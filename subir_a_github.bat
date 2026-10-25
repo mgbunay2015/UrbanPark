@@ -12,8 +12,8 @@ rem    VISIBILIDAD    : --private (privado) o --public (publico)
 rem ============================================================
 
 set GITHUB_USUARIO=mgbunay2015
-set REPO=urban-park-parqueadero
-set VISIBILIDAD=--private
+set REPO=UrbanPark
+set VISIBILIDAD=--public
 set RAMA=main
 set MENSAJE=Urban Park - app MAUI + API .NET + MySQL
 

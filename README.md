@@ -258,14 +258,14 @@ Antes de ejecutarlo, ajusta las tres primeras líneas del archivo:
 | Variable | Para qué sirve |
 |---|---|
 | `GITHUB_USUARIO` | tu usuario de GitHub |
-| `REPO` | nombre del repositorio (por defecto `urban-park-parqueadero`) |
-| `VISIBILIDAD` | `--private` (por defecto) o `--public` |
+| `REPO` | nombre del repositorio (por defecto `UrbanPark`) |
+| `VISIBILIDAD` | `--public` (por defecto) o `--private` |
 
 Hace: `git init` si falta, configura nombre/correo, `git add -A`, el commit, crea el repositorio con
 GitHub CLI (`gh`) si está autenticado y hace `git push`. Si `gh` no está, usa `git` normal y explica cómo
 autenticarse con un token (PAT).
 
-Repositorio de este proyecto: <https://github.com/mgbunay2015/urban-park-parqueadero> (privado).
+Repositorio de este proyecto: <https://github.com/mgbunay2015/UrbanPark> (público).
 
 ---
 
