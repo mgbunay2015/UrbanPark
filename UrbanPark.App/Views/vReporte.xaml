@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="UrbanPark.App.Views.vReporte"
@@ -33,6 +33,18 @@
                             </Border>
                         </VerticalStackLayout>
                     </Grid>
+
+                    <!-- Sucursales: todas, una o varias -->
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Sucursales" Style="{StaticResource EtiquetaCampoClaro}" />
+                        <Label x:Name="lblSucursales"
+                               Text="Todas las sucursales"
+                               Style="{StaticResource TextoSuave}"
+                               FontSize="10" />
+                        <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                            <HorizontalStackLayout x:Name="filaSucursales" Spacing="6" />
+                        </ScrollView>
+                    </VerticalStackLayout>
 
                     <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
                         <Button x:Name="btnHoy"

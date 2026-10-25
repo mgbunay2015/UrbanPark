@@ -161,6 +161,9 @@ public sealed class IaController : ControladorBase
             placa, ticket.Id, ticket.Codigo, eleccion.Motivo, eleccion.Explicacion, eleccion.Proveedor, true));
     }
 
+    /// <summary>Segundos que se espera a la IA al redactar el reporte.</summary>
+    private const int SegundosMaximosIa = 25;
+
     // ================================================================ reporte del administrador
     [HttpPost("reporte-tickets")]
     [Authorize(Roles = "ADMIN")]
@@ -189,6 +192,37 @@ public sealed class IaController : ControladorBase
             return NoDisponible("No se pudieron leer los tickets para el reporte.");
         }
 
+        // 2b) filtro por sucursal(es): se resuelve la sede de cada ticket por su plaza
+        var sedesPedidas = (peticion?.Sedes ?? []).Where(id => id > 0).Distinct().ToList();
+        List<Espacio> plazasDeSedes;
+        try { plazasDeSedes = await _espacios.ListarDeSedesAsync(sedesPedidas); }
+        catch (EspaciosNoDisponibleException) { plazasDeSedes = []; }
+
+        var espacioSede = plazasDeSedes
+            .Where(p => p.SedeId is not null)
+            .ToDictionary(p => p.Id, p => p.SedeId!.Value);
+        var nombreSede = plazasDeSedes
+            .Where(p => p.SedeId is not null)
+            .GroupBy(p => p.SedeId!.Value)
+            .ToDictionary(g => g.Key, g => string.IsNullOrWhiteSpace(g.First().SedeNombre)
+                ? $"Sede {g.Key}"
+                : g.First().SedeNombre!);
+
+        var sucursales = new List<string>();
+        if (sedesPedidas.Count > 0)
+        {
+            todos = todos.Where(t => espacioSede.ContainsKey(t.EspacioId)).ToList();
+            sucursales = sedesPedidas
+                .Where(id => nombreSede.ContainsKey(id))
+                .Select(id => nombreSede[id])
+                .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        else
+        {
+            sucursales = nombreSede.Values.OrderBy(n => n, StringComparer.OrdinalIgnoreCase).ToList();
+        }
+
         var desdeCompleto = desde.Date;
         var hastaCompleto = hasta.Date.AddDays(1).AddTicks(-1);
         var delPeriodo = todos.Where(t => t.Entrada >= desdeCompleto && t.Entrada <= hastaCompleto).ToList();
@@ -204,9 +238,17 @@ public sealed class IaController : ControladorBase
             .OrderBy(g => g.Key)
             .ToDictionary(g => g.Key, g => g.Count());
 
+        // tickets del periodo por sucursal
+        var porSede = delPeriodo
+            .GroupBy(t => espacioSede.TryGetValue(t.EspacioId, out var sedeId)
+                ? (nombreSede.TryGetValue(sedeId, out var nombre) ? nombre : $"Sede {sedeId}")
+                : "Sin sucursal")
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Count());
+
         // 3) ocupacion real (o la del sync si el servicio no responde)
         OcupacionDto? ocupacion = null;
-        try { ocupacion = await _espacios.OcupacionAsync(); }
+        try { ocupacion = await _espacios.OcupacionAsync(sedesPedidas); }
         catch (EspaciosNoDisponibleException) { }
 
         var plazasTotal = ocupacion?.Total ?? 0;
@@ -294,8 +336,12 @@ public sealed class IaController : ControladorBase
             .ToDictionary(g => g.Key, g => g.Count());
         try
         {
-            await _balance.GuardarAsync(desde, hasta, porZona, usosPlaza);
-            hallazgos.Add("Reporte guardado. Al asignar con IA se prefieren las plazas y zonas menos usadas de este periodo, sin cambiar la regla de la persona.");
+            // Con filtro por sucursal no se guarda: el balance de la IA es global.
+            if (sedesPedidas.Count == 0)
+            {
+                await _balance.GuardarAsync(desde, hasta, porZona, usosPlaza);
+                hallazgos.Add("Reporte guardado. Al asignar con IA se prefieren las plazas y zonas menos usadas de este periodo, sin cambiar la regla de la persona.");
+            }
         }
         catch (Exception ex)
         {
@@ -311,12 +357,20 @@ public sealed class IaController : ControladorBase
                       $"En el periodo {periodo} revisa lo cobrado y lo pendiente. Prioriza cerrar tickets abiertos antiguos.";
         var proveedor = "heuristica-local";
 
-        if (_deepseek.Configurado)
+        // La IA tiene un tope corto: si Ollama tarda, el reporte sale igual con el texto
+        // de respaldo (antes podía quedarse hasta 90 s esperando la redacción).
+        if (_deepseek.Configurado && peticion?.SinIa != true)
         {
             try
             {
-                resumen = LimpiarMarkdown((await _deepseek.GenerarAsync(ConstruirPromptReporte(periodo, datos), json: false, maxTokens: 700)).Trim());
+                using var topeIa = new CancellationTokenSource(TimeSpan.FromSeconds(SegundosMaximosIa));
+                resumen = LimpiarMarkdown((await _deepseek.GenerarAsync(
+                    ConstruirPromptReporte(periodo, datos), json: false, maxTokens: 700, ct: topeIa.Token)).Trim());
                 proveedor = _deepseek.Proveedor;
+            }
+            catch (OperationCanceledException)
+            {
+                _log.LogInformation("La IA tardó más de {Segundos}s; el reporte se devuelve con el resumen de respaldo", SegundosMaximosIa);
             }
             catch (Exception ex)
             {
@@ -329,7 +383,8 @@ public sealed class IaController : ControladorBase
             desde.ToString("yyyy-MM-dd"), hasta.ToString("yyyy-MM-dd"),
             plazasTotal, plazasOcupadas, plazasLibres, plazasPct,
             abiertosAhora.Count, cuadran, resumen, proveedor, hallazgos,
-            new MetricasReporte(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), porZona, detallePlazas, porDia, porPersona), descuento));
+            new MetricasReporte(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), porZona, detallePlazas, porDia, porPersona, porSede),
+            descuento, sucursales));
     }
 
     // ================================================================ chat de asistencia

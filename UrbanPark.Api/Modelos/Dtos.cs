@@ -101,16 +101,16 @@ public sealed record RecomendacionResponse(string ZonaRecomendada, long EspacioI
 public sealed record AsignarRequest(string? Placa, string? TipoVehiculo, string? Preferencia);
 public sealed record AsignacionResponse(long EspacioId, string EspacioCodigo, string Zona, double TarifaHora, int? Nivel,
     string Placa, long TicketId, string TicketCodigo, string Motivo, string ExplicacionIa, string ProveedorIa, bool Asignado);
-public sealed record ReporteRequest(string? FechaDesde, string? FechaHasta);
+public sealed record ReporteRequest(string? FechaDesde, string? FechaHasta, List<long>? Sedes = null, bool SinIa = false);
 public sealed record PlazaOcupadaDetalle(string Plaza, string Placa, string Cliente, string Zona, double PorCobrar);
 public sealed record DiaMonto(string Fecha, double Pagado, double Descuento);
 public sealed record PlazaUso(string Plaza, int Usos);
 public sealed record MetricasReporte(string GeneradoEn, Dictionary<string, int> PorZona, List<PlazaOcupadaDetalle> PlazasOcupadasDetalle,
-    List<DiaMonto> PorDia, List<PlazaUso> PlazasMasUsadas);
+    List<DiaMonto> PorDia, List<PlazaUso> PlazasMasUsadas, Dictionary<string, int>? PorSede = null);
 public sealed record ReporteTicketsResponse(int TotalTickets, int Abiertos, int Cerrados, double Recaudado, double PorCobrarEstimado,
     string FechaDesde, string FechaHasta, int PlazasTotal, int PlazasOcupadas, int PlazasLibres, int PlazasPorcentaje,
     int TicketsAbiertosAhora, bool CuadranConPlazas, string ResumenIa, string ProveedorIa, List<string> Hallazgos, MetricasReporte Metricas,
-    double DescuentoAplicado = 0);
+    double DescuentoAplicado = 0, List<string>? Sucursales = null);
 public sealed record IaEstadoResponse(bool Disponible, string BaseUrl, string Modelo, string Mensaje, string Proveedor);
 
 // ============================ Chat con la IA ============================

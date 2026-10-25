@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text;
 using Microsoft.Maui.Controls.Shapes;
 using UrbanPark.App.Modelos;
@@ -18,6 +18,11 @@ public partial class vReporte : ContentPage
 
     private bool generando;
 
+    // ---- filtro por sucursales (vacío = todas)
+    private readonly HashSet<long> _sedesElegidas = [];
+    private List<SedeDto> _sucursales = [];
+    private bool _sucursalesCargadas;
+
     public vReporte()
     {
         InitializeComponent();
@@ -34,7 +39,78 @@ public partial class vReporte : ContentPage
         {
             await Ui.Error(this, "No tienes acceso a esta pantalla con tu perfil");
             await Navigation.PopAsync();
+            return;
         }
+
+        if (!_sucursalesCargadas) await CargarSucursalesAsync();
+    }
+
+    // ================================================================ sucursales
+    /// <summary>Pinta los chips «Todas» y una por cada sucursal (se puede elegir una o varias).</summary>
+    private async Task CargarSucursalesAsync()
+    {
+        try
+        {
+            _sucursales = await ApiCliente.SedesAsync();
+            _sucursalesCargadas = _sucursales.Count > 0;
+        }
+        catch (Exception)
+        {
+            _sucursales = [];
+        }
+
+        PintarSucursales();
+    }
+
+    private void PintarSucursales()
+    {
+        filaSucursales.Children.Clear();
+        filaSucursales.Children.Add(Chip("Todas", _sedesElegidas.Count == 0, () =>
+        {
+            _sedesElegidas.Clear();
+            PintarSucursales();
+        }));
+
+        foreach (var sede in _sucursales.OrderBy(s => s.Nombre, StringComparer.OrdinalIgnoreCase))
+        {
+            var id = sede.Id;
+            var nombre = string.IsNullOrWhiteSpace(sede.Codigo) ? sede.Nombre : sede.Codigo;
+            filaSucursales.Children.Add(Chip(nombre, _sedesElegidas.Contains(id), () =>
+            {
+                if (!_sedesElegidas.Add(id)) _sedesElegidas.Remove(id);
+                PintarSucursales();
+            }));
+        }
+
+        lblSucursales.Text = _sedesElegidas.Count switch
+        {
+            0 => "Todas las sucursales",
+            1 => _sucursales.First(s => s.Id == _sedesElegidas.First()).Nombre,
+            _ => $"{_sedesElegidas.Count} sucursales elegidas"
+        };
+    }
+
+    private View Chip(string texto, bool activo, Action alPulsar)
+    {
+        var etiqueta = new Label
+        {
+            Text = texto,
+            FontSize = 11,
+            FontFamily = "OpenSansSemibold",
+            TextColor = activo ? Ui.ColorDe("TextoFuerte") : Ui.ColorDe("TextoClaroMedio")
+        };
+
+        var chip = new Border
+        {
+            Style = Ui.EstiloDe(activo ? "ChipActivo" : "Chip"),
+            Content = etiqueta,
+            Padding = new Thickness(10, 5)
+        };
+
+        var toque = new TapGestureRecognizer();
+        toque.Tapped += (_, _) => alPulsar();
+        chip.GestureRecognizers.Add(toque);
+        return chip;
     }
 
     // ================================================================ fechas
@@ -111,7 +187,7 @@ public partial class vReporte : ContentPage
 
         try
         {
-            var reporte = await ApiCliente.ReporteAsync(desde, hasta);
+            var reporte = await ApiCliente.ReporteAsync(desde, hasta, _sedesElegidas);
             PintarReporte(reporte, desde, hasta);
         }
         catch (Exception ex)
@@ -287,8 +363,29 @@ public partial class vReporte : ContentPage
 
         contenedorReporte.Add(TarjetaEncabezado(r, periodo));
 
+        // El reporte llega al instante con el resumen de respaldo; si el usuario quiere
+        // el texto de la IA se pide aparte (puede tardar unos segundos con Ollama).
+        if (r.ProveedorIa.StartsWith("heuristica", StringComparison.OrdinalIgnoreCase))
+            contenedorReporte.Add(BotonRedactarConIa(desde, hasta));
+
         // ---------- secciones ----------
         var secciones = new VerticalStackLayout { Spacing = 14 };
+
+        // ---------- 0. reparto por sucursal (cuando el reporte abarca varias) ----------
+        var porSede = r.Metricas.PorSede;
+        if (porSede.Count > 1)
+        {
+            var filas = new VerticalStackLayout { Spacing = 6 };
+            var maximo = porSede.Values.Max();
+            foreach (var (nombre, cantidad) in porSede.OrderByDescending(kv => kv.Value))
+            {
+                filas.Add(FilaBarraSucursal(nombre, cantidad, maximo));
+            }
+
+            secciones.Add(TarjetaSeccion("Por sucursal",
+                "Tickets del periodo en cada sucursal incluida en el reporte.",
+                filas));
+        }
 
         // ---------- 1. plazas actuales ----------
         secciones.Add(TarjetaSeccion("1. Plazas actuales",
@@ -349,11 +446,102 @@ public partial class vReporte : ContentPage
     }
 
     // ================================================================ tarjetas del reporte
+    /// <summary>Una fila «nombre · barra · cantidad» para el reparto por sucursal.</summary>
+    private static View FilaBarraSucursal(string nombre, int cantidad, int maximo)
+    {
+        var proporcion = maximo <= 0 ? 0 : Math.Max(0.04, cantidad * 1.0 / maximo);
+
+        var barra = new Border
+        {
+            BackgroundColor = Ui.ColorDe("Acento"),
+            StrokeThickness = 0,
+            StrokeShape = new RoundRectangle { CornerRadius = 4 },
+            HeightRequest = 8,
+            HorizontalOptions = LayoutOptions.Start,
+            WidthRequest = 150 * proporcion
+        };
+
+        var pista = new Border
+        {
+            BackgroundColor = Ui.ColorDe("SuperficieBorde"),
+            StrokeThickness = 0,
+            StrokeShape = new RoundRectangle { CornerRadius = 4 },
+            HeightRequest = 8,
+            Content = barra
+        };
+
+        var fila = new Grid
+        {
+            ColumnDefinitions = [new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto)],
+            ColumnSpacing = 8
+        };
+
+        var izquierda = new VerticalStackLayout { Spacing = 3 };
+        izquierda.Add(Parrafo(nombre, 12, fuerte: true));
+        izquierda.Add(pista);
+
+        var texto = Parrafo(cantidad.ToString(), 12, fuerte: true, color: Ui.ColorDe("Acento"));
+
+        fila.Add(izquierda, 0);
+        fila.Add(texto, 1);
+        return fila;
+    }
+
+    /// <summary>Botón para pedir el resumen narrativo a Ollama (el reporte ya está en pantalla).</summary>
+    private View BotonRedactarConIa(string desde, string hasta)
+    {
+        var boton = new Button
+        {
+            Text = "✨ Redactar el resumen con IA",
+            Style = Ui.EstiloDe("BotonSecundario"),
+            FontSize = 12
+        };
+
+        var nota = new Label
+        {
+            Text = "El reporte ya está listo con el resumen automático. La IA puede tardar unos segundos.",
+            FontSize = 10,
+            TextColor = Ui.ColorDe("TextoClaroSuave")
+        };
+
+        boton.Clicked += async (_, _) =>
+        {
+            boton.IsEnabled = false;
+            boton.Text = "Redactando con la IA…";
+            try
+            {
+                var conIa = await ApiCliente.ReporteAsync(desde, hasta, _sedesElegidas, conIa: true);
+                PintarReporte(conIa, desde, hasta);
+            }
+            catch (Exception ex)
+            {
+                boton.IsEnabled = true;
+                boton.Text = "✨ Redactar el resumen con IA";
+                await Ui.MostrarExcepcion(this, ex);
+            }
+        };
+
+        return TarjetaContenido("Resumen con IA", new VerticalStackLayout
+        {
+            Spacing = 6,
+            Children = { boton, nota }
+        });
+    }
+
     private static View TarjetaEncabezado(ReporteDto r, string periodo)
     {
         var contenido = new VerticalStackLayout { Spacing = 10 };
         contenido.Add(Parrafo("Reporte del parqueadero", 20, fuerte: true, color: Ui.ColorDe("Acento")));
         contenido.Add(Parrafo($"Periodo de tickets: {periodo}", 13, fuerte: true));
+
+        var sucursales = r.Sucursales.Count switch
+        {
+            0 => "Todas las sucursales",
+            <= 3 => string.Join(" · ", r.Sucursales),
+            _ => $"{r.Sucursales.Count} sucursales"
+        };
+        contenido.Add(Parrafo($"Sucursales: {sucursales}", 12));
+
         contenido.Add(Sello(r.CuadranConPlazas));
 
         return TarjetaContenido("Urban Park · reporte del administrador", contenido);

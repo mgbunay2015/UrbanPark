@@ -326,6 +326,9 @@ public sealed class MetricasReporteDto
     public List<PlazaOcupadaDetalleDto> PlazasOcupadasDetalle { get; set; } = [];
     public List<DiaMontoDto> PorDia { get; set; } = [];
     public List<PlazaUsoDto> PlazasMasUsadas { get; set; } = [];
+
+    /// <summary>Tickets del periodo por sucursal.</summary>
+    public Dictionary<string, int> PorSede { get; set; } = [];
 }
 
 public sealed class ReporteDto
@@ -347,6 +350,10 @@ public sealed class ReporteDto
     public string ResumenIa { get; set; } = "";
     public string ProveedorIa { get; set; } = "";
     public List<string> Hallazgos { get; set; } = [];
+
+    /// <summary>Nombres de las sucursales incluidas en el reporte.</summary>
+    public List<string> Sucursales { get; set; } = [];
+
     public MetricasReporteDto Metricas { get; set; } = new();
 }
 

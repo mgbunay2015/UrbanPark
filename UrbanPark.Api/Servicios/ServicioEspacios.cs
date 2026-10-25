@@ -43,10 +43,32 @@ public sealed class ServicioEspacios
         return await _repo.DisponiblesAsync(tipo, zona);
     }
 
-    public async Task<OcupacionDto> OcupacionAsync()
+    /// <summary>
+    /// Ocupación global o solo de las sedes indicadas (null/lista vacía = todas).
+    /// </summary>
+    public async Task<OcupacionDto> OcupacionAsync(IEnumerable<long>? sedes = null)
     {
         VerificarDisponibilidad();
-        return EspacioRepositorio.CalcularOcupacion(await _repo.ListarAsync());
+        var plazas = await _repo.ListarAsync();
+
+        var filtro = sedes?.Where(id => id > 0).ToHashSet();
+        if (filtro is { Count: > 0 })
+            plazas = plazas.Where(p => p.SedeId is long sede && filtro.Contains(sede)).ToList();
+
+        return EspacioRepositorio.CalcularOcupacion(plazas);
+    }
+
+    /// <summary>Plazas de esas sedes (null/lista vacía = todas).</summary>
+    public async Task<List<Espacio>> ListarDeSedesAsync(IEnumerable<long>? sedes = null)
+    {
+        VerificarDisponibilidad();
+        var plazas = await _repo.ListarAsync();
+
+        var filtro = sedes?.Where(id => id > 0).ToHashSet();
+        if (filtro is { Count: > 0 })
+            plazas = plazas.Where(p => p.SedeId is long sede && filtro.Contains(sede)).ToList();
+
+        return plazas;
     }
 
     /// <summary>Ocupa la plaza. Devuelve el espacio ocupado para copiar codigo/zona/tarifa al ticket.</summary>

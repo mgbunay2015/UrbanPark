@@ -244,6 +244,17 @@ campo del código automáticamente.
 
 ---
 
+### Reporte por sucursal
+
+En **Reportería** se eligen las sucursales con los chips: **Todas** o una/varias (se pueden combinar).
+El reporte filtra plazas, ocupación, tickets, dinero y gráficas a esas sucursales, muestra el reparto
+**Por sucursal** y, si el resumen es el automático, ofrece **✨ Redactar el resumen con IA**.
+
+El reporte se genera al instante (~100 ms) con el resumen automático; el texto de Ollama se pide aparte
+con ese botón, porque el modelo local puede tardar varios segundos.
+
+![Reporte por sucursal](docs/capturas/reporte-por-sucursal.png)
+
 ## 8. Subir el proyecto a GitHub
 
 `subir_a_github.bat` (en la raíz) crea el repositorio si no existe y sube todo, sin las carpetas

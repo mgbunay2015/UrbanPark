@@ -11,17 +11,10 @@
   <ItemGroup>
     <PackageReference Include="MySqlConnector" Version="2.*" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.*" />
-    <PackageReference Include="Google.Apis.Auth" Version="1.6.0-beta" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.*" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.*" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.*" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.*" />
-    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.11" />
-    <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.0.1" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="7.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="10.0.0" />
-    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12-pre20260709125052" />
   </ItemGroup>
 
 </Project>

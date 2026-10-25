@@ -555,8 +555,20 @@ public static class ApiCliente
     public static Task<AsignacionDto> AsignarAsync(string placa, string tipoVehiculo, string? preferencia) =>
         PostAsync<AsignacionDto>("/api/ia/asignar", new { placa, tipoVehiculo, preferencia });
 
-    public static Task<ReporteDto> ReporteAsync(string desde, string hasta) =>
-        PostAsync<ReporteDto>("/api/ia/reporte-tickets", new { fechaDesde = desde, fechaHasta = hasta });
+    /// <summary>Reporte del administrador; <paramref name="sedes"/> vacío o null = todas.</summary>
+    /// <summary>
+    /// Reporte del administrador. Con <paramref name="conIa"/> = false responde al instante
+    /// con el resumen de respaldo; con true espera a Ollama (puede tardar unos segundos).
+    /// </summary>
+    public static Task<ReporteDto> ReporteAsync(string desde, string hasta,
+        IReadOnlyCollection<long>? sedes = null, bool conIa = false) =>
+        PostAsync<ReporteDto>("/api/ia/reporte-tickets", new
+        {
+            fechaDesde = desde,
+            fechaHasta = hasta,
+            sedes = sedes is { Count: > 0 } ? sedes.ToArray() : null,
+            sinIa = !conIa
+        });
 
     public static Task<IaEstadoDto> EstadoIaAsync() => GetAsync<IaEstadoDto>("/api/ia/estado");
 

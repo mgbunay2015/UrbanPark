@@ -502,20 +502,41 @@ public partial class vLogin : ContentPage
     /// Ingreso sin internet: comprueba usuario y contraseña contra el hash guardado en el
     /// equipo y abre la app con la sesión y los datos que ya están descargados.
     /// </summary>
+    /// <summary>
+    /// Ingreso sin conexión: comprueba usuario y contraseña contra el hash guardado en el
+    /// equipo y abre la app con la sesión y los datos ya descargados.
+    /// Se distingue "no hay internet" de "el API no responde": en el segundo caso el
+    /// usuario decide, para no entrar a ciegas cuando el servidor está apagado.
+    /// </summary>
     private async Task EntrarSinInternetAsync(string usuario, string password, string? detalle = null)
     {
+        var hayRed = ApiCliente.HayInternet;
+        var problema = hayRed
+            ? $"No se pudo conectar con el API en {ApiCliente.BaseUrl}."
+            : "Sin internet.";
+
         if (!await CredencialLocal.TieneCredencialAsync())
         {
             await Ui.Error(this,
-                "Sin internet y este equipo todavía no tiene una contraseña guardada. " +
-                "Conéctate una vez para entrar y desde ahí podrás hacerlo sin conexión." + (detalle is null ? "" : $"\n\n{detalle}"));
+                $"{problema} Este equipo todavía no tiene una contraseña guardada: conéctate una vez para entrar " +
+                "y desde ahí también podrás hacerlo sin conexión." + (detalle is null ? "" : $"\n\n{detalle}"));
             return;
         }
 
         if (!await CredencialLocal.VerificarAsync(usuario, password))
         {
-            await Ui.Error(this, "Sin internet. La contraseña no coincide con la guardada en este equipo.");
+            await Ui.Error(this, $"{problema} La contraseña no coincide con la guardada en este equipo.");
             return;
+        }
+
+        // Con red pero sin servidor, se pregunta antes de abrir la app en modo guardado.
+        if (hayRed)
+        {
+            var entrar = await DisplayAlert("No se pudo conectar con el API",
+                $"{problema}\n\n¿Quieres entrar con los datos guardados en este equipo? " +
+                "Lo que hagas se enviará cuando el servidor vuelva a responder.",
+                "Entrar sin conexión", "Reintentar");
+            if (!entrar) return;
         }
 
         if (Sesion.Actual is null)
@@ -529,18 +550,20 @@ public partial class vLogin : ContentPage
             if (guardada is null)
             {
                 await Ui.Informar(this,
-                    "Sin internet y sin datos guardados en este equipo. Conéctate una vez para poder entrar después.");
+                    $"{problema} Y no hay datos guardados en este equipo. Conéctate una vez para poder entrar después.");
                 return;
             }
 
             await Sesion.GuardarAsync(guardada);
         }
 
-        await Ui.Informar(this,
-            $"Entraste sin internet como {usuario}. Verás los datos guardados y lo que hagas se enviará cuando vuelva la conexión.");
+        await Ui.Informar(this, hayRed
+            ? $"Entraste con los datos guardados de {usuario}: el API no responde en este momento. " +
+              "Lo que hagas se enviará cuando vuelva."
+            : $"Entraste sin internet como {usuario}. Verás los datos guardados y lo que hagas se enviará al volver la conexión.");
+
         IrAlMenu();
     }
-
     /// <summary>Muestra el campo del código TOTP y deja el cursor listo para escribirlo.</summary>
     private void MostrarCampoTotp(string? mensaje)
     {
