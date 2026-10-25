@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vSalida"
+             Title="Salida">
+
+    <Grid>
+        <ScrollView x:Name="vistaQr" IsVisible="False">
+            <Grid Padding="12,8,12,12" RowSpacing="8" RowDefinitions="Auto,*">
+
+                <VerticalStackLayout Spacing="2">
+                    <Label Text="Pases de salida" Style="{StaticResource TituloPagina}" />
+                    <Label x:Name="lblAyuda"
+                           Text="Muestra el QR de cada vehículo en la salida. Cada uno vence a los 10 minutos de su pago."
+                           Style="{StaticResource SubtituloPagina}" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout x:Name="contenedorPases"
+                                     Grid.Row="1"
+                                     Spacing="16" />
+
+            </Grid>
+        </ScrollView>
+
+        <VerticalStackLayout x:Name="panelCandado"
+                             Padding="16,20"
+                             Spacing="10"
+                             VerticalOptions="Center"
+                             MaximumWidthRequest="420">
+            <Label Text="🔒"
+                   FontSize="48"
+                   HorizontalTextAlignment="Center" />
+            <Label Text="QR protegido"
+                   Style="{StaticResource TituloPagina}"
+                   HorizontalTextAlignment="Center" />
+            <Label Text="Para ver el QR de salida confirma tu huella. En el emulador: ⋯ Extended controls → Fingerprint → Finger 1 → Touch the sensor."
+                   Style="{StaticResource SubtituloPagina}"
+                   HorizontalTextAlignment="Center" />
+            <Button Text="Verificar huella"
+                    Clicked="OnDesbloquearClicked"
+                    Style="{StaticResource BotonPrimario}"
+                    HeightRequest="36" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vTotp"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource Fondo}"
+             Title="Autenticador de Google">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <VerticalStackLayout Grid.Row="0" Padding="14,12,14,4" Spacing="1">
+            <Label Text="Autenticador de Google" Style="{StaticResource TituloPagina}" />
+            <Label Text="Un código de 6 dígitos cada vez que entres"
+                   Style="{StaticResource SubtituloPagina}" />
+        </VerticalStackLayout>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="14,4,14,12" Spacing="10">
+
+                <Border BackgroundColor="{StaticResource Superficie}"
+                        Stroke="{StaticResource Acento}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="12">
+                    <VerticalStackLayout Spacing="10">
+
+                        <Label Text="1 · Escanea este QR con Google Authenticator"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="12"
+                               TextColor="{StaticResource TextoClaro}" />
+
+                        <Border BackgroundColor="White"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 12"
+                                Padding="10"
+                                HorizontalOptions="Center">
+                            <Image x:Name="imgQr"
+                                   WidthRequest="220"
+                                   HeightRequest="220"
+                                   Aspect="AspectFit" />
+                        </Border>
+
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="¿No puedes escanear? Escribe esta clave en la app:"
+                                   FontSize="10"
+                                   TextColor="{StaticResource TextoClaroSuave}" />
+                            <Label x:Name="lblSecreto"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="13"
+                                   TextColor="{StaticResource Acento}"
+                                   LineBreakMode="CharacterWrap" />
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border BackgroundColor="{StaticResource Superficie}"
+                        Stroke="{StaticResource SuperficieBorde}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="12">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="2 · Escribe el código que muestra la app"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="12"
+                               TextColor="{StaticResource TextoClaro}" />
+
+                        <Border Style="{StaticResource Campo}">
+                            <Entry x:Name="txtCodigo"
+                                   Placeholder="6 dígitos"
+                                   Keyboard="Numeric"
+                                   MaxLength="6"
+                                   ReturnType="Done"
+                                   Completed="OnConfirmarClicked" />
+                        </Border>
+
+                        <Label x:Name="lblAyuda"
+                               Text="El código cambia cada 30 segundos."
+                               FontSize="10"
+                               TextColor="{StaticResource TextoClaroSuave}" />
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <VerticalStackLayout Grid.Row="2" Padding="12,6,12,10" Spacing="6"
+                             BackgroundColor="{StaticResource Superficie}">
+            <Button x:Name="btnConfirmar"
+                    Text="Confirmar y activar"
+                    Clicked="OnConfirmarClicked"
+                    Style="{StaticResource BotonAcento}"
+                    FontSize="13"
+                    HeightRequest="42" />
+            <Button x:Name="btnCancelar"
+                    Text="Ahora no"
+                    Clicked="OnCancelarClicked"
+                    Style="{StaticResource BotonFantasma}"
+                    FontSize="11"
+                    HeightRequest="30" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

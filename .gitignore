@@ -1,0 +1,42 @@
+# ===== .NET / MAUI =====
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+.vs/
+packages/
+*.binlog
+project.lock.json
+
+# ===== Compilados de la app =====
+*.apk
+*.aab
+*.ipa
+*.appx
+*.msix
+AppPackages/
+
+# ===== Editores =====
+.idea/
+*.sln.docstates
+*.DotSettings.user
+
+# ===== Sistema =====
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# ===== Temporales / registros =====
+*.log
+*.tmp
+*.bak
+~$*
+
+# ===== Capturas temporales de pruebas =====
+capturas-temp/
+.verif/
+
+# ===== Datos locales / secretos =====
+*.local.json
+appsettings.Local.json

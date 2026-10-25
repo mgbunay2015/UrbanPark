@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vLlegada"
+             Title="Cómo llegar">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="10" RowSpacing="8">
+        <VerticalStackLayout Grid.Row="0" Spacing="2">
+            <Label Text="Cómo llegar" Style="{StaticResource TituloPagina}" />
+            <Label x:Name="lblEstado"
+                   Text="Buscando tu ubicación…"
+                   Style="{StaticResource SubtituloPagina}" />
+        </VerticalStackLayout>
+
+        <Border Grid.Row="1" StrokeShape="RoundRectangle 22" StrokeThickness="0" BackgroundColor="#E7EEF6">
+            <Grid>
+                <WebView x:Name="mapa" Navigated="OnMapaNavegado" />
+                <ActivityIndicator x:Name="spinner"
+                                   IsRunning="True"
+                                   IsVisible="True"
+                                   Color="{StaticResource AcentoOscuro}"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="2" Style="{StaticResource Tarjeta}" Padding="8">
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="2">
+                <Label Text="URBAN PARK" Style="{StaticResource EncabezadoTabla}" TextColor="{StaticResource Acento}" />
+                <Label x:Name="lblDistancia"
+                       Grid.Row="1"
+                       Text="500 m"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="16"
+                       TextColor="{StaticResource TextoClaro}" />
+                <Label x:Name="lblTiempo"
+                       Grid.Row="2"
+                       Text="Unos 6 min caminando"
+                       FontSize="11"
+                       TextColor="{StaticResource TextoClaroMedio}" />
+                <Button Grid.Row="0" Grid.RowSpan="3" Grid.Column="1"
+                        Text="Navegar"
+                        Clicked="OnNavegarClicked"
+                        Style="{StaticResource BotonPrimario}"
+                        VerticalOptions="Center"
+                        Padding="12,0"
+                        HeightRequest="36" />
+            </Grid>
+        </Border>
+    </Grid>
+</ContentPage>

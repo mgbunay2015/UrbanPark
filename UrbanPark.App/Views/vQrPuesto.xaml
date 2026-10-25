@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vQrPuesto"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource Fondo}"
+             Title="Mi QR">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- ================= encabezado ================= -->
+        <VerticalStackLayout Grid.Row="0" Padding="14,12,14,4" Spacing="1">
+            <Label Text="Tu puesto está reservado" Style="{StaticResource TituloPagina}" />
+            <Label x:Name="lblSubtitulo"
+                   Text="Muestra este QR en la entrada del parqueadero"
+                   Style="{StaticResource SubtituloPagina}" />
+        </VerticalStackLayout>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="14,4,14,10" Spacing="10">
+
+                <!-- ================= QR ================= -->
+                <Border BackgroundColor="{StaticResource Superficie}"
+                        Stroke="{StaticResource Acento}"
+                        StrokeThickness="2"
+                        StrokeShape="RoundRectangle 18"
+                        Padding="12">
+                    <VerticalStackLayout Spacing="8">
+
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label x:Name="lblSede"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="14"
+                                   TextColor="{StaticResource TextoClaro}"
+                                   LineBreakMode="TailTruncation"
+                                   VerticalOptions="Center" />
+                            <Border Grid.Column="1"
+                                    BackgroundColor="{StaticResource Acento}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 8"
+                                    Padding="8,2">
+                                <Label x:Name="lblPuesto"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="12"
+                                       TextColor="{StaticResource Fondo}" />
+                            </Border>
+                        </Grid>
+
+                        <Label x:Name="lblDireccion"
+                               FontSize="11"
+                               TextColor="{StaticResource TextoClaroSuave}"
+                               LineBreakMode="WordWrap" />
+
+                        <Border BackgroundColor="White"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 12"
+                                Padding="10"
+                                HorizontalOptions="Center">
+                            <Image x:Name="imgQr"
+                                   WidthRequest="230"
+                                   HeightRequest="230"
+                                   Aspect="AspectFit" />
+                        </Border>
+
+                        <VerticalStackLayout Spacing="0">
+                            <Label x:Name="lblEtiquetaMonto"
+                                   Text="VALOR A PAGAR EN ESTE MOMENTO"
+                                   Style="{StaticResource EncabezadoTabla}"
+                                   HorizontalTextAlignment="Center" />
+                            <Label x:Name="lblMonto"
+                                   Text="$0.00"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="34"
+                                   TextColor="{StaticResource Acento}"
+                                   HorizontalTextAlignment="Center" />
+                            <Label x:Name="lblTiempo"
+                                   Text="00:00:00 dentro"
+                                   FontSize="12"
+                                   TextColor="{StaticResource TextoClaroMedio}"
+                                   HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+
+                        <Label x:Name="lblCalculo"
+                               FontSize="10"
+                               TextColor="{StaticResource TextoClaroSuave}"
+                               HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- ================= datos del pase ================= -->
+                <Border BackgroundColor="{StaticResource Superficie}"
+                        Stroke="{StaticResource SuperficieBorde}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="12">
+                    <VerticalStackLayout x:Name="contenidoDatos" Spacing="4" />
+                </Border>
+
+                <Label x:Name="lblNota"
+                       FontSize="10"
+                       TextColor="{StaticResource TextoClaroSuave}"
+                       Text="El QR lleva el parqueadero, la dirección, el puesto, la placa y el valor de ahora. Se actualiza solo mientras la reserva siga activa."
+                       LineBreakMode="WordWrap" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- ================= acciones ================= -->
+        <VerticalStackLayout Grid.Row="2" Padding="12,6,12,10" Spacing="6"
+                             BackgroundColor="{StaticResource Superficie}">
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <Button x:Name="btnLlegar"
+                        Text="🗺 Cómo llegar"
+                        Clicked="OnLlegarClicked"
+                        Style="{StaticResource BotonFantasma}"
+                        FontSize="12"
+                        HeightRequest="38" />
+                <Button x:Name="btnPagar"
+                        Grid.Column="1"
+                        Text="Cerrar y pagar"
+                        Clicked="OnPagarClicked"
+                        Style="{StaticResource BotonAcento}"
+                        FontSize="12"
+                        HeightRequest="38" />
+            </Grid>
+            <Button x:Name="btnAnular"
+                    Text="Anular la reserva y liberar el puesto"
+                    Clicked="OnAnularClicked"
+                    Style="{StaticResource BotonFantasma}"
+                    TextColor="{StaticResource Peligro}"
+                    FontSize="11"
+                    HeightRequest="32" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

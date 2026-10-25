@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vPerfil"
+             Shell.NavBarIsVisible="False"
+             Title="Perfil">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="10" Spacing="8" MaximumWidthRequest="720">
+
+            <!-- ============================================================
+                 CABECERA con avatar
+                 ============================================================ -->
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <Border Grid.Column="0" Style="{StaticResource Avatar}" VerticalOptions="Center">
+                    <Label x:Name="lblAvatar" Text="—" Style="{StaticResource AvatarTexto}" />
+                </Border>
+
+                <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                    <Label Text="Mi perfil" Style="{StaticResource TituloPagina}" />
+                    <Label x:Name="lblNombre" Text="—" Style="{StaticResource SubtituloPagina}" />
+                    <Label x:Name="lblUsuario"
+                           Text="Usuario: — · Roles: —"
+                           Style="{StaticResource Ayuda}" />
+                </VerticalStackLayout>
+
+                <Button Grid.Column="2"
+                        Text="Recargar"
+                        Clicked="OnRecargarClicked"
+                        Style="{StaticResource BotonSecundario}"
+                        HeightRequest="42"
+                        VerticalOptions="Center" />
+            </Grid>
+
+            <ActivityIndicator x:Name="spinnerPerfil"
+                               IsRunning="False"
+                               IsVisible="False"
+                               HorizontalOptions="Center" />
+
+            <!-- ============================================================
+                 DATOS PERSONALES
+                 ============================================================ -->
+            <Border Style="{StaticResource TarjetaClara}">
+                <VerticalStackLayout Spacing="14">
+
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Datos personales" Style="{StaticResource TituloSeccion}" />
+                        <Label Text="Tu nombre de usuario no se puede modificar."
+                               Style="{StaticResource TextoSuave}" />
+                    </VerticalStackLayout>
+
+                    <BoxView Style="{StaticResource Divisor}" />
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Nombre" Style="{StaticResource EtiquetaCampo}" />
+                        <Border Style="{StaticResource Campo}">
+                            <Entry x:Name="txtNombre" Placeholder="Nombre" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Apellido" Style="{StaticResource EtiquetaCampo}" />
+                        <Border Style="{StaticResource Campo}">
+                            <Entry x:Name="txtApellido" Placeholder="Apellido" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Email" Style="{StaticResource EtiquetaCampo}" />
+                        <Border Style="{StaticResource Campo}">
+                            <Entry x:Name="txtEmail" Placeholder="correo@dominio.com" Keyboard="Email" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <Button x:Name="btnGuardarPerfil"
+                            Text="Guardar perfil"
+                            Clicked="OnGuardarPerfilClicked"
+                            Style="{StaticResource BotonPrimario}"
+                            Margin="0,2,0,0" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ============================================================
+                 CAMBIAR CONTRASEÑA
+                 ============================================================ -->
+            <Border Style="{StaticResource TarjetaClara}">
+                <VerticalStackLayout Spacing="14">
+
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Cambiar contraseña" Style="{StaticResource TituloSeccion}" />
+                        <Label Text="Se cerrará la sesión en los demás dispositivos." Style="{StaticResource TextoSuave}" />
+                    </VerticalStackLayout>
+
+                    <BoxView Style="{StaticResource Divisor}" />
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Contraseña actual" Style="{StaticResource EtiquetaCampo}" />
+                        <Border Style="{StaticResource Campo}">
+                            <Entry x:Name="txtPasswordActual" IsPassword="True" Placeholder="Contraseña actual" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Nueva contraseña (mínimo 6 caracteres)" Style="{StaticResource EtiquetaCampo}" />
+                        <Border Style="{StaticResource Campo}">
+                            <Entry x:Name="txtPasswordNueva" IsPassword="True" Placeholder="Nueva contraseña" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <Button x:Name="btnCambiarPassword"
+                            Text="Cambiar contraseña"
+                            Clicked="OnCambiarPasswordClicked"
+                            Style="{StaticResource BotonAcento}"
+                            Margin="0,2,0,0" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource TarjetaClara}">
+                <VerticalStackLayout Spacing="10">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Huella" Style="{StaticResource TituloSeccion}" />
+                        <Label x:Name="lblHuella"
+                               Text="Sirve para entrar al sistema y para abrir el QR de salida."
+                               Style="{StaticResource TextoSuave}" />
+                    </VerticalStackLayout>
+                    <Button x:Name="btnHuella"
+                            Text="Registrar huella"
+                            Clicked="OnHuellaClicked"
+                            Style="{StaticResource BotonPrimario}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource TarjetaClara}">
+                <VerticalStackLayout Spacing="10">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Autenticador de Google" Style="{StaticResource TituloSeccion}" />
+                        <Label x:Name="lblTotp"
+                               Text="Comprueba el estado del segundo factor…"
+                               Style="{StaticResource TextoSuave}" />
+                    </VerticalStackLayout>
+                    <Button x:Name="btnTotp"
+                            Text="Activar autenticador"
+                            Clicked="OnTotpClicked"
+                            Style="{StaticResource BotonPrimario}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource TarjetaClara}">
+                <VerticalStackLayout Spacing="8">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Conexión con el API" Style="{StaticResource TituloSeccion}" />
+                        <Label Text="Cambia la dirección del servidor (emulador, celular en la misma WiFi o servidor propio)."
+                               Style="{StaticResource TextoSuave}"
+                               FontSize="11" />
+                    </VerticalStackLayout>
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Border Style="{StaticResource Campo}">
+                            <Entry x:Name="txtBaseUrl" FontSize="13" />
+                        </Border>
+                        <Button Grid.Column="1"
+                                Text="Aplicar"
+                                Clicked="OnAplicarUrlClicked"
+                                Style="{StaticResource BotonAcento}"
+                                HeightRequest="38"
+                                FontSize="11"
+                                Padding="14,0" />
+                    </Grid>
+
+                    <Label x:Name="lblSugerenciasUrl"
+                           Style="{StaticResource TextoSuave}"
+                           FontSize="10" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label x:Name="lblPie"
+                   Style="{StaticResource TextoSuaveClaro}"
+                   HorizontalTextAlignment="Center"
+                   Margin="0,0,0,14" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

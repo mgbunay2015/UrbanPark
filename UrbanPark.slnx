@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/UrbanPark.Pruebas/UrbanPark.Pruebas.csproj" />
+  </Folder>
+  <Project Path="UrbanPark.Api/UrbanPark.Api.csproj" />
+  <Project Path="UrbanPark.App/UrbanPark.App.csproj">
+    <Deploy />
+  </Project>
+</Solution>

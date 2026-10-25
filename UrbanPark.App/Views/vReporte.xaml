@@ -1,0 +1,86 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vReporte"
+             Title="Reporte">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="10,10,10,12" Spacing="8" MaximumWidthRequest="680">
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Reporte IA" Style="{StaticResource TituloPagina}" />
+                <Label Text="Elige el rango y genera el reporte. Ollama lo resume y ese reporte se guarda para asignar plazas de forma más equilibrada."
+                       Style="{StaticResource SubtituloPagina}" />
+            </VerticalStackLayout>
+
+            <!-- ================= fechas ================= -->
+            <Border Style="{StaticResource Tarjeta}">
+                <VerticalStackLayout Spacing="14">
+                    <Label Text="RANGO DE FECHAS" Style="{StaticResource TituloSeccionClaro}" />
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <VerticalStackLayout Grid.Column="0" Spacing="6">
+                            <Label Text="Desde" Style="{StaticResource EtiquetaCampoClaro}" />
+                            <Border Style="{StaticResource CampoOscuro}">
+                                <DatePicker x:Name="dtpDesde" Style="{StaticResource FechaOscura}" Format="dd/MM/yyyy" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Grid.Column="1" Spacing="6">
+                            <Label Text="Hasta" Style="{StaticResource EtiquetaCampoClaro}" />
+                            <Border Style="{StaticResource CampoOscuro}">
+                                <DatePicker x:Name="dtpHasta" Style="{StaticResource FechaOscura}" Format="dd/MM/yyyy" />
+                            </Border>
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                        <Button x:Name="btnHoy"
+                                Grid.Column="0"
+                                Text="Hoy"
+                                Clicked="OnHoyClicked"
+                                Style="{StaticResource BotonSecundario}" />
+
+                        <Button x:Name="btnMes"
+                                Grid.Column="1"
+                                Text="Mes actual"
+                                Clicked="OnMesClicked"
+                                Style="{StaticResource BotonSecundario}" />
+
+                        <Button x:Name="btnUltimos7"
+                                Grid.Column="2"
+                                Text="Últimos 7 días"
+                                Clicked="OnUltimos7Clicked"
+                                Style="{StaticResource BotonSecundario}" />
+                    </Grid>
+
+                    <Button x:Name="btnGenerar"
+                            Text="Generar reporte"
+                            Clicked="OnGenerarClicked"
+                            Style="{StaticResource BotonPrimario}" />
+
+                    <Button x:Name="btnDescargar"
+                            Text="Descargar base y gráficas"
+                            Clicked="OnDescargarClicked"
+                            Style="{StaticResource BotonSecundario}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ================= caja del reporte ================= -->
+            <Border x:Name="panelReporte" Style="{StaticResource Tarjeta}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="REPORTE" Style="{StaticResource EncabezadoTablaClaro}" />
+                    <VerticalStackLayout x:Name="contenedorReporte" Spacing="14" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label x:Name="lblPie"
+                   Text=""
+                   FontSize="11"
+                   TextColor="{StaticResource TextoSuave}"
+                   HorizontalTextAlignment="Center"
+                   Margin="0,0,0,14" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

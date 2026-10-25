@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vTickets"
+             Title="Tickets">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <!-- Los 3 filtros son Buttons (conservan su Clicked) con aspecto de chip. -->
+            <Style x:Key="FiltroChip" TargetType="Button">
+                <Setter Property="FontFamily" Value="{StaticResource FuenteSemi}" />
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="TextColor" Value="{StaticResource TextoClaroMedio}" />
+                <Setter Property="BackgroundColor" Value="{StaticResource Superficie}" />
+                <Setter Property="BorderColor" Value="{StaticResource SuperficieBorde}" />
+                <Setter Property="BorderWidth" Value="1" />
+                <Setter Property="CornerRadius" Value="12" />
+                <Setter Property="HeightRequest" Value="28" />
+                <Setter Property="Padding" Value="10,0" />
+            </Style>
+
+            <Style x:Key="FiltroChipActivo" TargetType="Button" BasedOn="{StaticResource FiltroChip}">
+                <Setter Property="TextColor" Value="{StaticResource TextoFuerte}" />
+                <Setter Property="BackgroundColor" Value="{StaticResource Acento}" />
+                <Setter Property="BorderColor" Value="{StaticResource AcentoOscuro}" />
+            </Style>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="10" Spacing="8">
+
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <VerticalStackLayout Grid.Column="0" Spacing="3" VerticalOptions="Center">
+                    <Label x:Name="lblTitulo" Text="Tickets entrada / salida" Style="{StaticResource TituloPagina}" />
+                    <Label Text="Cierra y cobra los tickets del parqueadero."
+                           Style="{StaticResource SubtituloPagina}" />
+                </VerticalStackLayout>
+                <Button x:Name="btnSincronizar"
+                        Grid.Column="1"
+                        Text="Sincronizar"
+                        Clicked="OnSincronizarClicked"
+                        Style="{StaticResource BotonCabecera}"
+                        VerticalOptions="Center" />
+            </Grid>
+
+            <Border x:Name="panelSyncHint"
+                    IsVisible="False"
+                    Style="{StaticResource Tarjeta}"
+                    Stroke="{StaticResource Advertencia}">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <Border Grid.Column="0"
+                            Style="{StaticResource BadgeAviso}"
+                            VerticalOptions="Start">
+                        <Label Text="PENDIENTE" Style="{StaticResource BadgeAvisoTexto}" />
+                    </Border>
+                    <Label x:Name="lblSyncHint"
+                           Grid.Column="1"
+                           Style="{StaticResource TextoSuaveClaro}"
+                           LineBreakMode="WordWrap"
+                           VerticalOptions="Center" />
+                </Grid>
+            </Border>
+
+            <!-- ================= resumen ================= -->
+            <Border x:Name="panelResumen" IsVisible="False" Style="{StaticResource Tarjeta}">
+                <VerticalStackLayout Spacing="12">
+
+                    <VerticalStackLayout Spacing="3">
+                        <Label x:Name="lblResumenTitulo"
+                               Style="{StaticResource TituloSeccionClaro}"
+                               FontSize="16" />
+                        <Label x:Name="lblResumenSubtitulo"
+                               Style="{StaticResource TextoSuaveClaro}"
+                               LineBreakMode="WordWrap" />
+                    </VerticalStackLayout>
+
+                    <BoxView Style="{StaticResource Divisor}" />
+
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+
+                        <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                            <Label Text="Tickets usados" Style="{StaticResource EtiquetaCampoClaro}" />
+                            <Label x:Name="lblPieUsados"
+                                   Style="{StaticResource TextoSuaveClaro}"
+                                   LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                        <Label x:Name="lblUsados"
+                               Grid.Row="0" Grid.Column="1"
+                               Text="0"
+                               Style="{StaticResource MetricaValor}"
+                               FontSize="18"
+                               VerticalOptions="Center"
+                               HorizontalOptions="End" />
+
+                        <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                            <Label Text="He pagado" Style="{StaticResource EtiquetaCampoClaro}" />
+                            <Label x:Name="lblPiePagado"
+                                   Text="Suma de tickets cerrados"
+                                   Style="{StaticResource TextoSuaveClaro}"
+                                   LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                        <Label x:Name="lblPagado"
+                               Grid.Row="1" Grid.Column="1"
+                               Text="$0.00"
+                               Style="{StaticResource MetricaValor}"
+                               FontSize="16"
+                               TextColor="{StaticResource Exito}"
+                               VerticalOptions="Center"
+                               HorizontalOptions="End" />
+
+                        <VerticalStackLayout Grid.Row="2" Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                            <Label Text="Me falta por pagar" Style="{StaticResource EtiquetaCampoClaro}" />
+                            <Label x:Name="lblPiePendiente"
+                                   Style="{StaticResource TextoSuaveClaro}"
+                                   LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                        <Label x:Name="lblPendiente"
+                               Grid.Row="2" Grid.Column="1"
+                               Text="$0.00"
+                               Style="{StaticResource MetricaValor}"
+                               FontSize="16"
+                               TextColor="{StaticResource Advertencia}"
+                               VerticalOptions="Center"
+                               HorizontalOptions="End" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Button x:Name="btnCobrarTodos"
+                    IsVisible="False"
+                    Text="Cobrar todos y salir"
+                    Clicked="OnCobrarTodosClicked"
+                    Style="{StaticResource BotonPrimario}"
+                    HeightRequest="36" />
+
+            <ActivityIndicator x:Name="spinnerTickets"
+                               IsRunning="False"
+                               IsVisible="False"
+                               HorizontalOptions="Start" />
+
+            <!-- ================= filtros ================= -->
+            <Label Text="FILTRAR" Style="{StaticResource EncabezadoTabla}" Margin="2,8,0,0" />
+
+            <HorizontalStackLayout Spacing="8">
+                <Button x:Name="btnFiltroTodos" Text="Todos" Clicked="OnFiltroTodosClicked"
+                        Style="{StaticResource FiltroChip}" />
+                <Button x:Name="btnFiltroAbiertos" Text="Abiertos" Clicked="OnFiltroAbiertosClicked"
+                        Style="{StaticResource FiltroChip}" />
+                <Button x:Name="btnFiltroCerrados" Text="Cerrados" Clicked="OnFiltroCerradosClicked"
+                        Style="{StaticResource FiltroChip}" />
+            </HorizontalStackLayout>
+
+            <!-- ================= lista ================= -->
+            <VerticalStackLayout x:Name="contenedorTickets" Spacing="0" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

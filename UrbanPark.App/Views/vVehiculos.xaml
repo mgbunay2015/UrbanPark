@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vVehiculos"
+             Shell.NavBarIsVisible="False"
+             Title="Vehículos">
+
+    <Grid Padding="10,10,10,12" RowDefinitions="Auto,*" RowSpacing="8">
+
+        <VerticalStackLayout Grid.Row="0" Spacing="3">
+            <Label x:Name="lblTitulo" Text="Vehículos" Style="{StaticResource TituloPagina}" />
+            <Label x:Name="lblPista"
+                   IsVisible="False"
+                   Text="Pulsa Registrados para ver los vehículos de tu usuario."
+                   Style="{StaticResource SubtituloPagina}" />
+        </VerticalStackLayout>
+
+        <ScrollView Grid.Row="1">
+            <Border Style="{StaticResource TarjetaClara}">
+                    <VerticalStackLayout Spacing="8">
+
+                        <Label Text="REGISTRAR VEHÍCULO" Style="{StaticResource TituloSeccion}" />
+
+                        <Grid ColumnDefinitions="200,*,*"
+                              ColumnSpacing="18"
+                              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                              RowSpacing="8">
+
+                            <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+                                  ColumnDefinitions="200,Auto" ColumnSpacing="12">
+                                <VerticalStackLayout Grid.Column="0" Spacing="6" WidthRequest="200">
+                                    <Label Text="Placa" Style="{StaticResource EtiquetaCampo}" />
+                                    <Border Style="{StaticResource Campo}">
+                                        <Entry x:Name="txtPlaca"
+                                               Placeholder="ABC-1234"
+                                               MaxLength="9"
+                                               TextChanged="OnPlacaChanged" />
+                                    </Border>
+                                </VerticalStackLayout>
+                                <Button Grid.Column="1"
+                                        Text="Registrados"
+                                        Clicked="OnRegistradosClicked"
+                                        Style="{StaticResource BotonPrimario}"
+                                        VerticalOptions="End"
+                                        HeightRequest="36"
+                                        Padding="12,0" />
+                            </Grid>
+
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Spacing="8">
+                                <Label Text="Tipo" Style="{StaticResource EtiquetaCampo}" />
+                                <FlexLayout x:Name="iconosTipo" Wrap="Wrap" Direction="Row" AlignItems="Start" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Spacing="8">
+                                <Label Text="Quién conduce" Style="{StaticResource EtiquetaCampo}" />
+                                <FlexLayout x:Name="iconosPerfil" Wrap="Wrap" Direction="Row" AlignItems="Start" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Spacing="8">
+                                <Label Text="Marca" Style="{StaticResource EtiquetaCampo}" />
+                                <FlexLayout x:Name="iconosMarca" Wrap="Wrap" Direction="Row" AlignItems="Start" />
+                                <FlexLayout x:Name="iconosMarcaExtra" Wrap="Wrap" Direction="Row" AlignItems="Start" IsVisible="False" />
+                                <Border x:Name="bordeMarcaOtra" Style="{StaticResource Campo}" IsVisible="False">
+                                    <Entry x:Name="txtMarca" Placeholder="Escribe la marca y el modelo" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout x:Name="panelModelo"
+                                                 Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3"
+                                                 Spacing="8"
+                                                 IsVisible="False">
+                                <Label Text="Modelo" Style="{StaticResource EtiquetaCampo}" />
+                                <FlexLayout x:Name="iconosModelo" Wrap="Wrap" Direction="Row" AlignItems="Start" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3" Spacing="8">
+                                <Label Text="Color" Style="{StaticResource EtiquetaCampo}" />
+                                <FlexLayout x:Name="iconosColor" Wrap="Wrap" Direction="Row" AlignItems="Start" />
+                            </VerticalStackLayout>
+
+                            <Button x:Name="btnRegistrar"
+                                    Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="3"
+                                    Text="Registrar"
+                                    Clicked="OnRegistrarClicked"
+                                    Style="{StaticResource BotonPrimario}" />
+                        </Grid>
+
+                    </VerticalStackLayout>
+                </Border>
+        </ScrollView>
+
+    </Grid>
+</ContentPage>

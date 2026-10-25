@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vLogin"
+             NavigationPage.HasNavigationBar="False"
+             SafeAreaEdges="Container"
+             Title="Urban Park">
+
+    <ScrollView>
+        <VerticalStackLayout x:Name="cajaLogin"
+                             Padding="16,26,16,22"
+                             Spacing="14"
+                             MaximumWidthRequest="520"
+                             HorizontalOptions="Fill">
+
+            <!-- Marca -->
+            <VerticalStackLayout Spacing="5" Margin="0,2,0,6">
+                <Border Style="{StaticResource Avatar}"
+                        WidthRequest="48" HeightRequest="48"
+                        HorizontalOptions="Center">
+                    <Label Text="P"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="18"
+                           TextColor="{StaticResource TextoFuerte}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+                </Border>
+
+                <Label Text="URBAN PARK"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="18"
+                       CharacterSpacing="2"
+                       TextColor="{StaticResource Acento}"
+                       HorizontalTextAlignment="Center"
+                       Margin="0,2,0,0" />
+
+                <BoxView Style="{StaticResource LineaMarca}"
+                         WidthRequest="36"
+                         HorizontalOptions="Center" />
+
+                <Label Text="Estacionamiento inteligente"
+                       Style="{StaticResource SubtituloPagina}"
+                       HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
+
+            <!-- Iniciar sesión -->
+            <Border x:Name="panelLogin" Style="{StaticResource TarjetaClara}" Padding="18,16,18,18">
+                <VerticalStackLayout Spacing="10">
+
+                    <Label Text="Iniciar sesión" Style="{StaticResource TituloSeccion}" />
+                    <Label x:Name="lblSubLogin"
+                           Text="Entra con tu cuenta o prueba un perfil de demostración."
+                           Style="{StaticResource TextoSuave}" />
+
+                    <!-- ================= login corto: equipo ya vinculado al autenticador ================= -->
+                    <!-- ================= dos formas: huella o código ================= -->
+                    <VerticalStackLayout x:Name="panelCodigo" IsVisible="False" Spacing="10" Margin="0,6,0,0">
+                        <Label x:Name="lblCodigoSaludo"
+                               Text="Hola"
+                               Style="{StaticResource TituloSeccion}" />
+                        <Label x:Name="lblCodigoAyuda"
+                               Text="Este equipo ya está vinculado a tu cuenta."
+                               Style="{StaticResource TextoSuave}"
+                               FontSize="11" />
+
+                        <Button x:Name="btnIngresoHuella"
+                                Text="🖐  Ingreso con huella"
+                                Clicked="OnIngresoHuellaClicked"
+                                Style="{StaticResource BotonAcento}"
+                                HeightRequest="50"
+                                FontSize="14" />
+
+                        <Button x:Name="btnIngresoCodigo"
+                                Text="🔢  Ingreso con código"
+                                Clicked="OnIngresoCodigoClicked"
+                                Style="{StaticResource BotonPrimario}"
+                                HeightRequest="50"
+                                FontSize="14" />
+
+                        <VerticalStackLayout x:Name="panelEscribirCodigo" IsVisible="False" Spacing="6" Margin="0,2,0,0">
+                            <Label x:Name="lblPegarAyuda"
+                                   Text="Abre Google Authenticator y escribe el código de 6 dígitos (si lo copias, al volver se pega solo)."
+                                   FontSize="10"
+                                   TextColor="{StaticResource TextoSuave}" />
+                            <Border Style="{StaticResource Campo}">
+                                <Entry x:Name="txtCodigo"
+                                       Placeholder="6 dígitos"
+                                       Keyboard="Numeric"
+                                       MaxLength="6"
+                                       ReturnType="Go"
+                                       Completed="OnEntrarConCodigoClicked" />
+                            </Border>
+                            <Button x:Name="btnEntrarCodigo"
+                                    Text="Entrar"
+                                    Clicked="OnEntrarConCodigoClicked"
+                                    Style="{StaticResource BotonAcento}"
+                                    HeightRequest="42"
+                                    FontSize="12" />
+                        </VerticalStackLayout>
+
+                        <!-- para entrar con otra cuenta -->
+                        <Label x:Name="lblOtroUsuario"
+                               Text="Otro usuario ›"
+                               FontSize="12"
+                               TextColor="{StaticResource AcentoOscuro}"
+                               HorizontalTextAlignment="Center"
+                               Margin="0,4,0,0">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnOtroUsuarioTapped" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </VerticalStackLayout>
+                    <!-- ================= login completo (usuario + contraseña) ================= -->
+                    <VerticalStackLayout x:Name="panelCredenciales" Spacing="8">
+                        <Label Text="Usuario" Style="{StaticResource EtiquetaCampo}" Margin="0,4,0,-2" />
+                        <Border Style="{StaticResource Campo}">
+                            <Entry x:Name="txtUsuario" Placeholder="usuario" />
+                        </Border>
+
+                        <Label Text="Contraseña" Style="{StaticResource EtiquetaCampo}" Margin="0,8,0,-2" />
+                        <Border Style="{StaticResource Campo}">
+                            <Entry x:Name="txtPassword" Placeholder="contraseña" IsPassword="True" />
+                        </Border>
+
+                        <!-- aparece solo si la cuenta tiene el autenticador de Google activo -->
+                        <VerticalStackLayout x:Name="panelTotp" IsVisible="False" Spacing="2" Margin="0,4,0,0">
+                            <Label Text="Código del autenticador de Google" Style="{StaticResource EtiquetaCampo}" />
+                            <Border Style="{StaticResource Campo}">
+                                <Entry x:Name="txtTotp"
+                                       Placeholder="6 dígitos"
+                                       Keyboard="Numeric"
+                                       MaxLength="6"
+                                       ReturnType="Go"
+                                       Completed="OnEntrarClicked" />
+                            </Border>
+                            <Label x:Name="lblTotpAyuda"
+                                   Text="Abre Google Authenticator y escribe el código de 6 dígitos de Urban Park."
+                                   Style="{StaticResource TextoSuave}"
+                                   FontSize="11" />
+                            <Button x:Name="btnPegarTotp"
+                                    Text="📋 Pegar el código del autenticador"
+                                    Clicked="OnPegarCodigoClicked"
+                                    Style="{StaticResource BotonFantasma}"
+                                    FontSize="11"
+                                    HeightRequest="32" />
+                        </VerticalStackLayout>
+
+                        <Button x:Name="btnEntrar"
+                                Text="Iniciar sesión"
+                                Clicked="OnEntrarClicked"
+                                Style="{StaticResource BotonPrimario}"
+                                HeightRequest="46"
+                                FontSize="14"
+                                Margin="0,8,0,0" />
+
+                        <Label x:Name="lblSinInternet"
+                               Text="Sin internet también puedes entrar con usuario y contraseña: se usan los datos guardados en el equipo."
+                               Style="{StaticResource TextoSuave}"
+                               FontSize="10" />
+                    </VerticalStackLayout>
+
+                    <Button x:Name="btnHuella"
+                            Text="Entrar con huella"
+                            Clicked="OnHuellaClicked"
+                            Style="{StaticResource BotonContornoMarca}"
+                            HeightRequest="44"
+                            FontSize="13"
+                            Margin="0,2,0,0" />
+
+                    <Label x:Name="lblHuellaAyuda"
+                           Text="Toca Entrar con huella: te pedirá el sensor y luego buscará tu usuario en la base de datos."
+                           Style="{StaticResource TextoSuave}"
+                           FontSize="11" />
+
+                    <VerticalStackLayout x:Name="panelOtrasOpciones" Spacing="8">
+                    <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="12" Margin="0,2">
+                        <BoxView Grid.Column="0" Style="{StaticResource DivisorClaro}" />
+                        <Label Grid.Column="1" Text="o" Style="{StaticResource TextoSuave}" />
+                        <BoxView Grid.Column="2" Style="{StaticResource DivisorClaro}" />
+                    </Grid>
+
+                    <Button x:Name="btnCrearCuenta"
+                            Text="Crear cuenta"
+                            Clicked="OnMostrarRegistroClicked"
+                            Style="{StaticResource BotonContornoMarca}" />
+
+                    <Button x:Name="btnVerPerfiles"
+                            Text="Ver perfiles de demostración"
+                            Clicked="OnVerPerfilesClicked"
+                            Style="{StaticResource BotonContorno}" />
+                    </VerticalStackLayout>
+
+                    <ActivityIndicator x:Name="spinnerLogin"
+                                       IsRunning="False" IsVisible="False"
+                                       HorizontalOptions="Center" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Crear cuenta -->
+            <Border x:Name="panelRegistro"
+                    IsVisible="False"
+                    Style="{StaticResource TarjetaClara}">
+                <VerticalStackLayout Spacing="8">
+
+                    <Label Text="Crear cuenta" Style="{StaticResource TituloSeccion}" />
+                    <Label Text="Al registrarte se pide tu huella y queda en la base de datos. Con esa huella entras al sistema y abres el QR de salida."
+                           Style="{StaticResource TextoSuave}" />
+
+                    <Label Text="Usuario" Style="{StaticResource EtiquetaCampo}" Margin="0,4,0,-2" />
+                    <Border Style="{StaticResource Campo}">
+                        <Entry x:Name="txtRegUsuario" Placeholder="Mínimo 4 caracteres" />
+                    </Border>
+
+                    <Label Text="Email" Style="{StaticResource EtiquetaCampo}" />
+                    <Border Style="{StaticResource Campo}">
+                        <Entry x:Name="txtRegEmail" Placeholder="correo@dominio.com" Keyboard="Email" />
+                    </Border>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <VerticalStackLayout Grid.Column="0" Spacing="6">
+                            <Label Text="Nombre" Style="{StaticResource EtiquetaCampo}" />
+                            <Border Style="{StaticResource Campo}">
+                                <Entry x:Name="txtRegNombre" Placeholder="Nombre" />
+                            </Border>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="6">
+                            <Label Text="Apellido" Style="{StaticResource EtiquetaCampo}" />
+                            <Border Style="{StaticResource Campo}">
+                                <Entry x:Name="txtRegApellido" Placeholder="Apellido" />
+                            </Border>
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Label Text="Contraseña" Style="{StaticResource EtiquetaCampo}" Margin="0,8,0,-2" />
+                    <Border Style="{StaticResource Campo}">
+                        <Entry x:Name="txtRegPassword" Placeholder="Mínimo 6 caracteres" IsPassword="True" />
+                    </Border>
+
+                    <Label Text="Perfil" Style="{StaticResource EtiquetaCampo}" />
+                    <Border Style="{StaticResource Campo}">
+                        <Picker x:Name="pckRegRol" SelectedIndex="0" Title="Elige un perfil">
+                            <Picker.ItemsSource>
+                                <x:Array Type="{x:Type x:String}">
+                                    <x:String>CLIENTE</x:String>
+                                    <x:String>OPERADOR</x:String>
+                                    <x:String>ADMIN</x:String>
+                                </x:Array>
+                            </Picker.ItemsSource>
+                        </Picker>
+                    </Border>
+
+                    <Button Text="Registrarme con huella"
+                            Clicked="OnRegistrarClicked"
+                            Style="{StaticResource BotonPrimario}"
+                            Margin="0,6,0,0" />
+
+                    <Button Text="Volver al inicio de sesión"
+                            Clicked="OnCancelarRegistroClicked"
+                            Style="{StaticResource BotonContorno}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Perfiles de demostración -->
+            <Border x:Name="panelPerfiles"
+                    IsVisible="False"
+                    Style="{StaticResource Tarjeta}">
+                <VerticalStackLayout Spacing="14">
+
+                    <Label Text="Perfiles de demostración" Style="{StaticResource TituloSeccionClaro}" />
+                    <Label Text="Toca una cuenta para rellenar el usuario y la contraseña."
+                           Style="{StaticResource TextoSuaveClaro}" />
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="CLIENTE" Style="{StaticResource EncabezadoTablaClaro}" />
+                        <Label Text="Plazas, sus vehículos, sus tickets y la IA."
+                               Style="{StaticResource TextoSuaveClaro}" />
+                        <Button Text="cliente1  ·  cliente123"
+                                Clicked="OnUsarCliente1" Style="{StaticResource BotonMini}" Margin="0,6,0,0" />
+                        <Button Text="cliente2  ·  cliente123"
+                                Clicked="OnUsarCliente2" Style="{StaticResource BotonMini}" />
+                        <Button Text="cliente3  ·  cliente123"
+                                Clicked="OnUsarCliente3" Style="{StaticResource BotonMini}" />
+                    </VerticalStackLayout>
+
+                    <BoxView Style="{StaticResource Divisor}" />
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="OPERADOR" Style="{StaticResource EncabezadoTablaClaro}" />
+                        <Label Text="Operación del parqueadero y liberación de plazas."
+                               Style="{StaticResource TextoSuaveClaro}" />
+                        <Button Text="operador1  ·  operador123"
+                                Clicked="OnUsarOperador"
+                                Style="{StaticResource BotonSecundario}"
+                                HeightRequest="38" FontSize="12" Padding="14,0" CornerRadius="10"
+                                Margin="0,6,0,0" />
+                    </VerticalStackLayout>
+
+                    <BoxView Style="{StaticResource Divisor}" />
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="ADMIN" Style="{StaticResource EncabezadoTablaClaro}" />
+                        <Label Text="Todo, más usuarios, reporte IA y resilience."
+                               Style="{StaticResource TextoSuaveClaro}" />
+                        <Button Text="admin1  ·  admin123"
+                                Clicked="OnUsarAdmin"
+                                Style="{StaticResource BotonAcento}"
+                                HeightRequest="38" FontSize="12" Padding="14,0" CornerRadius="10"
+                                Margin="0,6,0,0" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <Label x:Name="lblVersion"
+                   Text="Urban Park  ·  .NET MAUI"
+                   Style="{StaticResource TextoSuaveClaro}"
+                   HorizontalTextAlignment="Center" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

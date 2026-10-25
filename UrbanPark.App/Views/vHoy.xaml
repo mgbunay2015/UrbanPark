@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vHoy"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="#F3F4F6"
+             Title="Hoy">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="10" Spacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+                <Label x:Name="lblFecha"
+                       Text="Hoy"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="18"
+                       TextColor="#1E1B2E" />
+            </Grid>
+
+            <HorizontalStackLayout x:Name="dias" Spacing="8" />
+
+            <Border BackgroundColor="#6C4DFF" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="10,8">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Movimiento de hoy"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="14"
+                           TextColor="White" />
+                    <VerticalStackLayout x:Name="lista" Spacing="8" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border BackgroundColor="#FFE14A" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="10,8">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Tu actividad"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="14"
+                           TextColor="#1E1B2E" />
+                    <GraphicsView x:Name="barras" HeightRequest="100" />
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,0 +1,548 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    URBAN PARK - Sistema de diseño (componentes)
+    ============================================================
+    Estilos implicitos: se aplican solos a TODOS los controles de la app.
+    Estilos con clave: se usan con Style="{StaticResource Nombre}".
+
+    Regla para las pantallas: no escribir colores ni tamaños en linea.
+    Usar los estilos de este archivo para que toda la app sea coherente.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=netstandard">
+
+    <!-- ==========================================================
+         TIPOGRAFIA
+         ========================================================== -->
+    <x:String x:Key="FuenteRegular">OpenSansRegular</x:String>
+    <x:String x:Key="FuenteSemi">OpenSansSemibold</x:String>
+
+    <!-- ==========================================================
+         IMPLICITOS: se aplican a todos los controles
+         ========================================================== -->
+
+    <Style TargetType="ContentPage" ApplyToDerivedTypes="True">
+        <Setter Property="BackgroundColor" Value="{StaticResource Fondo}" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <Style TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteRegular}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaro}" />
+    </Style>
+
+    <!-- El estilo implicito de Button se define mas abajo, heredando de "BotonBase"
+         (no puede haber dos estilos implicitos con la misma clave: la app fallaria al arrancar). -->
+
+    <Style TargetType="Entry">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteRegular}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{StaticResource TextoFuerte}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="PlaceholderColor" Value="{StaticResource TextoSuave}" />
+        <Setter Property="HeightRequest" Value="36" />
+        <Setter Property="VerticalTextAlignment" Value="Center" />
+    </Style>
+
+    <Style TargetType="Picker">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteRegular}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{StaticResource TextoFuerte}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TitleColor" Value="{StaticResource TextoSuave}" />
+        <Setter Property="HeightRequest" Value="36" />
+    </Style>
+
+    <Style TargetType="DatePicker">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteRegular}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{StaticResource TextoFuerte}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="HeightRequest" Value="36" />
+    </Style>
+
+    <Style TargetType="ActivityIndicator">
+        <Setter Property="Color" Value="{StaticResource Acento}" />
+    </Style>
+
+    <Style TargetType="Switch">
+        <Setter Property="OnColor" Value="{StaticResource Primario}" />
+        <Setter Property="ThumbColor" Value="{StaticResource Blanco}" />
+    </Style>
+
+    <Style TargetType="ProgressBar">
+        <Setter Property="ProgressColor" Value="{StaticResource Acento}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource SuperficieBorde}" />
+        <Setter Property="HeightRequest" Value="4" />
+    </Style>
+
+    <Style TargetType="ScrollView">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+    </Style>
+
+    <!-- ==========================================================
+         ESTRUCTURA DE PANTALLA
+         ========================================================== -->
+
+    <!-- Cabecera de pantalla: titulo grande + bajada -->
+    <Style x:Key="TituloPagina" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteSemi}" />
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaro}" />
+    </Style>
+
+    <Style x:Key="SubtituloPagina" TargetType="Label">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaroSuave}" />
+        <Setter Property="LineBreakMode" Value="WordWrap" />
+    </Style>
+
+    <!-- Titulo de seccion (dentro de una tarjeta clara u oscura) -->
+    <Style x:Key="TituloSeccion" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteSemi}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{StaticResource TextoFuerte}" />
+    </Style>
+
+    <Style x:Key="TituloSeccionClaro" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteSemi}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaro}" />
+    </Style>
+
+    <Style x:Key="EncabezadoTabla" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteSemi}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="TextColor" Value="{StaticResource TextoSuave}" />
+        <Setter Property="CharacterSpacing" Value="1" />
+    </Style>
+
+    <Style x:Key="EncabezadoTablaClaro" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteSemi}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaroSuave}" />
+        <Setter Property="CharacterSpacing" Value="1" />
+    </Style>
+
+    <!-- ==========================================================
+         TARJETAS
+         ========================================================== -->
+
+    <!-- Tarjeta oscura (chrome, datos destacados) -->
+    <Style x:Key="Tarjeta" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Superficie}" />
+        <Setter Property="Stroke" Value="{StaticResource SuperficieBorde}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="10" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 12" />
+    </Style>
+
+    <!-- Tarjeta clara (contenido, formularios) -->
+    <Style x:Key="TarjetaClara" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Blanco}" />
+        <Setter Property="Stroke" Value="{StaticResource BordeClaro}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="10" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 12" />
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="#0A0E13" Offset="0,8" Radius="18" Opacity="0.10" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Tarjeta con acento a la izquierda (elemento de lista) -->
+    <Style x:Key="TarjetaLista" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Blanco}" />
+        <Setter Property="Stroke" Value="{StaticResource BordeClaro}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="10,8" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 12" />
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="#0A0E13" Offset="0,6" Radius="14" Opacity="0.08" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Tarjeta de metrica (indicadores) -->
+    <Style x:Key="TarjetaMetrica" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource SuperficieAlta}" />
+        <Setter Property="Stroke" Value="{StaticResource SuperficieBorde}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="8" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 10" />
+    </Style>
+
+    <Style x:Key="MetricaEtiqueta" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteSemi}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaroSuave}" />
+        <Setter Property="CharacterSpacing" Value="1" />
+    </Style>
+
+    <Style x:Key="MetricaValor" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteSemi}" />
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="TextColor" Value="{StaticResource Acento}" />
+    </Style>
+
+    <!-- ==========================================================
+         CAMPOS DE FORMULARIO (Entry / Picker dentro de un Border)
+         ========================================================== -->
+
+    <Style x:Key="Campo" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource BlancoHumo}" />
+        <Setter Property="Stroke" Value="{StaticResource BordeClaro}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="8,3" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 8" />
+    </Style>
+
+    <Style x:Key="CampoOscuro" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource SuperficieAlta}" />
+        <Setter Property="Stroke" Value="{StaticResource SuperficieBorde}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="8,3" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 8" />
+    </Style>
+
+    <!-- Texto claro: el estilo implícito de Entry/Picker/DatePicker es para campos blancos. -->
+    <Style x:Key="EntradaOscura" TargetType="Entry">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteRegular}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaro}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="PlaceholderColor" Value="{StaticResource TextoClaroSuave}" />
+        <Setter Property="HeightRequest" Value="36" />
+        <Setter Property="VerticalTextAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="SelectorOscuro" TargetType="Picker">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteRegular}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaro}" />
+        <Setter Property="TitleColor" Value="{StaticResource TextoClaroSuave}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="HeightRequest" Value="36" />
+    </Style>
+
+    <Style x:Key="FechaOscura" TargetType="DatePicker">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteRegular}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaro}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="HeightRequest" Value="36" />
+    </Style>
+
+    <Style x:Key="EtiquetaCampo" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteSemi}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" Value="{StaticResource TextoMedio}" />
+        <Setter Property="CharacterSpacing" Value="0.4" />
+    </Style>
+
+    <Style x:Key="EtiquetaCampoClaro" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteSemi}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaroMedio}" />
+        <Setter Property="CharacterSpacing" Value="0.4" />
+    </Style>
+
+    <!-- ==========================================================
+         BOTONES (un estilo base + variantes)
+         ========================================================== -->
+
+    <!-- Base de todos los botones. El estilo implicito y cada variante heredan de aqui. -->
+    <Style x:Key="BotonBase" TargetType="Button">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteSemi}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" Value="{StaticResource TextoFuerte}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Acento}" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="HeightRequest" Value="36" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup Name="CommonStates">
+                    <VisualState Name="Normal" />
+                    <VisualState Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Property="Opacity" Value="0.78" />
+                            <Setter Property="Scale" Value="0.985" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="Opacity" Value="0.42" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <Style TargetType="Button" BasedOn="{StaticResource BotonBase}" />
+
+    <Style x:Key="BotonPrimario" TargetType="Button" BasedOn="{StaticResource BotonBase}" />
+
+    <Style x:Key="BotonSecundario" TargetType="Button" BasedOn="{StaticResource BotonBase}">
+        <Setter Property="BackgroundColor" Value="{StaticResource SuperficieAlta}" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaro}" />
+        <Setter Property="BorderColor" Value="{StaticResource SuperficieBorde}" />
+        <Setter Property="BorderWidth" Value="1" />
+    </Style>
+
+    <Style x:Key="BotonAcento" TargetType="Button" BasedOn="{StaticResource BotonBase}">
+        <Setter Property="BackgroundColor" Value="{StaticResource Acento}" />
+        <Setter Property="TextColor" Value="{StaticResource TextoFuerte}" />
+    </Style>
+
+    <Style x:Key="BotonFantasma" TargetType="Button" BasedOn="{StaticResource BotonBase}">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaroMedio}" />
+        <Setter Property="BorderColor" Value="{StaticResource SuperficieBorde}" />
+        <Setter Property="BorderWidth" Value="1" />
+    </Style>
+
+    <Style x:Key="BotonPeligro" TargetType="Button" BasedOn="{StaticResource BotonBase}">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="{StaticResource Peligro}" />
+        <Setter Property="BorderColor" Value="{StaticResource Peligro}" />
+        <Setter Property="BorderWidth" Value="1" />
+    </Style>
+
+    <!-- Boton pequeño (acciones dentro de una fila) -->
+    <Style x:Key="BotonMini" TargetType="Button" BasedOn="{StaticResource BotonBase}">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="HeightRequest" Value="28" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="CornerRadius" Value="6" />
+    </Style>
+
+    <!-- Acción secundaria compacta, alineada al título de la pantalla. -->
+    <Style x:Key="BotonCabecera" TargetType="Button" BasedOn="{StaticResource BotonSecundario}">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="HeightRequest" Value="32" />
+        <Setter Property="Padding" Value="10,0" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+
+    <!-- Contorno para usarse sobre tarjetas blancas (el fantasma es para fondo oscuro). -->
+    <Style x:Key="BotonContorno" TargetType="Button" BasedOn="{StaticResource BotonBase}">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="{StaticResource TextoFuerte}" />
+        <Setter Property="BorderColor" Value="{StaticResource BordeClaro}" />
+        <Setter Property="BorderWidth" Value="1" />
+    </Style>
+
+    <Style x:Key="BotonContornoMarca" TargetType="Button" BasedOn="{StaticResource BotonContorno}">
+        <Setter Property="TextColor" Value="{StaticResource AcentoOscuro}" />
+        <Setter Property="BorderColor" Value="{StaticResource AcentoOscuro}" />
+    </Style>
+
+    <!-- ==========================================================
+         BADGES Y CHIPS
+         ========================================================== -->
+
+    <Style x:Key="Badge" TargetType="Border">
+        <Setter Property="Padding" Value="8,2" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 999" />
+        <Setter Property="BackgroundColor" Value="{StaticResource SuperficieAlta}" />
+    </Style>
+
+    <Style x:Key="BadgeTexto" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteSemi}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaro}" />
+        <Setter Property="CharacterSpacing" Value="0.6" />
+    </Style>
+
+    <Style x:Key="BadgeOk" TargetType="Border" BasedOn="{StaticResource Badge}">
+        <Setter Property="BackgroundColor" Value="{StaticResource ExitoClaro}" />
+    </Style>
+
+    <Style x:Key="BadgeOkTexto" TargetType="Label" BasedOn="{StaticResource BadgeTexto}">
+        <Setter Property="TextColor" Value="{StaticResource ExitoTexto}" />
+    </Style>
+
+    <Style x:Key="BadgeOcupado" TargetType="Border" BasedOn="{StaticResource Badge}">
+        <Setter Property="BackgroundColor" Value="{StaticResource PeligroClaro}" />
+    </Style>
+
+    <Style x:Key="BadgeOcupadoTexto" TargetType="Label" BasedOn="{StaticResource BadgeTexto}">
+        <Setter Property="TextColor" Value="{StaticResource PeligroTexto}" />
+    </Style>
+
+    <Style x:Key="BadgeAviso" TargetType="Border" BasedOn="{StaticResource Badge}">
+        <Setter Property="BackgroundColor" Value="{StaticResource AdvertenciaClaro}" />
+    </Style>
+
+    <Style x:Key="BadgeAvisoTexto" TargetType="Label" BasedOn="{StaticResource BadgeTexto}">
+        <Setter Property="TextColor" Value="{StaticResource AdvertenciaTexto}" />
+    </Style>
+
+    <Style x:Key="BadgeMio" TargetType="Border" BasedOn="{StaticResource Badge}">
+        <Setter Property="BackgroundColor" Value="{StaticResource Acento}" />
+    </Style>
+
+    <Style x:Key="BadgeMioTexto" TargetType="Label" BasedOn="{StaticResource BadgeTexto}">
+        <Setter Property="TextColor" Value="{StaticResource TextoFuerte}" />
+    </Style>
+
+    <!-- Chips de filtro -->
+    <Style x:Key="Chip" TargetType="Border">
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Stroke" Value="{StaticResource SuperficieBorde}" />
+        <Setter Property="BackgroundColor" Value="{StaticResource Superficie}" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 999" />
+    </Style>
+
+    <Style x:Key="ChipTexto" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteSemi}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaroMedio}" />
+    </Style>
+
+    <Style x:Key="ChipActivo" TargetType="Border" BasedOn="{StaticResource Chip}">
+        <Setter Property="BackgroundColor" Value="{StaticResource Acento}" />
+        <Setter Property="Stroke" Value="{StaticResource AcentoOscuro}" />
+    </Style>
+
+    <Style x:Key="ChipActivoTexto" TargetType="Label" BasedOn="{StaticResource ChipTexto}">
+        <Setter Property="TextColor" Value="{StaticResource TextoFuerte}" />
+    </Style>
+
+    <!-- ==========================================================
+         TEXTOS AUXILIARES
+         ========================================================== -->
+
+    <Style x:Key="TextoSuave" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" Value="{StaticResource TextoSuave}" />
+        <Setter Property="LineBreakMode" Value="WordWrap" />
+    </Style>
+
+    <Style x:Key="TextoSuaveClaro" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaroSuave}" />
+        <Setter Property="LineBreakMode" Value="WordWrap" />
+    </Style>
+
+    <Style x:Key="Ayuda" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaroSuave}" />
+        <Setter Property="LineBreakMode" Value="WordWrap" />
+    </Style>
+
+    <Style x:Key="DatoFila" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" Value="{StaticResource TextoFuerte}" />
+    </Style>
+
+    <Style x:Key="DatoFilaFuerte" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteSemi}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" Value="{StaticResource TextoFuerte}" />
+    </Style>
+
+    <Style x:Key="EstadoVacio" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" Value="{StaticResource TextoSuave}" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,12" />
+    </Style>
+
+    <!-- Mensajes de error / exito -->
+    <Style x:Key="MensajeError" TargetType="Label">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{StaticResource PeligroTexto}" />
+        <Setter Property="LineBreakMode" Value="WordWrap" />
+    </Style>
+
+    <Style x:Key="MensajeOk" TargetType="Label">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{StaticResource ExitoTexto}" />
+        <Setter Property="LineBreakMode" Value="WordWrap" />
+    </Style>
+
+    <!-- Codigo / JSON -->
+    <Style x:Key="Codigo" TargetType="Label">
+        <Setter Property="FontFamily" Value="Consolas" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="TextColor" Value="{StaticResource TextoClaroMedio}" />
+        <Setter Property="LineBreakMode" Value="CharacterWrap" />
+    </Style>
+
+    <Style x:Key="PanelCodigo" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="#060A0E" />
+        <Setter Property="Stroke" Value="{StaticResource SuperficieBorde}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Padding" Value="14" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 14" />
+    </Style>
+
+    <Style x:Key="Divisor" TargetType="BoxView">
+        <Setter Property="HeightRequest" Value="1" />
+        <Setter Property="Color" Value="{StaticResource SuperficieBorde}" />
+    </Style>
+
+    <Style x:Key="DivisorClaro" TargetType="BoxView">
+        <Setter Property="HeightRequest" Value="1" />
+        <Setter Property="Color" Value="{StaticResource BordeClaro}" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+
+    <Style x:Key="LineaMarca" TargetType="BoxView">
+        <Setter Property="HeightRequest" Value="3" />
+        <Setter Property="Color" Value="{StaticResource Acento}" />
+    </Style>
+
+    <Style x:Key="PuntoLibre" TargetType="BoxView">
+        <Setter Property="WidthRequest" Value="8" />
+        <Setter Property="HeightRequest" Value="8" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Color" Value="{StaticResource Exito}" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+
+    <Style x:Key="PuntoOcupado" TargetType="BoxView" BasedOn="{StaticResource PuntoLibre}">
+        <Setter Property="Color" Value="{StaticResource Peligro}" />
+    </Style>
+
+    <Style x:Key="PuntoMio" TargetType="BoxView" BasedOn="{StaticResource PuntoLibre}">
+        <Setter Property="Color" Value="{StaticResource Acento}" />
+    </Style>
+
+    <!-- Barra superior de la app (cabecera de navegacion) -->
+    <Style x:Key="BarraApp" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Superficie}" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="Padding" Value="10,8,10,8" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 0,0,12,12" />
+    </Style>
+
+    <!-- Avatar circular con iniciales -->
+    <Style x:Key="Avatar" TargetType="Border">
+        <Setter Property="BackgroundColor" Value="{StaticResource Acento}" />
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="WidthRequest" Value="32" />
+        <Setter Property="HeightRequest" Value="32" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 999" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <Style x:Key="AvatarTexto" TargetType="Label">
+        <Setter Property="FontFamily" Value="{StaticResource FuenteSemi}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextColor" Value="{StaticResource TextoFuerte}" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+
+</ResourceDictionary>

@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vMenu"
+             Shell.NavBarIsVisible="False"
+             NavigationPage.HasNavigationBar="False"
+             SafeAreaEdges="Container"
+             BackgroundColor="#F4F7FC"
+             Title="Inicio">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="0">
+
+            <!-- ================= encabezado azul ================= -->
+            <VerticalStackLayout BackgroundColor="#2D4E8E" Padding="10,10,10,12" Spacing="8">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <Border BackgroundColor="#3A5EA0"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 18"
+                            WidthRequest="36"
+                            HeightRequest="36"
+                            VerticalOptions="Center">
+                        <Label Text="📍" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1" Spacing="0" VerticalOptions="Center">
+                        <Label Text="Tu ubicación" FontSize="11" TextColor="#C9D6F0" />
+                        <Label x:Name="lblUbicacion"
+                               Text="Buscando…"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="14"
+                               TextColor="White"
+                               LineBreakMode="TailTruncation" />
+                    </VerticalStackLayout>
+                    <Border Grid.Column="2"
+                            BackgroundColor="White"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 20"
+                            WidthRequest="40"
+                            HeightRequest="40"
+                            VerticalOptions="Center">
+                        <Label x:Name="lblAvatar"
+                               Text="UP"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="14"
+                               TextColor="#2D4E8E"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
+                    </Border>
+                </Grid>
+
+                <VerticalStackLayout Spacing="2">
+                    <Label x:Name="lblSesion" FontSize="13" TextColor="#C9D6F0" />
+                    <Label Text="Encuentra el mejor&#10;estacionamiento"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="18"
+                           TextColor="White" />
+                </VerticalStackLayout>
+
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                    <Border BackgroundColor="White"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="10,0"
+                            HeightRequest="36">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                            <Label Text="🔍" FontSize="14" VerticalOptions="Center" />
+                            <Entry x:Name="txtBuscar"
+                                   Grid.Column="1"
+                                   Placeholder="Buscar plaza o zona"
+                                   PlaceholderColor="#9AA6BF"
+                                   TextColor="#1F3566"
+                                   BackgroundColor="Transparent"
+                                   ReturnType="Search"
+                                   Completed="OnBuscarCompleted"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+                    <Border Grid.Column="1"
+                            BackgroundColor="#FFE14A"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 16"
+                            WidthRequest="36"
+                            HeightRequest="36">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnLlegadaTapped" />
+                        </Border.GestureRecognizers>
+                        <Label Text="➤" FontSize="20" TextColor="#1F3566"
+                               HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                </Grid>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Padding="10,10,10,8" Spacing="8">
+
+                <!-- ================= estacionado ahora ================= -->
+                <Border x:Name="panelEstacionado"
+                        IsVisible="False"
+                        BackgroundColor="#1F3566"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 18"
+                        Padding="8,6">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnEstacionadoTapped" />
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8">
+                        <Label x:Name="lblEstPlaza"
+                               Text="Plaza"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="14"
+                               TextColor="White" />
+                        <Label x:Name="lblEstValor"
+                               Grid.Column="1"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="14"
+                               TextColor="#FFE14A"
+                               HorizontalTextAlignment="End" />
+                        <Label x:Name="lblEstDetalle"
+                               Grid.Row="1"
+                               FontSize="12"
+                               TextColor="#C9D6F0" />
+                        <Label x:Name="lblEstTiempo"
+                               Grid.Row="1"
+                               Grid.Column="1"
+                               FontSize="12"
+                               TextColor="#C9D6F0"
+                               HorizontalTextAlignment="End" />
+                    </Grid>
+                </Border>
+
+                <!-- ================= tipo de vehículo ================= -->
+                <Label Text="Tu tipo de vehículo"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="13"
+                       TextColor="#1F3566" />
+                <Grid x:Name="contenedorTipos" ColumnDefinitions="*,*,*" ColumnSpacing="10" />
+
+                <!-- ================= ocupación ================= -->
+                <Border BackgroundColor="White"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 18"
+                        Padding="8,6">
+                    <VerticalStackLayout Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label x:Name="lblFrase"
+                                   Text="Revisando las plazas de hoy"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="14"
+                                   TextColor="#1F3566" />
+                            <Label x:Name="lblPorcentaje"
+                                   Grid.Column="1"
+                                   Text="0%"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="14"
+                                   TextColor="#2D4E8E" />
+                        </Grid>
+                        <ProgressBar x:Name="barraOcupacion"
+                                     Progress="0"
+                                     ProgressColor="#2D4E8E"
+                                     BackgroundColor="#DCE4F3" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- ================= lugares recientes ================= -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Lugares recientes"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="16"
+                           TextColor="#1F3566" />
+                    <Label Grid.Column="1"
+                           Text="Ver todo"
+                           FontSize="13"
+                           TextColor="#2D4E8E"
+                           VerticalOptions="Center">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnVerTodoTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                </Grid>
+                <VerticalStackLayout x:Name="contenedorLugares" Spacing="10" />
+
+                <Label x:Name="lblPie"
+                       TextColor="#9AA6BF"
+                       FontSize="11"
+                       HorizontalTextAlignment="Center"
+                       Margin="0,6,0,10" />
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

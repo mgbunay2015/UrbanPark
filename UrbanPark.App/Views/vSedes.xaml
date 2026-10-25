@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:UrbanPark.App.Views"
+             x:Class="UrbanPark.App.Views.vSedes"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource Fondo}"
+             Title="Parqueaderos">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+        <!-- ================= encabezado ================= -->
+        <VerticalStackLayout Grid.Row="0" Padding="14,12,14,6" Spacing="8">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <VerticalStackLayout Spacing="1">
+                    <Label Text="Elige tu parqueadero"
+                           Style="{StaticResource TituloPagina}" />
+                    <Label x:Name="lblUbicacion"
+                           Text="Ubicando tu posición…"
+                           Style="{StaticResource SubtituloPagina}" />
+                </VerticalStackLayout>
+                <Button x:Name="btnRefrescar"
+                        Grid.Column="1"
+                        Text="↻"
+                        Clicked="OnRefrescarClicked"
+                        BackgroundColor="{StaticResource SuperficieAlta}"
+                        TextColor="{StaticResource Acento}"
+                        FontFamily="OpenSansSemibold"
+                        FontSize="15"
+                        CornerRadius="10"
+                        HeightRequest="34"
+                        WidthRequest="38"
+                        Padding="0"
+                        VerticalOptions="Center" />
+            </Grid>
+
+            <FlexLayout x:Name="contenedorTipos" Wrap="Wrap" Direction="Row" JustifyContent="Start" />
+        </VerticalStackLayout>
+
+        <!-- ================= mapa ================= -->
+        <Border Grid.Row="1"
+                Margin="14,0,14,6"
+                BackgroundColor="#FFFFFF"
+                Stroke="#D5DAE0"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 16"
+                Padding="3">
+            <Border.Shadow>
+                <Shadow Brush="#0A0E13" Offset="0,4" Radius="12" Opacity="0.18" />
+            </Border.Shadow>
+            <Grid RowDefinitions="Auto,*">
+                <views:MapaSedes x:Name="mapa" HeightRequest="262" />
+
+                <!-- aviso flotante sobre el mapa -->
+                <Border x:Name="avisoMapa"
+                        BackgroundColor="#FFFFFF"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 10"
+                        Padding="8,5"
+                        Margin="6,6,6,0"
+                        VerticalOptions="Start"
+                        HorizontalOptions="Start">
+                    <Border.Shadow>
+                        <Shadow Brush="#0A0E13" Offset="0,2" Radius="6" Opacity="0.18" />
+                    </Border.Shadow>
+                    <Label x:Name="lblAvisoMapa"
+                           Text="Toca un pin para ver el parqueadero"
+                           FontSize="10"
+                           TextColor="#5F6B7A" />
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ================= lista y recomendación ================= -->
+        <ScrollView Grid.Row="2">
+            <VerticalStackLayout Padding="14,2,14,12" Spacing="8">
+
+                <Border x:Name="panelIa"
+                        IsVisible="False"
+                        BackgroundColor="{StaticResource Superficie}"
+                        Stroke="{StaticResource Acento}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="12">
+                    <VerticalStackLayout x:Name="contenidoIa" Spacing="6" />
+                </Border>
+
+                <Border x:Name="panelEstacionado"
+                        IsVisible="False"
+                        BackgroundColor="#1F3566"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 14"
+                        Padding="10,8">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnEstacionadoTapped" />
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8">
+                        <Label x:Name="lblEstPlaza"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="13"
+                               TextColor="White" />
+                        <Label x:Name="lblEstValor"
+                               Grid.Column="1"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="13"
+                               TextColor="#FFE14A"
+                               HorizontalTextAlignment="End" />
+                        <Label x:Name="lblEstDetalle"
+                               Grid.Row="1"
+                               FontSize="11"
+                               TextColor="#C9D6F0" />
+                        <Label Grid.Row="1"
+                               Grid.Column="1"
+                               Text="Ver mi QR ›"
+                               FontSize="11"
+                               TextColor="#FFE14A"
+                               HorizontalTextAlignment="End" />
+                    </Grid>
+                </Border>
+
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <Label Text="Parqueaderos de la zona"
+                           Style="{StaticResource TituloSeccionClaro}"
+                           FontSize="14"
+                           VerticalOptions="Center" />
+                    <Button x:Name="btnIa"
+                            Grid.Column="1"
+                            Text="🤖 ¿Cuál me conviene?"
+                            Clicked="OnIaClicked"
+                            BackgroundColor="{StaticResource Acento}"
+                            TextColor="{StaticResource TextoFuerte}"
+                            FontFamily="OpenSansSemibold"
+                            FontSize="11"
+                            CornerRadius="10"
+                            HeightRequest="32"
+                            Padding="10,0" />
+                </Grid>
+
+                <VerticalStackLayout x:Name="listaSedes" Spacing="8" />
+
+                <ActivityIndicator x:Name="spinner"
+                                   IsRunning="False"
+                                   IsVisible="False"
+                                   Color="{StaticResource Acento}" />
+
+                <Button x:Name="btnTodasLasPlazas"
+                        Text="Ver todas las plazas del sistema"
+                        Clicked="OnTodasLasPlazasClicked"
+                        Style="{StaticResource BotonFantasma}"
+                        FontSize="11"
+                        HeightRequest="34"
+                        Margin="0,4,0,0" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- ================= barra inferior ================= -->
+        <Border x:Name="barraSeleccion"
+                Grid.Row="3"
+                IsVisible="False"
+                BackgroundColor="{StaticResource Superficie}"
+                Stroke="{StaticResource SuperficieBorde}"
+                StrokeThickness="1"
+                Padding="12,8">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <VerticalStackLayout Spacing="1" VerticalOptions="Center">
+                    <Label x:Name="lblSelNombre"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="13"
+                           TextColor="{StaticResource TextoClaro}"
+                           LineBreakMode="TailTruncation" />
+                    <Label x:Name="lblSelDetalle"
+                           FontSize="10"
+                           TextColor="{StaticResource TextoClaroSuave}"
+                           LineBreakMode="TailTruncation" />
+                </VerticalStackLayout>
+                <Button x:Name="btnPuestos"
+                        Grid.Column="1"
+                        Text="Ver puestos"
+                        Clicked="OnVerPuestosClicked"
+                        BackgroundColor="{StaticResource Acento}"
+                        TextColor="{StaticResource Fondo}"
+                        FontFamily="OpenSansSemibold"
+                        FontSize="12"
+                        CornerRadius="10"
+                        HeightRequest="36"
+                        Padding="14,0"
+                        VerticalOptions="Center" />
+            </Grid>
+        </Border>
+    </Grid>
+</ContentPage>

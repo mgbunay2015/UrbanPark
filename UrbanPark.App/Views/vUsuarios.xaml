@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vUsuarios"
+             Title="Usuarios">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="10" Spacing="8">
+
+            <!-- ============================================================
+                 CABECERA
+                 ============================================================ -->
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                    <Label Text="Usuarios" Style="{StaticResource TituloPagina}" />
+                    <Label x:Name="lblPista"
+                           Text="Mantenimiento de usuarios en MySQL. Solo ADMIN."
+                           Style="{StaticResource SubtituloPagina}" />
+                </VerticalStackLayout>
+                <Button Grid.Column="1"
+                        Text="Actualizar"
+                        Clicked="OnActualizarClicked"
+                        Style="{StaticResource BotonSecundario}"
+                        FontSize="12"
+                        HeightRequest="42"
+                        VerticalOptions="Center" />
+            </Grid>
+
+            <!-- ============================================================
+                 FORMULARIO DE CREACION
+                 ============================================================ -->
+            <Border Style="{StaticResource TarjetaClara}">
+                <VerticalStackLayout Spacing="14">
+
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="CREAR USUARIO" Style="{StaticResource TituloSeccion}" />
+                        <Label Text="El usuario y el correo deben ser únicos." Style="{StaticResource TextoSuave}" />
+                    </VerticalStackLayout>
+
+                    <BoxView Style="{StaticResource Divisor}" />
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowSpacing="12"
+                          RowDefinitions="Auto,Auto,Auto">
+
+                        <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="6">
+                            <Label Text="Usuario" Style="{StaticResource EtiquetaCampo}" />
+                            <Border Style="{StaticResource Campo}">
+                                <Entry x:Name="txtNuevoUsuario" Placeholder="Usuario (mínimo 4)" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="6">
+                            <Label Text="Email" Style="{StaticResource EtiquetaCampo}" />
+                            <Border Style="{StaticResource Campo}">
+                                <Entry x:Name="txtNuevoEmail" Placeholder="correo@dominio.com" Keyboard="Email" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="6">
+                            <Label Text="Nombre" Style="{StaticResource EtiquetaCampo}" />
+                            <Border Style="{StaticResource Campo}">
+                                <Entry x:Name="txtNuevoNombre" Placeholder="Nombre" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="6">
+                            <Label Text="Apellido" Style="{StaticResource EtiquetaCampo}" />
+                            <Border Style="{StaticResource Campo}">
+                                <Entry x:Name="txtNuevoApellido" Placeholder="Apellido" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Grid.Row="2" Grid.Column="0" Spacing="6">
+                            <Label Text="Contraseña" Style="{StaticResource EtiquetaCampo}" />
+                            <Border Style="{StaticResource Campo}">
+                                <Entry x:Name="txtNuevoPassword" Placeholder="Mínimo 6 caracteres" IsPassword="True" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Grid.Row="2" Grid.Column="1" Spacing="6">
+                            <Label Text="Perfil" Style="{StaticResource EtiquetaCampo}" />
+                            <Border Style="{StaticResource Campo}">
+                                <Picker x:Name="pckNuevoRol" SelectedIndex="0">
+                                    <Picker.ItemsSource>
+                                        <x:Array Type="{x:Type x:String}">
+                                            <x:String>CLIENTE</x:String>
+                                            <x:String>OPERADOR</x:String>
+                                            <x:String>ADMIN</x:String>
+                                        </x:Array>
+                                    </Picker.ItemsSource>
+                                </Picker>
+                            </Border>
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Button Text="Crear"
+                            Clicked="OnCrearClicked"
+                            Style="{StaticResource BotonPrimario}"
+                            Margin="0,2,0,0" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ============================================================
+                 PANEL DE EDICION (destacado, borde de acento desde el code-behind)
+                 ============================================================ -->
+            <Border x:Name="panelEditar" IsVisible="False" Style="{StaticResource Tarjeta}">
+                <VerticalStackLayout Spacing="14">
+                    <Grid ColumnDefinitions="6,*" ColumnSpacing="12">
+                        <BoxView x:Name="acentoEditar" Grid.Column="0" WidthRequest="6" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="14">
+
+                            <Label x:Name="lblEditarTitulo" Text="Editar usuario"
+                                   Style="{StaticResource TituloSeccionClaro}" />
+
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowSpacing="12"
+                                  RowDefinitions="Auto,Auto">
+
+                                <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="6">
+                                    <Label Text="Nombre" Style="{StaticResource EtiquetaCampoClaro}" />
+                                    <Border Style="{StaticResource CampoOscuro}">
+                                        <Entry x:Name="txtEditarNombre" Style="{StaticResource EntradaOscura}" Placeholder="Nombre" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="6">
+                                    <Label Text="Apellido" Style="{StaticResource EtiquetaCampoClaro}" />
+                                    <Border Style="{StaticResource CampoOscuro}">
+                                        <Entry x:Name="txtEditarApellido" Style="{StaticResource EntradaOscura}" Placeholder="Apellido" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="6">
+                                    <Label Text="Email" Style="{StaticResource EtiquetaCampoClaro}" />
+                                    <Border Style="{StaticResource CampoOscuro}">
+                                        <Entry x:Name="txtEditarEmail" Style="{StaticResource EntradaOscura}" Placeholder="correo@dominio.com" Keyboard="Email" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="6">
+                                    <Label Text="Perfil" Style="{StaticResource EtiquetaCampoClaro}" />
+                                    <Border Style="{StaticResource CampoOscuro}">
+                                        <Picker x:Name="pckEditarRol" Style="{StaticResource SelectorOscuro}">
+                                            <Picker.ItemsSource>
+                                                <x:Array Type="{x:Type x:String}">
+                                                    <x:String>CLIENTE</x:String>
+                                                    <x:String>OPERADOR</x:String>
+                                                    <x:String>ADMIN</x:String>
+                                                </x:Array>
+                                            </Picker.ItemsSource>
+                                        </Picker>
+                                    </Border>
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <BoxView Style="{StaticResource Divisor}" />
+
+                            <HorizontalStackLayout Spacing="8">
+                                <Switch x:Name="swEditarActivo" VerticalOptions="Center" />
+                                <Label Text="Activo" Style="{StaticResource TextoSuaveClaro}" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Grid.Column="0"
+                                        Text="Cancelar"
+                                        Clicked="OnCancelarEditarClicked"
+                                        Style="{StaticResource BotonSecundario}" />
+                                <Button Grid.Column="1"
+                                        Text="Guardar"
+                                        Clicked="OnGuardarEditarClicked"
+                                        Style="{StaticResource BotonAcento}" />
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ============================================================
+                 PANEL DE CONTRASEÑA (destacado, borde de acento desde el code-behind)
+                 ============================================================ -->
+            <Border x:Name="panelPassword" IsVisible="False" Style="{StaticResource Tarjeta}">
+                <VerticalStackLayout Spacing="14">
+                    <Grid ColumnDefinitions="6,*" ColumnSpacing="12">
+                        <BoxView x:Name="acentoPassword" Grid.Column="0" WidthRequest="6" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="14">
+
+                            <Label Text="Reset contraseña" Style="{StaticResource TituloSeccionClaro}" />
+                            <Label x:Name="lblPasswordUsuario" Text="Usuario: —"
+                                   Style="{StaticResource TextoSuaveClaro}" />
+
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="Nueva contraseña" Style="{StaticResource EtiquetaCampoClaro}" />
+                                <Border Style="{StaticResource CampoOscuro}">
+                                    <Entry x:Name="txtNuevaPassword" Style="{StaticResource EntradaOscura}" Placeholder="Mínimo 6 caracteres" IsPassword="True" />
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Grid.Column="0"
+                                        Text="Cancelar"
+                                        Clicked="OnCancelarPasswordClicked"
+                                        Style="{StaticResource BotonSecundario}" />
+                                <Button Grid.Column="1"
+                                        Text="Actualizar"
+                                        Clicked="OnActualizarPasswordClicked"
+                                        Style="{StaticResource BotonPrimario}" />
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ============================================================
+                 TABLA DE USUARIOS (la construye el code-behind como tarjetas)
+                 ============================================================ -->
+            <Border x:Name="tablaUsuarios" Style="{StaticResource Tarjeta}">
+                <ScrollView Orientation="Horizontal">
+                    <VerticalStackLayout x:Name="contTabla" Spacing="8" Padding="0" />
+                </ScrollView>
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

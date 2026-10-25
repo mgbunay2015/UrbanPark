@@ -1,0 +1,16 @@
+info: Program[0]
+      Base de datos 'urbanpark' verificada.
+info: Program[0]
+      Esquema verificado (usuarios, espacios, vehiculos, tickets).
+info: Program[0]
+      Datos semilla verificados: 20 plazas, 4 vehiculos, 5 usuarios demo.
+info: Program[0]
+      Base de datos lista. Revisa /swagger para probar la API.
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://0.0.0.0:8090
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\moviles\Parqueadero\UrbanPark.Api\bin\Debug\net10.0\

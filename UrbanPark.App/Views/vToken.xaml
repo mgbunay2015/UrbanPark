@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vToken"
+             Title="Sesión">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="10" Spacing="8" MaximumWidthRequest="720">
+
+            <!-- ============================================================
+                 CABECERA
+                 ============================================================ -->
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                    <Label Text="Sesión y JWT" Style="{StaticResource TituloPagina}" />
+                    <Label Text="Claims del token emitido para esta sesión."
+                           Style="{StaticResource SubtituloPagina}" />
+                </VerticalStackLayout>
+                <Button Grid.Column="1"
+                        Text="Recargar"
+                        Clicked="OnRecargarClicked"
+                        Style="{StaticResource BotonSecundario}"
+                        HeightRequest="42"
+                        VerticalOptions="Center" />
+            </Grid>
+
+            <!-- ============================================================
+                 CLAIMS DEL TOKEN
+                 ============================================================ -->
+            <Border Style="{StaticResource TarjetaClara}">
+                <VerticalStackLayout Spacing="12">
+
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Claims del token" Style="{StaticResource TituloSeccion}" />
+                        <Label Text="Datos leídos del payload del JWT." Style="{StaticResource TextoSuave}" />
+                    </VerticalStackLayout>
+
+                    <BoxView Style="{StaticResource Divisor}" />
+
+                    <Grid ColumnDefinitions="92,*" ColumnSpacing="10" RowSpacing="12"
+                          RowDefinitions="Auto,Auto,Auto,Auto">
+
+                        <Label Grid.Row="0" Grid.Column="0" Text="Usuario"
+                               Style="{StaticResource EtiquetaCampo}" VerticalOptions="Center" />
+                        <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="10">
+                            <Label x:Name="lblUsuario" Text="Usuario: -"
+                                   Style="{StaticResource DatoFilaFuerte}" LineBreakMode="CharacterWrap" />
+                            <BoxView Style="{StaticResource Divisor}" />
+                        </VerticalStackLayout>
+
+                        <Label Grid.Row="1" Grid.Column="0" Text="Roles"
+                               Style="{StaticResource EtiquetaCampo}" VerticalOptions="Center" />
+                        <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="10">
+                            <Label x:Name="lblRoles" Text="Roles: -"
+                                   Style="{StaticResource DatoFila}" LineBreakMode="CharacterWrap" />
+                            <BoxView Style="{StaticResource Divisor}" />
+                        </VerticalStackLayout>
+
+                        <Label Grid.Row="2" Grid.Column="0" Text="Expira"
+                               Style="{StaticResource EtiquetaCampo}" VerticalOptions="Center" />
+                        <VerticalStackLayout Grid.Row="2" Grid.Column="1" Spacing="10">
+                            <Label x:Name="lblExpira" Text="Expira: -"
+                                   Style="{StaticResource DatoFila}" LineBreakMode="CharacterWrap" />
+                            <BoxView Style="{StaticResource Divisor}" />
+                        </VerticalStackLayout>
+
+                        <Label Grid.Row="3" Grid.Column="0" Text="Issuer"
+                               Style="{StaticResource EtiquetaCampo}" VerticalOptions="Center" />
+                        <VerticalStackLayout Grid.Row="3" Grid.Column="1" Spacing="10">
+                            <Label x:Name="lblIssuer" Text="Issuer: -"
+                                   Style="{StaticResource DatoFila}" LineBreakMode="CharacterWrap" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ============================================================
+                 TOKEN COMPLETO
+                 ============================================================ -->
+            <VerticalStackLayout Spacing="8">
+                <Label Text="TOKEN (JWT)" Style="{StaticResource EncabezadoTablaClaro}" Margin="0,6,0,0" />
+
+                <Border Style="{StaticResource PanelCodigo}">
+                    <ScrollView HeightRequest="240">
+                        <Label x:Name="lblToken" Text="" Style="{StaticResource Codigo}" />
+                    </ScrollView>
+                </Border>
+            </VerticalStackLayout>
+
+            <Button x:Name="btnCopiarToken"
+                    Text="Copiar token"
+                    Clicked="OnCopiarTokenClicked"
+                    Style="{StaticResource BotonSecundario}" />
+
+            <Label x:Name="lblPie"
+                   Style="{StaticResource TextoSuaveClaro}"
+                   HorizontalTextAlignment="Center"
+                   Margin="0,0,0,14" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

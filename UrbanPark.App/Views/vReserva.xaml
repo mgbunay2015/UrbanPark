@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vReserva"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource Fondo}"
+             Title="Reservar puesto">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <VerticalStackLayout Grid.Row="0" Padding="14,12,14,4" Spacing="1">
+            <Label Text="Reserva tu puesto" Style="{StaticResource TituloPagina}" />
+            <Label x:Name="lblPuesto"
+                   Style="{StaticResource SubtituloPagina}" />
+        </VerticalStackLayout>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="14,4,14,12" Spacing="10">
+
+                <!-- ================= parqueadero y puesto ================= -->
+                <Border BackgroundColor="{StaticResource Superficie}"
+                        Stroke="{StaticResource Acento}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 14"
+                        Padding="12,10">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <VerticalStackLayout Spacing="1">
+                            <Label x:Name="lblSede"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="13"
+                                   TextColor="{StaticResource TextoClaro}"
+                                   LineBreakMode="TailTruncation" />
+                            <Label x:Name="lblDireccion"
+                                   FontSize="10"
+                                   TextColor="{StaticResource TextoClaroSuave}"
+                                   LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                        <Border Grid.Column="1"
+                                BackgroundColor="{StaticResource Acento}"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 8"
+                                Padding="8,2"
+                                VerticalOptions="Center">
+                            <Label x:Name="lblCodigoPuesto"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="12"
+                                   TextColor="{StaticResource Fondo}" />
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- ================= fecha y horas ================= -->
+                <Border BackgroundColor="{StaticResource Superficie}"
+                        Stroke="{StaticResource SuperficieBorde}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 14"
+                        Padding="12,10">
+                    <VerticalStackLayout Spacing="10">
+
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Fecha de la reserva"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="12"
+                                   TextColor="{StaticResource TextoClaro}"
+                                   VerticalOptions="Center" />
+                            <Button x:Name="btnHoy"
+                                    Grid.Column="1"
+                                    Text="Hoy"
+                                    Clicked="OnHoyClicked"
+                                    BackgroundColor="{StaticResource SuperficieAlta}"
+                                    TextColor="{StaticResource Acento}"
+                                    FontSize="11"
+                                    CornerRadius="8"
+                                    HeightRequest="28"
+                                    Padding="10,0" />
+                        </Grid>
+
+                        <DatePicker x:Name="fecha"
+                                    MinimumDate="2024-01-01"
+                                    TextColor="{StaticResource TextoClaro}"
+                                    BackgroundColor="{StaticResource SuperficieAlta}"
+                                    DateSelected="OnFechaCambiada" />
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="Hora de ingreso" Style="{StaticResource EncabezadoTabla}" />
+                                <TimePicker x:Name="horaIngreso"
+                                            Format="HH:mm"
+                                            TextColor="{StaticResource TextoClaro}"
+                                            BackgroundColor="{StaticResource SuperficieAlta}"
+                                            PropertyChanged="OnHoraCambiada" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                <Label Text="Hora de salida" Style="{StaticResource EncabezadoTabla}" />
+                                <TimePicker x:Name="horaSalida"
+                                            Format="HH:mm"
+                                            TextColor="{StaticResource TextoClaro}"
+                                            BackgroundColor="{StaticResource SuperficieAlta}"
+                                            PropertyChanged="OnHoraCambiada" />
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <Label x:Name="lblDuracion"
+                               FontSize="11"
+                               TextColor="{StaticResource TextoClaroMedio}"
+                               LineBreakMode="WordWrap" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- ================= resumen ================= -->
+                <Border BackgroundColor="{StaticResource Superficie}"
+                        Stroke="{StaticResource SuperficieBorde}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 14"
+                        Padding="12,10">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="RESUMEN" Style="{StaticResource EncabezadoTabla}" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Duración"
+                                   FontSize="12"
+                                   TextColor="{StaticResource TextoClaroMedio}" />
+                            <Label x:Name="lblHoras"
+                                   Grid.Column="1"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="12"
+                                   TextColor="{StaticResource TextoClaro}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Tarifa"
+                                   FontSize="12"
+                                   TextColor="{StaticResource TextoClaroMedio}" />
+                            <Label x:Name="lblTarifa"
+                                   Grid.Column="1"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="12"
+                                   TextColor="{StaticResource TextoClaro}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Total estimado"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="13"
+                                   TextColor="{StaticResource TextoClaro}" />
+                            <Label x:Name="lblTotal"
+                                   Grid.Column="1"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="16"
+                                   TextColor="{StaticResource Acento}" />
+                        </Grid>
+                        <Label x:Name="lblAviso"
+                               FontSize="10"
+                               TextColor="{StaticResource TextoClaroSuave}"
+                               LineBreakMode="WordWrap"
+                               Text="El QR se activa al confirmar. El valor se calcula por las horas reservadas; si sales antes se cobra el tiempo real." />
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <VerticalStackLayout Grid.Row="2" Padding="12,6,12,10" Spacing="6"
+                             BackgroundColor="{StaticResource Superficie}">
+            <Button x:Name="btnReservar"
+                    Text="Reservar y generar QR"
+                    Clicked="OnReservarClicked"
+                    Style="{StaticResource BotonAcento}"
+                    FontSize="13"
+                    HeightRequest="42" />
+            <Button x:Name="btnCancelar"
+                    Text="Cancelar"
+                    Clicked="OnCancelarClicked"
+                    Style="{StaticResource BotonFantasma}"
+                    FontSize="11"
+                    HeightRequest="30" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

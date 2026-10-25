@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vResilience"
+             Title="Resilience">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="10" Spacing="8" MaximumWidthRequest="820">
+
+            <!-- ============================================================
+                 CABECERA
+                 ============================================================ -->
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Resilience" Style="{StaticResource TituloPagina}" />
+
+                <Border Style="{StaticResource BadgeAviso}" HorizontalOptions="Start">
+                    <Label Text="Solo ADMIN" Style="{StaticResource BadgeAvisoTexto}" />
+                </Border>
+            </VerticalStackLayout>
+
+            <!-- ============================================================
+                 EXPLICACION
+                 ============================================================ -->
+            <Border Style="{StaticResource Tarjeta}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Circuit Breaker + Retry" Style="{StaticResource TituloSeccionClaro}" />
+                    <Label x:Name="lblExplicacion" Style="{StaticResource TextoSuaveClaro}" />
+                    <BoxView Style="{StaticResource Divisor}" Margin="0,2" />
+                    <Label x:Name="lblFlujo" Style="{StaticResource Ayuda}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ============================================================
+                 ACCIONES
+                 ============================================================ -->
+            <VerticalStackLayout Spacing="8">
+                <Label Text="PRUEBAS" Style="{StaticResource EncabezadoTablaClaro}" />
+
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                    <Button Grid.Column="0"
+                            Text="Probar 1 llamada"
+                            Clicked="OnProbarUnaClicked"
+                            Style="{StaticResource BotonAcento}"
+                            FontSize="12"
+                            HeightRequest="36" />
+                    <Button Grid.Column="1"
+                            Text="Stress ×5"
+                            Clicked="OnStressClicked"
+                            Style="{StaticResource BotonPrimario}"
+                            FontSize="12"
+                            HeightRequest="36" />
+                    <Button Grid.Column="2"
+                            Text="Limpiar"
+                            Clicked="OnLimpiarClicked"
+                            Style="{StaticResource BotonSecundario}"
+                            FontSize="12"
+                            HeightRequest="36" />
+                </Grid>
+
+                <!-- demo de espacios -->
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                    <Button Grid.Column="0"
+                            Text="Detener espacios"
+                            Clicked="OnDetenerEspaciosClicked"
+                            Style="{StaticResource BotonPeligro}"
+                            FontSize="12"
+                            HeightRequest="36" />
+                    <Button Grid.Column="1"
+                            Text="Iniciar espacios"
+                            Clicked="OnIniciarEspaciosClicked"
+                            Style="{StaticResource BotonPrimario}"
+                            FontSize="12"
+                            HeightRequest="36" />
+                    <Button Grid.Column="2"
+                            Text="Estado espacios"
+                            Clicked="OnEstadoEspaciosClicked"
+                            Style="{StaticResource BotonSecundario}"
+                            FontSize="12"
+                            HeightRequest="36" />
+                </Grid>
+            </VerticalStackLayout>
+
+            <!-- ============================================================
+                 PILDORA DE ESTADO DEL SERVICIO (el code-behind cambia el badge)
+                 ============================================================ -->
+            <Border x:Name="pillEstadoEspacios" Style="{StaticResource Badge}" HorizontalOptions="Start">
+                <Label x:Name="lblEstadoEspacios" Text="—" Style="{StaticResource BadgeTexto}" />
+            </Border>
+
+            <!-- ============================================================
+                 ESTADISTICAS
+                 ============================================================ -->
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                <Border Grid.Column="0" Style="{StaticResource TarjetaMetrica}">
+                    <VerticalStackLayout Spacing="2">
+                        <Label x:Name="lblStatOk" Text="0" Style="{StaticResource MetricaValor}" />
+                        <Label Text="OK" Style="{StaticResource MetricaEtiqueta}" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="1" Style="{StaticResource TarjetaMetrica}">
+                    <VerticalStackLayout Spacing="2">
+                        <Label x:Name="lblStatFallos" Text="0" Style="{StaticResource MetricaValor}" />
+                        <Label Text="Fallback / error" Style="{StaticResource MetricaEtiqueta}" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="2" Style="{StaticResource TarjetaMetrica}">
+                    <VerticalStackLayout Spacing="2">
+                        <Label x:Name="lblStatTotal" Text="0" Style="{StaticResource MetricaValor}" />
+                        <Label Text="Total pruebas" Style="{StaticResource MetricaEtiqueta}" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <!-- ============================================================
+                 PANEL DE ESTADO (el code-behind pinta borde y titulo)
+                 ============================================================ -->
+            <Border x:Name="panelEstado" Style="{StaticResource Tarjeta}">
+                <VerticalStackLayout Spacing="6">
+                    <Label x:Name="lblEstadoTitulo" Style="{StaticResource TituloSeccionClaro}" />
+                    <Label x:Name="lblEstadoCuerpo" Style="{StaticResource DatoFila}" />
+                    <Label x:Name="lblEstadoPie" Style="{StaticResource TextoSuaveClaro}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ============================================================
+                 RESPUESTA JSON
+                 ============================================================ -->
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Respuesta JSON" Style="{StaticResource TituloSeccionClaro}" />
+
+                <Border Style="{StaticResource PanelCodigo}">
+                    <ScrollView HeightRequest="220">
+                        <Label x:Name="lblJson" Text="—" Style="{StaticResource Codigo}" />
+                    </ScrollView>
+                </Border>
+            </VerticalStackLayout>
+
+            <!-- ============================================================
+                 HISTORIAL DE PRUEBAS
+                 ============================================================ -->
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Historial de pruebas" Style="{StaticResource TituloSeccionClaro}" />
+
+                <VerticalStackLayout x:Name="listaHistorial" Spacing="8" />
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

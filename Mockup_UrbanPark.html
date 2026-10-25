@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Urban Park · Mockup para cliente</title>
+<style>
+  @page { size: A4 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", Roboto, Arial, sans-serif; background: #0A0E13; color: #F8FAFC; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .hoja { width: 297mm; height: 210mm; padding: 12mm 14mm; page-break-after: always; position: relative; overflow: hidden;
+          background: radial-gradient(circle at 85% 10%, #1C2530 0, #0A0E13 55%); }
+  .hoja:last-child { page-break-after: auto; }
+  .titulo-hoja { display: flex; align-items: center; gap: 12px; margin-bottom: 8mm; }
+  .titulo-hoja .num { background: #F2C51A; color: #0A0E13; font-weight: 800; border-radius: 8px; padding: 4px 10px; font-size: 14px; }
+  .titulo-hoja h2 { font-size: 22px; font-weight: 700; }
+  .titulo-hoja p { color: #B6C2D1; font-size: 13px; margin-left: auto; }
+  .fila { display: flex; justify-content: space-around; align-items: flex-start; gap: 8mm; }
+  .bloque { display: flex; flex-direction: column; align-items: center; gap: 4mm; width: 74mm; }
+  .nota { font-size: 11.5px; color: #B6C2D1; text-align: center; line-height: 1.45; }
+  .nota b { color: #F2C51A; }
+  .pie { position: absolute; bottom: 7mm; left: 14mm; right: 14mm; display: flex; justify-content: space-between; font-size: 10px; color: #64748B; }
+
+  /* Teléfono */
+  .tel { width: 68mm; height: 140mm; background: #000; border-radius: 9mm; padding: 2.2mm; box-shadow: 0 0 0 1.5px #28323F, 0 12px 30px rgba(0,0,0,.6); }
+  .pantalla { width: 100%; height: 100%; border-radius: 7mm; overflow: hidden; position: relative; display: flex; flex-direction: column; font-size: 9.5px; }
+  .estado { height: 18px; display: flex; justify-content: space-between; align-items: center; padding: 0 12px; font-size: 8.5px; font-weight: 600; flex: none; }
+  .oscura { background: #0A0E13; color: #F8FAFC; }
+  .clara { background: #F4F6FA; color: #0F172A; }
+  .clara .estado { background: #0A0E13; color: #F8FAFC; }
+  .cab { background: #0A0E13; color: #F8FAFC; padding: 6px 12px 10px; display: flex; align-items: center; gap: 8px; flex: none; }
+  .logo { width: 22px; height: 22px; border-radius: 6px; background: #F2C51A; color: #0A0E13; font-weight: 900; display: grid; place-items: center; font-size: 13px; flex: none; }
+  .cab .nom { font-weight: 700; font-size: 12px; }
+  .cab .sub { font-size: 8px; color: #B6C2D1; }
+  .cuerpo { flex: 1; padding: 10px 11px; overflow: hidden; display: flex; flex-direction: column; gap: 7px; }
+  .h1 { font-size: 15px; font-weight: 800; }
+  .muted { color: #475569; font-size: 8.5px; line-height: 1.35; }
+  .oscura .muted { color: #B6C2D1; }
+  .card { background: #fff; border: 1px solid #E5E9F0; border-radius: 10px; padding: 8px 9px; }
+  .oscura .card { background: #141B24; border-color: #28323F; }
+  .campo { border: 1px solid #E5E9F0; border-radius: 8px; padding: 6px 8px; font-size: 8.5px; color: #94A3B8; background: #fff; }
+  .oscura .campo { background: #1C2530; border-color: #28323F; color: #B6C2D1; }
+  .lbl { font-size: 7.5px; font-weight: 700; color: #94A3B8; letter-spacing: .5px; margin-bottom: 2px; }
+  .btn { border-radius: 9px; padding: 7px; text-align: center; font-weight: 700; font-size: 9.5px; }
+  .b-acento { background: #F2C51A; color: #0A0E13; }
+  .b-prim { background: #12B5A5; color: #fff; }
+  .b-borde { border: 1.3px solid #12B5A5; color: #0C8C80; }
+  .oscura .b-borde { border-color: #F2C51A; color: #F2C51A; }
+  .b-osc { background: #0F172A; color: #fff; }
+  .b-google { background: #fff; color: #0F172A; border: 1px solid #E5E9F0; }
+  .chip { display: inline-block; border-radius: 20px; padding: 2px 7px; font-size: 7.5px; font-weight: 700; }
+  .tabbar { flex: none; height: 40px; background: #0A0E13; display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #28323F; }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 7px; color: #94A3B8; }
+  .tab svg { width: 15px; height: 15px; }
+  .tab.on { color: #F2C51A; }
+
+  /* Plazas */
+  .leyenda { display: flex; gap: 8px; font-size: 8px; color: #475569; }
+  .leyenda span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 3px; margin-right: 3px; vertical-align: -1px; background: var(--c); }
+  .zona { font-size: 8px; font-weight: 800; color: #475569; letter-spacing: .6px; margin-top: 2px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .pz { border-radius: 8px; padding: 6px 4px; text-align: center; font-weight: 800; font-size: 10px; border: 1.3px solid; }
+  .pz small { display: block; font-weight: 600; font-size: 7px; margin-top: 1px; }
+  .libre { background: #E7F8EE; border-color: #22C55E; color: #15803D; }
+  .ocup { background: #FDECEC; border-color: #EF4444; color: #B91C1C; }
+  .tuyo { background: #E8F0FE; border-color: #3B82F6; color: #1D4ED8; }
+  .sel { background: #F2C51A; border-color: #C9A012; color: #0A0E13; box-shadow: 0 0 0 2px #0A0E13 inset; }
+  .disc { background: #E4F7F4; border-color: #12B5A5; color: #0C8C80; }
+
+  /* Huella */
+  .velo { position: absolute; inset: 0; background: rgba(10,14,19,.55); display: flex; align-items: flex-end; }
+  .hoja-bio { background: #1C2530; width: 100%; border-radius: 16px 16px 0 0; padding: 14px 12px 18px; text-align: center; color: #F8FAFC; }
+  .huella { width: 54px; height: 54px; margin: 10px auto; border-radius: 50%; background: #3D3413; display: grid; place-items: center; }
+
+  /* Mapa */
+  .mapa { flex: 1; border-radius: 10px; position: relative; overflow: hidden; background: #E9EEF2; border: 1px solid #E5E9F0; }
+
+  /* Portada */
+  .portada { display: flex; flex-direction: column; justify-content: center; height: 100%; padding-left: 10mm; }
+  .portada .grande { width: 64px; height: 64px; border-radius: 16px; font-size: 38px; }
+  .portada h1 { font-size: 54px; letter-spacing: 3px; margin-top: 8mm; }
+  .portada h3 { font-size: 20px; color: #F2C51A; font-weight: 600; margin-top: 2mm; }
+  .portada p { color: #B6C2D1; max-width: 140mm; margin-top: 6mm; font-size: 14px; line-height: 1.6; }
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6mm; }
+  .feat { background: #141B24; border: 1px solid #28323F; border-radius: 12px; padding: 6mm; }
+  .feat .ico { font-size: 22px; }
+  .feat h4 { margin: 3mm 0 2mm; font-size: 15px; color: #F2C51A; }
+  .feat p { font-size: 12px; color: #B6C2D1; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- ===================== PORTADA ===================== -->
+<section class="hoja">
+  <div class="fila" style="height:100%; align-items:center;">
+    <div class="portada" style="flex:1">
+      <div class="logo grande">P</div>
+      <h1>URBAN PARK</h1>
+      <h3>Estacionamiento inteligente</h3>
+      <p>Mockup funcional del aplicativo móvil para clientes, operadores y administradores.
+         Reserva de plazas con asignación por Inteligencia Artificial, acceso con huella,
+         pase de salida QR, rutas con Google Maps, reportería y funcionamiento sin internet.</p>
+      <p style="font-size:12px; color:#64748B">Plataforma: Android · Windows (.NET MAUI) &nbsp;|&nbsp; API ASP.NET Core &nbsp;|&nbsp; MySQL</p>
+    </div>
+    <div class="tel" style="transform: rotate(-6deg)">
+      <div class="pantalla oscura" id="portadaTel"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FUNCIONALIDADES ===================== -->
+<section class="hoja">
+  <div class="titulo-hoja"><span class="num">00</span><h2>Funcionalidades principales</h2><p>Resumen para el cliente</p></div>
+  <div class="features">
+    <div class="feat"><div class="ico">🔐</div><h4>Acceso con huella</h4><p>La huella se registra al crear la cuenta y se guarda vinculada al usuario en la base de datos. Con ella se inicia sesión y se desbloquea el QR.</p></div>
+    <div class="feat"><div class="ico">🅿️</div><h4>Mapa de plazas</h4><p>Plazas por zona en tiempo real: libres, ocupadas, propias y preferenciales. El cliente toca la plaza que desea.</p></div>
+    <div class="feat"><div class="ico">🤖</div><h4>Asignación con IA</h4><p>Asignación manual si la plaza cumple los requisitos (tipo de vehículo, perfil, discapacidad); si no, la IA asigna la mejor plaza automáticamente.</p></div>
+    <div class="feat"><div class="ico">🎫</div><h4>Pase de salida QR</h4><p>Al pagar se genera un QR a pantalla completa, protegido con huella y con vencimiento de 10 minutos.</p></div>
+    <div class="feat"><div class="ico">🗺️</div><h4>Cómo llegar</h4><p>Ruta a pie desde la ubicación del cliente hasta su plaza usando Google Maps integrado.</p></div>
+    <div class="feat"><div class="ico">📊</div><h4>Reportería (Admin)</h4><p>Recaudación, ocupación y tipo de persona en barras horizontales con porcentaje, resumidos por IA.</p></div>
+    <div class="feat"><div class="ico">👤</div><h4>Mi perfil</h4><p>Editar nombre, apellido, email, contraseña y cambiar la huella registrada.</p></div>
+    <div class="feat"><div class="ico">📶</div><h4>Modo sin conexión</h4><p>Los datos se guardan en una mini base local en el equipo y se sincronizan solos al volver internet.</p></div>
+    <div class="feat"><div class="ico">👥</div><h4>Roles</h4><p>Cliente, Operador y Administrador, cada uno con su propio menú inferior.</p></div>
+  </div>
+  <div class="pie"><span>Urban Park · Mockup</span><span>Página 2</span></div>
+</section>
+
+<!-- ===================== ACCESO ===================== -->
+<section class="hoja">
+  <div class="titulo-hoja"><span class="num">01</span><h2>Acceso y registro con huella</h2><p>Iniciar sesión · Crear cuenta · Confirmar huella</p></div>
+  <div class="fila">
+    <div class="bloque">
+      <div class="tel"><div class="pantalla oscura">
+        <div class="estado"><span>9:41</span><span>▲ ◼ 100%</span></div>
+        <div class="cuerpo" style="gap:8px">
+          <div style="text-align:center; margin-top:8px">
+            <div class="logo" style="margin:0 auto; width:38px; height:38px; font-size:22px; border-radius:10px">P</div>
+            <div style="font-weight:800; letter-spacing:2px; font-size:15px; margin-top:6px">URBAN PARK</div>
+            <div class="muted">Estacionamiento inteligente</div>
+          </div>
+          <div class="card" style="display:flex; flex-direction:column; gap:6px">
+            <div class="h1" style="font-size:13px">Iniciar sesión</div>
+            <div class="muted">Entra con tu cuenta o prueba un perfil de demostración.</div>
+            <div><div class="lbl">USUARIO</div><div class="campo">cliente1</div></div>
+            <div><div class="lbl">CONTRASEÑA</div><div class="campo">••••••••</div></div>
+            <div class="btn b-acento">Iniciar sesión</div>
+            <div class="btn b-borde">☝ Entrar con huella</div>
+            <div class="muted" style="text-align:center">o</div>
+            <div class="btn b-google"><b style="color:#4285F4">G</b> Entrar con Google</div>
+          </div>
+          <div class="muted" style="text-align:center; color:#F2C51A; font-weight:700">Crear cuenta</div>
+          <div class="muted" style="text-align:center">Ver perfiles de demostración</div>
+        </div>
+      </div></div>
+      <div class="nota">Ingreso con usuario y contraseña, <b>huella</b> o Google.</div>
+    </div>
+
+    <div class="bloque">
+      <div class="tel"><div class="pantalla oscura">
+        <div class="estado"><span>9:41</span><span>▲ ◼ 100%</span></div>
+        <div class="cuerpo">
+          <div class="h1">Crear cuenta</div>
+          <div class="muted">Al registrarte se pide tu huella y queda en la base de datos. Con esa huella entras al sistema y abres el QR de salida.</div>
+          <div class="card" style="display:flex; flex-direction:column; gap:5px">
+            <div><div class="lbl">USUARIO</div><div class="campo">maria.lopez</div></div>
+            <div><div class="lbl">EMAIL</div><div class="campo">maria@correo.com</div></div>
+            <div style="display:flex; gap:5px">
+              <div style="flex:1"><div class="lbl">NOMBRE</div><div class="campo">María</div></div>
+              <div style="flex:1"><div class="lbl">APELLIDO</div><div class="campo">López</div></div>
+            </div>
+            <div><div class="lbl">CONTRASEÑA</div><div class="campo">••••••••</div></div>
+            <div><div class="lbl">PERFIL</div><div class="campo">Estudiante ▾</div></div>
+            <div class="btn b-acento">☝ Registrarme con huella</div>
+          </div>
+          <div class="muted" style="text-align:center">Volver al inicio de sesión</div>
+        </div>
+      </div></div>
+      <div class="nota">El registro <b>obliga a enrolar la huella</b> del cliente.</div>
+    </div>
+
+    <div class="bloque">
+      <div class="tel"><div class="pantalla oscura">
+        <div class="estado"><span>9:41</span><span>▲ ◼ 100%</span></div>
+        <div class="cuerpo" style="filter:blur(1.2px); opacity:.6">
+          <div class="h1">Crear cuenta</div>
+          <div class="card" style="height:160px"></div>
+        </div>
+        <div class="velo"><div class="hoja-bio">
+          <div style="font-weight:800; font-size:12px">Urban Park</div>
+          <div class="muted" style="margin-top:3px">Confirma tu huella para registrarla en tu cuenta</div>
+          <div class="huella">
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#F2C51A" stroke-width="1.5" stroke-linecap="round">
+              <path d="M12 11v4M8.5 8.5a5 5 0 0 1 8.5 3.5v2M7 12a5 5 0 0 1 .3-1.7M7 15v-3M17 17v-1M10 21c.5-1.5 1-3.5 1-6M14 21c.4-1.2.7-2.6.9-4M5 9a8 8 0 0 1 14 0M4 13a8 8 0 0 1 .3-2"/>
+            </svg>
+          </div>
+          <div class="muted">Toca el sensor de huella</div>
+          <div style="margin-top:10px; color:#F2C51A; font-weight:700; font-size:9px">Cancelar</div>
+        </div></div>
+      </div></div>
+      <div class="nota">Diálogo nativo del sistema (Android / Windows Hello).</div>
+    </div>
+  </div>
+  <div class="pie"><span>Urban Park · Mockup</span><span>Página 3</span></div>
+</section>
+
+<!-- ===================== PLAZAS E IA ===================== -->
+<section class="hoja">
+  <div class="titulo-hoja"><span class="num">02</span><h2>Elegir plaza y asignación</h2><p>Manual · IA · Recomendación</p></div>
+  <div class="fila">
+    <div class="bloque">
+      <div class="tel"><div class="pantalla clara">
+        <div class="estado"><span>9:41</span><span>▲ ◼ 100%</span></div>
+        <div class="cab"><div class="logo">P</div><div><div class="nom">Urban Park</div><div class="sub">cliente1 · Cliente</div></div><div style="margin-left:auto; font-size:14px">↻</div></div>
+        <div class="cuerpo">
+          <div class="h1">Elige tu plaza</div>
+          <div class="leyenda"><span style="--c:#22C55E">Libre</span><span style="--c:#EF4444">Ocupada</span><span style="--c:#3B82F6">Tuyo</span></div>
+          <div class="zona">ZONA A · GENERAL</div>
+          <div class="grid" id="zonaA"></div>
+          <div class="zona">ZONA B · ESTUDIANTES</div>
+          <div class="grid" id="zonaB"></div>
+          <div class="zona">ZONA P · PREFERENCIAL ♿</div>
+          <div class="grid" id="zonaP"></div>
+          <div style="margin-top:auto; display:flex; align-items:center; gap:6px">
+            <div style="flex:1"><div style="font-weight:800; font-size:9px">9 PLAZAS LIBRES</div><div class="muted">Plaza A-05 seleccionada</div></div>
+            <div class="btn b-acento" style="padding:7px 14px">Continuar</div>
+          </div>
+        </div>
+        <div class="tabbar" data-tabs="cliente" data-on="0"></div>
+      </div></div>
+      <div class="nota">Mapa de plazas en 3 columnas con colores por estado.</div>
+    </div>
+
+    <div class="bloque">
+      <div class="tel"><div class="pantalla clara">
+        <div class="estado"><span>9:41</span><span>▲ ◼ 100%</span></div>
+        <div class="cab"><div style="font-size:14px">‹</div><div><div class="nom">Asignar plaza</div><div class="sub">Elige el vehículo</div></div></div>
+        <div class="cuerpo">
+          <div class="card" style="background:#FEF4E3; border-color:#F59E0B">
+            <div class="lbl" style="color:#B45309">PLAZA ELEGIDA</div>
+            <div style="font-weight:800; font-size:12px">A-05 · Zona General · Auto</div>
+          </div>
+          <div class="lbl">TUS VEHÍCULOS</div>
+          <div class="card" style="border:1.5px solid #12B5A5; display:flex; align-items:center; gap:8px">
+            <div style="font-size:18px">🚗</div><div><b>PBC-1234</b><div class="muted">Auto · Kia Rio · Activo</div></div><div style="margin-left:auto; color:#12B5A5; font-weight:900">✓</div>
+          </div>
+          <div class="card" style="display:flex; align-items:center; gap:8px">
+            <div style="font-size:18px">🏍️</div><div><b>IAB-77K</b><div class="muted">Moto · Yamaha · Activo</div></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px">
+            <div class="btn b-acento">Asignación manual</div>
+            <div class="btn b-prim">✦ Asignación IA</div>
+            <div class="btn b-borde">Recomendar con IA</div>
+          </div>
+          <div class="card" style="background:#E8F0FE; border-color:#3B82F6; margin-top:auto">
+            <div class="lbl" style="color:#1D4ED8">CÓMO FUNCIONA</div>
+            <div class="muted">Si la plaza cumple los requisitos (tipo, perfil, discapacidad) se asigna tal cual. Si no, la IA elige la mejor plaza disponible.</div>
+          </div>
+        </div>
+        <div class="tabbar" data-tabs="cliente" data-on="0"></div>
+      </div></div>
+      <div class="nota">Orden de botones: <b>Manual · IA · Recomendar</b>.</div>
+    </div>
+
+    <div class="bloque">
+      <div class="tel"><div class="pantalla clara">
+        <div class="estado"><span>9:41</span><span>▲ ◼ 100%</span></div>
+        <div class="cab"><div style="font-size:14px">‹</div><div><div class="nom">Asignar plaza</div><div class="sub">Resultado</div></div></div>
+        <div class="cuerpo">
+          <div class="card" style="background:#E7F8EE; border-color:#22C55E; text-align:center; padding:14px 8px">
+            <div style="font-size:26px">✅</div>
+            <div style="font-weight:800; font-size:13px; color:#15803D; margin-top:4px">Ticket abierto</div>
+            <div class="muted">Plaza asignada correctamente</div>
+          </div>
+          <div class="card">
+            <div style="display:flex; justify-content:space-between"><span class="muted">Plaza</span><b>A-05</b></div>
+            <div style="display:flex; justify-content:space-between; margin-top:4px"><span class="muted">Vehículo</span><b>PBC-1234</b></div>
+            <div style="display:flex; justify-content:space-between; margin-top:4px"><span class="muted">Entrada</span><b>09:41</b></div>
+            <div style="display:flex; justify-content:space-between; margin-top:4px"><span class="muted">Método</span><span class="chip" style="background:#FEF4E3; color:#B45309">MANUAL</span></div>
+          </div>
+          <div class="card" style="background:#E4F7F4; border-color:#12B5A5">
+            <div class="lbl" style="color:#0C8C80">✦ SUGERENCIA IA</div>
+            <div class="muted">A-05 está a 40 m de la entrada principal y es compatible con tu perfil de Estudiante.</div>
+          </div>
+          <div class="btn b-osc" style="margin-top:auto">🗺 Cómo llegar a mi plaza</div>
+        </div>
+        <div class="tabbar" data-tabs="cliente" data-on="0"></div>
+      </div></div>
+      <div class="nota">Confirmación del ticket y acceso directo a la ruta.</div>
+    </div>
+  </div>
+  <div class="pie"><span>Urban Park · Mockup</span><span>Página 4</span></div>
+</section>
+
+<!-- ===================== SALIDA Y MAPA ===================== -->
+<section class="hoja">
+  <div class="titulo-hoja"><span class="num">03</span><h2>Llegar a la plaza y salir</h2><p>Google Maps · QR protegido · Pase pagado</p></div>
+  <div class="fila">
+    <div class="bloque">
+      <div class="tel"><div class="pantalla clara">
+        <div class="estado"><span>9:41</span><span>▲ ◼ 100%</span></div>
+        <div class="cab"><div class="logo">P</div><div><div class="nom">Cómo llegar</div><div class="sub">Plaza A-05 · Zona General</div></div></div>
+        <div class="cuerpo">
+          <div class="mapa">
+            <svg width="100%" height="100%" viewBox="0 0 200 260" preserveAspectRatio="xMidYMid slice">
+              <rect width="200" height="260" fill="#EEF1F4"/>
+              <g fill="#DDE3E8"><rect x="10" y="10" width="70" height="55" rx="3"/><rect x="110" y="10" width="80" height="55" rx="3"/><rect x="10" y="95" width="70" height="70" rx="3"/><rect x="110" y="95" width="80" height="70" rx="3"/><rect x="10" y="195" width="70" height="55" rx="3"/><rect x="110" y="195" width="80" height="55" rx="3"/></g>
+              <rect x="115" y="100" width="70" height="60" rx="3" fill="#CDEBD6"/>
+              <g stroke="#fff" stroke-width="14"><line x1="95" y1="0" x2="95" y2="260"/><line x1="0" y1="80" x2="200" y2="80"/><line x1="0" y1="180" x2="200" y2="180"/></g>
+              <path d="M45 230 L45 180 L95 180 L95 130 L135 130" fill="none" stroke="#1A73E8" stroke-width="4" stroke-dasharray="1 7" stroke-linecap="round"/>
+              <circle cx="45" cy="232" r="6" fill="#1A73E8" stroke="#fff" stroke-width="2.5"/>
+              <path d="M140 108 a10 10 0 1 1 0.01 0 Z M140 108 l0 0" fill="none"/>
+              <path d="M140 132 c-9 -12 -13 -17 -13 -23 a13 13 0 0 1 26 0 c0 6 -4 11 -13 23z" fill="#EA4335"/>
+              <circle cx="140" cy="109" r="5" fill="#fff"/>
+              <text x="150" y="152" font-size="8" font-weight="700" fill="#15803D" text-anchor="middle">Urban Park</text>
+            </svg>
+            <div style="position:absolute; top:8px; left:8px; right:8px; background:#fff; border-radius:8px; padding:6px 8px; box-shadow:0 2px 6px rgba(0,0,0,.15)">
+              <b style="font-size:10px">🚶 4 min (280 m)</b><div class="muted">Vía Entrada principal</div>
+            </div>
+          </div>
+          <div class="btn b-acento">Abrir en Google Maps</div>
+        </div>
+        <div class="tabbar" data-tabs="cliente" data-on="2"></div>
+      </div></div>
+      <div class="nota">Mapa de Google <b>integrado</b> con la ruta a pie.</div>
+    </div>
+
+    <div class="bloque">
+      <div class="tel"><div class="pantalla clara">
+        <div class="estado"><span>9:41</span><span>▲ ◼ 100%</span></div>
+        <div class="cab"><div class="logo">P</div><div><div class="nom">Salida</div><div class="sub">1 pase activo</div></div></div>
+        <div class="cuerpo">
+          <div class="h1">Pases de salida</div>
+          <div class="muted">Muestra el QR de cada vehículo en la salida. Cada uno vence a los 10 minutos de su pago.</div>
+          <div class="card" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; text-align:center">
+            <div style="width:62px; height:62px; border-radius:50%; background:#FEF4E3; display:grid; place-items:center; font-size:28px">🔒</div>
+            <div style="font-weight:800; font-size:13px">QR protegido</div>
+            <div class="muted" style="padding:0 6px">Para ver el QR de salida confirma tu huella registrada en tu cuenta.</div>
+            <div class="btn b-acento" style="width:85%">☝ Verificar huella</div>
+          </div>
+        </div>
+        <div class="tabbar" data-tabs="cliente" data-on="3x"></div>
+      </div></div>
+      <div class="nota">El QR solo se muestra tras validar la <b>huella del titular</b>.</div>
+    </div>
+
+    <div class="bloque">
+      <div class="tel"><div class="pantalla clara">
+        <div class="estado"><span>9:41</span><span>▲ ◼ 100%</span></div>
+        <div class="cuerpo" style="padding:8px">
+          <div class="card" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; padding:10px">
+            <div style="display:flex; width:100%; justify-content:space-between; align-items:center">
+              <b style="font-size:12px">PBC-1234</b><span class="chip" style="background:#E7F8EE; color:#15803D">PAGADO</span>
+            </div>
+            <svg id="qr" viewBox="0 0 29 29" style="width:100%; aspect-ratio:1; shape-rendering:crispEdges"></svg>
+            <div style="font-weight:800; color:#B45309; font-size:11px">⏱ Vence en 09:24</div>
+            <div style="width:100%; border-top:1px dashed #E5E9F0; padding-top:6px; display:grid; grid-template-columns:1fr 1fr; gap:4px 8px">
+              <span class="muted">Plaza</span><b style="text-align:right">A-05</b>
+              <span class="muted">Entrada</span><b style="text-align:right">09:41</b>
+              <span class="muted">Salida</span><b style="text-align:right">12:15</b>
+              <span class="muted">Total pagado</span><b style="text-align:right; color:#15803D">$ 3.75</b>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar" data-tabs="cliente" data-on="3x"></div>
+      </div></div>
+      <div class="nota">Ticket pagado: QR a <b>pantalla completa</b> con cuenta regresiva.</div>
+    </div>
+  </div>
+  <div class="pie"><span>Urban Park · Mockup</span><span>Página 5</span></div>
+</section>
+
+<!-- ===================== ADMIN, PERFIL, OFFLINE ===================== -->
+<section class="hoja">
+  <div class="titulo-hoja"><span class="num">04</span><h2>Reportería, perfil y modo sin conexión</h2><p>Admin · Todos los roles</p></div>
+  <div class="fila">
+    <div class="bloque">
+      <div class="tel"><div class="pantalla clara">
+        <div class="estado"><span>9:41</span><span>▲ ◼ 100%</span></div>
+        <div class="cab"><div class="logo">P</div><div><div class="nom">Reporte IA</div><div class="sub">admin1 · Administrador</div></div></div>
+        <div class="cuerpo">
+          <div style="display:flex; gap:4px"><span class="chip" style="background:#E5E9F0">Hoy</span><span class="chip" style="background:#F2C51A">Mes actual</span><span class="chip" style="background:#E5E9F0">Últimos 7 días</span></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px">
+            <div class="card"><div class="lbl">RECAUDACIÓN</div><b style="font-size:13px">$ 1.284</b></div>
+            <div class="card"><div class="lbl">OCUPACIÓN</div><b style="font-size:13px">78 %</b></div>
+          </div>
+          <div class="card">
+            <div class="lbl">TIPO DE PERSONA</div>
+            <div id="barras" style="display:flex; flex-direction:column; gap:5px; margin-top:4px"></div>
+          </div>
+          <div class="card" style="background:#E4F7F4; border-color:#12B5A5">
+            <div class="lbl" style="color:#0C8C80">✦ RESUMEN IA</div>
+            <div class="muted">La ocupación sube 22 % entre 7:00 y 9:00. Se recomienda habilitar la Zona C en ese horario.</div>
+          </div>
+          <div style="display:flex; gap:5px; margin-top:auto"><div class="btn b-acento" style="flex:1">Generar reporte</div><div class="btn b-borde" style="flex:1">Descargar base</div></div>
+        </div>
+        <div class="tabbar" data-tabs="admin" data-on="2"></div>
+      </div></div>
+      <div class="nota">Admin ve <b>Reportería</b> en lugar de "Llegar".</div>
+    </div>
+
+    <div class="bloque">
+      <div class="tel"><div class="pantalla clara">
+        <div class="estado"><span>9:41</span><span>▲ ◼ 100%</span></div>
+        <div class="cab" style="padding-bottom:14px">
+          <div style="width:34px; height:34px; border-radius:50%; background:#F2C51A; color:#0A0E13; display:grid; place-items:center; font-weight:900; font-size:14px">ML</div>
+          <div><div class="nom">María López</div><div class="sub">Usuario: maria.lopez · Roles: CLIENTE</div></div>
+        </div>
+        <div class="cuerpo">
+          <div class="card" style="display:flex; flex-direction:column; gap:4px">
+            <b>Datos personales</b>
+            <div class="muted">Tu nombre de usuario no se puede modificar.</div>
+            <div style="display:flex; gap:5px"><div class="campo" style="flex:1">María</div><div class="campo" style="flex:1">López</div></div>
+            <div class="campo">maria@correo.com</div>
+            <div class="btn b-acento">Guardar perfil</div>
+          </div>
+          <div class="card" style="display:flex; flex-direction:column; gap:4px">
+            <b>Cambiar contraseña</b>
+            <div class="campo">Contraseña actual</div>
+            <div class="campo">Nueva contraseña (mínimo 6 caracteres)</div>
+          </div>
+          <div class="card" style="display:flex; align-items:center; gap:8px">
+            <div style="width:30px; height:30px; border-radius:8px; background:#E7F8EE; display:grid; place-items:center">☝</div>
+            <div style="flex:1"><b>Huella</b><div class="muted"><span style="color:#15803D; font-weight:700">● Registrada</span> · entrar y abrir QR</div></div>
+            <div class="btn b-borde" style="padding:5px 8px">Cambiar</div>
+          </div>
+        </div>
+        <div class="tabbar" data-tabs="cliente" data-on="3"></div>
+      </div></div>
+      <div class="nota">Edita datos, contraseña y <b>cambia la huella</b>.</div>
+    </div>
+
+    <div class="bloque">
+      <div class="tel"><div class="pantalla clara">
+        <div class="estado"><span>9:41</span><span>✈ ◼ 100%</span></div>
+        <div class="cab"><div class="logo">P</div><div><div class="nom">Urban Park</div><div class="sub">cliente1 · Cliente · <span style="color:#F59E0B">sin conexión</span></div></div></div>
+        <div style="background:#FEF4E3; color:#B45309; font-size:8.5px; font-weight:700; padding:5px 11px">📶 Sin internet · 2 cambios por sincronizar</div>
+        <div class="cuerpo">
+          <div class="h1">Elige tu plaza</div>
+          <div class="muted">Mostrando los últimos datos guardados en el equipo.</div>
+          <div class="grid" id="zonaOff"></div>
+          <div class="card">
+            <div class="lbl">PENDIENTES DE ENVIAR</div>
+            <div style="display:flex; justify-content:space-between; margin-top:3px"><span>Registrar vehículo IAB-77K</span><span class="chip" style="background:#FEF4E3; color:#B45309">En cola</span></div>
+            <div style="display:flex; justify-content:space-between; margin-top:4px"><span>Actualizar perfil</span><span class="chip" style="background:#FEF4E3; color:#B45309">En cola</span></div>
+          </div>
+          <div class="card" style="background:#E7F8EE; border-color:#22C55E; margin-top:auto">
+            <div class="muted" style="color:#15803D"><b>Al volver la conexión</b> los cambios se envían solos al servidor.</div>
+          </div>
+        </div>
+        <div class="tabbar" data-tabs="cliente" data-on="0"></div>
+      </div></div>
+      <div class="nota">Mini base local y <b>sincronización automática</b>.</div>
+    </div>
+  </div>
+  <div class="pie"><span>Urban Park · Mockup</span><span>Página 6</span></div>
+</section>
+
+<script>
+  const ico = {
+    plazas: '<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M10 17V7h3a3 3 0 0 1 0 6h-3"/>',
+    autos: '<path d="M5 16l1.5-5h11L19 16M4 16h16v3H4zM7 19v1M17 19v1"/>',
+    llegar: '<path d="M12 21s-6-6-6-11a6 6 0 0 1 12 0c0 5-6 11-6 11z"/><circle cx="12" cy="10" r="2"/>',
+    reporte: '<path d="M4 20h16M7 17v-5M12 17V7M17 17v-8"/>',
+    perfil: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+    salida: '<rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><path d="M14 14h2v2h-2zM18 18h2v2h-2z"/>',
+    salir: '<path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9"/>'
+  };
+  const svg = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ico[k]}</svg>`;
+  document.querySelectorAll('.tabbar').forEach(t => {
+    const admin = t.dataset.tabs === 'admin';
+    const conSalida = t.dataset.on.endsWith('x');
+    const on = conSalida ? 'salida' : null;
+    let tabs = [['plazas','Plazas'],['autos','Autos'], admin ? ['reporte','Reportería'] : ['llegar','Llegar'], ['perfil','Perfil']];
+    if (conSalida) tabs.push(['salida','Salida']);
+    tabs.push(['salir','Salir']);
+    const idx = parseInt(t.dataset.on);
+    t.innerHTML = tabs.map(([k,n],i) => `<div class="tab ${(on ? k===on : i===idx) ? 'on':''}">${svg(k)}<span>${n}</span></div>`).join('');
+  });
+
+  function plazas(id, pref, estados) {
+    const el = document.getElementById(id);
+    el.innerHTML = estados.map((e,i) => {
+      const cls = {L:'libre',O:'ocup',T:'tuyo',S:'sel',D:'disc'}[e];
+      const txt = {L:'Libre',O:'Ocupada',T:'Tuyo',S:'Elegida',D:'Libre ♿'}[e];
+      return `<div class="pz ${cls}">${pref}-${String(i+1).padStart(2,'0')}<small>${txt}</small></div>`;
+    }).join('');
+  }
+  plazas('zonaA','A','LOOTSL'.split(''));
+  plazas('zonaB','B','OLLOOL'.split(''));
+  plazas('zonaP','P','DOD'.split(''));
+  plazas('zonaOff','A','LOOTLL'.split(''));
+
+  document.getElementById('barras').innerHTML = [
+    ['Estudiante',46,'#12B5A5'],['Docente',24,'#3B82F6'],['Administrativo',18,'#F2C51A'],['Visitante',8,'#F59E0B'],['Discapacidad',4,'#EF4444']
+  ].map(([n,p,c]) => `<div><div style="display:flex; justify-content:space-between; font-size:8px"><span>${n}</span><b>${p} %</b></div>
+    <div style="height:7px; background:#E5E9F0; border-radius:4px; margin-top:2px"><div style="width:${p*2}%; max-width:100%; height:100%; background:${c}; border-radius:4px"></div></div></div>`).join('');
+
+  // Patrón tipo QR (ilustrativo)
+  (function () {
+    const n = 29, q = document.getElementById('qr');
+    let s = 12345, out = '<rect width="29" height="29" fill="#fff"/>';
+    const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    const finder = (x, y) => `<rect x="${x}" y="${y}" width="7" height="7" fill="#0F172A"/><rect x="${x+1}" y="${y+1}" width="5" height="5" fill="#fff"/><rect x="${x+2}" y="${y+2}" width="3" height="3" fill="#0F172A"/>`;
+    const enFinder = (x, y) => (x < 8 && y < 8) || (x > n-9 && y < 8) || (x < 8 && y > n-9);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++)
+      if (!enFinder(x, y) && rnd() > 0.52) out += `<rect x="${x}" y="${y}" width="1" height="1" fill="#0F172A"/>`;
+    q.innerHTML = out + finder(0,0) + finder(n-7,0) + finder(0,n-7);
+  })();
+
+  // Teléfono de portada = copia del login
+  document.getElementById('portadaTel').innerHTML = document.querySelector('section:nth-of-type(3) .pantalla').innerHTML;
+</script>
+</body>
+</html>

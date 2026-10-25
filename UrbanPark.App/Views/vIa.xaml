@@ -1,0 +1,120 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vIa"
+             Title="IA">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="10,10,10,12" Spacing="8" MaximumWidthRequest="680">
+
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <VerticalStackLayout Grid.Column="0" Spacing="4" VerticalOptions="Center">
+                    <Label Text="Asignación con IA" Style="{StaticResource TituloPagina}" />
+                    <Label Text="Elige un vehículo. Asignar manual usa la plaza que marcaste en el mapa, si ese vehículo puede ocuparla. Si no cumple, asigna la IA."
+                           Style="{StaticResource SubtituloPagina}" />
+                </VerticalStackLayout>
+                <Button x:Name="btnEstado"
+                        Grid.Column="1"
+                        Text="Estado"
+                        Clicked="OnEstadoClicked"
+                        Style="{StaticResource BotonCabecera}"
+                        VerticalOptions="Center" />
+            </Grid>
+
+            <Border Style="{StaticResource Tarjeta}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="SERVICIO DE IA" Style="{StaticResource EtiquetaCampoClaro}" />
+                    <Border Style="{StaticResource CampoOscuro}">
+                        <Label x:Name="lblEstadoIa"
+                               Text="Pulsa «Estado» para consultar Ollama."
+                               FontSize="13"
+                               LineBreakMode="WordWrap" />
+                    </Border>
+                    <Label Text="Ollama elige la plaza en los dos botones. Si no responde, el backend usa un respaldo local."
+                           Style="{StaticResource Ayuda}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ================= formulario ================= -->
+            <Border Style="{StaticResource TarjetaClara}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="ASIGNAR PLAZA CON IA" Style="{StaticResource TituloSeccion}" />
+
+                    <Label Text="Tus vehículos" Style="{StaticResource EtiquetaCampo}" />
+                    <ActivityIndicator x:Name="spinnerVehiculos"
+                                       IsRunning="False"
+                                       IsVisible="False"
+                                       Color="{StaticResource Primario}"
+                                       HorizontalOptions="Start" />
+                    <FlexLayout x:Name="iconosVehiculos"
+                                Wrap="Wrap"
+                                JustifyContent="Start"
+                                AlignItems="Start" />
+                    <Label x:Name="lblSinVehiculos"
+                           Text="No hay vehículos registrados. Regístralos en Vehículos y vuelve aquí."
+                           Style="{StaticResource Ayuda}"
+                           IsVisible="False" />
+
+                    <BoxView Style="{StaticResource Divisor}" />
+
+                    <Label x:Name="lblPlazaElegida"
+                           Text="No hay una plaza elegida en el mapa. Asignar manual pasará a la IA."
+                           Style="{StaticResource Ayuda}" />
+
+                    <Button x:Name="btnManual"
+                            Text="Asignación manual"
+                            Clicked="OnAsignarManualClicked"
+                            Style="{StaticResource BotonPrimario}" />
+
+                    <Button x:Name="btnAsignar"
+                            Text="Asignación IA"
+                            Clicked="OnAsignarClicked"
+                            Style="{StaticResource BotonAcento}" />
+
+                    <Button x:Name="btnRecomendar"
+                            Text="Recomendar con IA"
+                            Clicked="OnRecomendarClicked"
+                            Style="{StaticResource BotonSecundario}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ================= resultado ================= -->
+            <Label Text="RESULTADO" Style="{StaticResource EtiquetaCampoClaro}" />
+
+            <Border x:Name="panelResultado" IsVisible="False" Style="{StaticResource Tarjeta}">
+                <VerticalStackLayout x:Name="contenedorResultado" Spacing="12" />
+            </Border>
+
+            <!-- ================= asistente ================= -->
+            <VerticalStackLayout Spacing="4" Margin="0,10,0,0">
+                <Label Text="Asistente Ollama" Style="{StaticResource TituloSeccionClaro}" />
+                <Label Text="Pregunta lo que necesites sobre plazas, tarifas o tickets."
+                       Style="{StaticResource SubtituloPagina}" />
+            </VerticalStackLayout>
+
+            <Border Style="{StaticResource Tarjeta}" Padding="10">
+                <ScrollView x:Name="scrollChat" HeightRequest="260">
+                    <VerticalStackLayout x:Name="contenedorChat" Spacing="8" />
+                </ScrollView>
+            </Border>
+
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Border Grid.Column="0" Style="{StaticResource CampoOscuro}" VerticalOptions="Center">
+                    <Entry x:Name="txtMensaje"
+                           Style="{StaticResource EntradaOscura}"
+                           Placeholder="Escribe tu mensaje…"
+                           Completed="OnEnviarClicked" />
+                </Border>
+                <Button x:Name="btnEnviar"
+                        Grid.Column="1"
+                        Text="Enviar"
+                        Clicked="OnEnviarClicked"
+                        Style="{StaticResource BotonMini}" />
+            </Grid>
+
+            <Label Text="La recomendación la hace Ollama en esta PC. Si no responde, el backend usa un respaldo local."
+                   Style="{StaticResource Ayuda}" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
