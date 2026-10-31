@@ -70,6 +70,7 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
 		<PackageReference Include="QRCoder" Version="1.6.0" />
 		<PackageReference Include="NPOI" Version="2.7.3" />
+		<PackageReference Include="QuestPDF" Version="2025.7.0" />
 	</ItemGroup>
 
 </Project>

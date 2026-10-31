@@ -14,16 +14,19 @@ namespace UrbanPark.App.Views;
 public sealed class MapaSedes : GraphicsView, IDrawable
 {
     // ------------------------------------------------------------------ paleta del mapa
-    private static readonly Color Tierra = Color.FromArgb("#DFE5EA");
-    private static readonly Color Bloque = Color.FromArgb("#F7F9FB");
-    private static readonly Color BloqueBorde = Color.FromArgb("#C7D0D9");
-    private static readonly Color Edificio = Color.FromArgb("#E9EDF1");
-    private static readonly Color Parque = Color.FromArgb("#C1E4CF");
-    private static readonly Color ParqueBorde = Color.FromArgb("#A6D4B8");
-    private static readonly Color CalleBorde = Color.FromArgb("#CBD3DA");
-    private static readonly Color Calle = Colors.White;
-    private static readonly Color EtiquetaCalle = Color.FromArgb("#8B98A7");
+    private static readonly Color Tierra = Color.FromArgb("#DDE4EB");
+    private static readonly Color TierraClaro = Color.FromArgb("#EEF2F6");
+    private static readonly Color Bloque = Color.FromArgb("#F5F8FA");
+    private static readonly Color BloqueBorde = Color.FromArgb("#B8C4D0");
+    private static readonly Color Edificio = Color.FromArgb("#E4E9EE");
+    private static readonly Color Parque = Color.FromArgb("#B8DEC8");
+    private static readonly Color ParqueBorde = Color.FromArgb("#8FC4A4");
+    private static readonly Color CalleBorde = Color.FromArgb("#BCC6D0");
+    private static readonly Color Calle = Color.FromArgb("#FCFDFE");
+    private static readonly Color EtiquetaCalle = Color.FromArgb("#6B7A8C");
     private static readonly Color Halo = Colors.White;
+    private static readonly Color AguaClaro = Color.FromArgb("#A8D4F5");
+    private static readonly Color AguaOscuro = Color.FromArgb("#7BB8E8");
 
     // ------------------------------------------------------------------ pines
     private static readonly Color PinBlanco = Colors.White;
@@ -83,16 +86,11 @@ public sealed class MapaSedes : GraphicsView, IDrawable
         Drawable = this;
         BackgroundColor = Tierra;
         StartInteraction += OnTocando;
-    }
-
-    /// <summary>Recorta el mapa con las esquinas redondeadas de la tarjeta que lo contiene.</summary>
-    protected override void OnSizeAllocated(double width, double height)
-    {
-        base.OnSizeAllocated(width, height);
-        if (width <= 0 || height <= 0) return;
-
-        Clip = new Microsoft.Maui.Controls.Shapes.RoundRectangleGeometry(
-            new CornerRadius(13), new RectF(0, 0, (float)width, (float)height));
+        SizeChanged += (_, _) =>
+        {
+            if (Width > 1 && Height > 1)
+                Invalidate();
+        };
     }
 
     public event EventHandler<SedeDto>? SedeElegida;
@@ -155,13 +153,12 @@ public sealed class MapaSedes : GraphicsView, IDrawable
     // ================================================================ dibujo
     public void Draw(ICanvas canvas, RectF dirtyRect)
     {
-        canvas.FillColor = Tierra;
-        canvas.FillRectangle(dirtyRect);
+        DibujarFondo(canvas, dirtyRect);
 
         var ancho = dirtyRect.Width > 0 ? dirtyRect.Width : 320;
         var alto = dirtyRect.Height > 0 ? dirtyRect.Height : 380;
 
-        _areaPines = new RectF(18, 18, Math.Max(40, ancho - 36), Math.Max(40, alto - 52));
+        _areaPines = new RectF(14, 14, Math.Max(40, ancho - 28), Math.Max(40, alto - 72));
 
         var horizontales = ConstruirLineas(esHorizontal: true);
         var verticales = ConstruirLineas(esHorizontal: false);
@@ -173,6 +170,17 @@ public sealed class MapaSedes : GraphicsView, IDrawable
         DibujarNombresDeCalles(canvas, horizontales, verticales);
         DibujarUsuario(canvas);
         DibujarPines(canvas);
+        DibujarLeyenda(canvas, dirtyRect);
+        DibujarAtribucion(canvas, dirtyRect);
+    }
+
+    /// <summary>Fondo del mapa (color sólido: compatible con Android).</summary>
+    private static void DibujarFondo(ICanvas canvas, RectF dirtyRect)
+    {
+        canvas.FillColor = TierraClaro;
+        canvas.FillRectangle(dirtyRect);
+        canvas.FillColor = Tierra.WithAlpha(0.35f);
+        canvas.FillRectangle(new RectF(0, dirtyRect.Height * 0.55f, dirtyRect.Width, dirtyRect.Height * 0.45f));
     }
 
     /// <summary>
@@ -259,11 +267,14 @@ public sealed class MapaSedes : GraphicsView, IDrawable
 
         canvas.StrokeLineCap = LineCap.Round;
         canvas.StrokeLineJoin = LineJoin.Round;
-        canvas.StrokeColor = Color.FromArgb("#B9D8F2");
-        canvas.StrokeSize = 11;
+        canvas.StrokeColor = AguaOscuro.WithAlpha(0.35f);
+        canvas.StrokeSize = 16;
         canvas.DrawPath(camino);
-        canvas.StrokeColor = Color.FromArgb("#A3CBEE");
-        canvas.StrokeSize = 9;
+        canvas.StrokeColor = AguaClaro;
+        canvas.StrokeSize = 12;
+        canvas.DrawPath(camino);
+        canvas.StrokeColor = Color.FromArgb("#C5E4FA");
+        canvas.StrokeSize = 8;
         canvas.DrawPath(camino);
 
         // laguna de La Carolina
@@ -273,8 +284,11 @@ public sealed class MapaSedes : GraphicsView, IDrawable
         var rect = new RectF(laguna.X - ancho * 1.3f, laguna.Y - alto * 0.55f, ancho * 2.6f, alto * 1.5f);
         if (rect.Width > 4 && rect.Height > 3 && Dentro(laguna))
         {
-            canvas.FillColor = Color.FromArgb("#A3CBEE");
+            canvas.FillColor = AguaClaro;
             canvas.FillEllipse(rect);
+            canvas.StrokeColor = AguaOscuro.WithAlpha(0.4f);
+            canvas.StrokeSize = 1;
+            canvas.DrawEllipse(rect);
         }
     }
 
@@ -294,11 +308,11 @@ public sealed class MapaSedes : GraphicsView, IDrawable
             canvas.StrokeSize = 1;
             canvas.DrawRoundedRectangle(rect, 6);
 
-            if (rect.Width > 90 && rect.Height > 34)
+            if (rect.Width > 72 && rect.Height > 28)
             {
-                canvas.FontColor = Color.FromArgb("#4E8C68");
-                canvas.FontSize = 7.5f;
-                canvas.Font = GFont.Default;
+                canvas.FontColor = Color.FromArgb("#3D7A5C");
+                canvas.FontSize = 7f;
+                canvas.Font = GFont.DefaultBold;
                 canvas.DrawString(parque.Nombre, rect.X + 4, rect.Y + 3, rect.Width - 8, 12,
                     HorizontalAlignment.Left, VerticalAlignment.Top, TextFlow.ClipBounds);
             }
@@ -440,26 +454,27 @@ public sealed class MapaSedes : GraphicsView, IDrawable
         var p = Proyectar(_latUsuario, _lngUsuario);
         if (!Dentro(p)) return;
 
-        // halo de precisión
-        canvas.FillColor = Azul.WithAlpha(0.14f);
-        canvas.FillCircle(p, 26);
-        canvas.FillColor = Azul.WithAlpha(0.20f);
-        canvas.FillCircle(p, 15);
+        canvas.FillColor = Azul.WithAlpha(0.10f);
+        canvas.FillCircle(p, 28);
+        canvas.FillColor = Azul.WithAlpha(0.18f);
+        canvas.FillCircle(p, 18);
+        canvas.FillColor = Azul.WithAlpha(0.28f);
+        canvas.FillCircle(p, 10);
 
-        // punto azul con anillo blanco, como el "estás aquí" de Google Maps
-        canvas.FillColor = Colors.White;
-        canvas.FillCircle(p, 8);
+        canvas.StrokeColor = Colors.White;
+        canvas.StrokeSize = 2.5f;
         canvas.FillColor = Azul;
-        canvas.FillCircle(p, 5.5f);
+        canvas.FillCircle(p, 6.5f);
+        canvas.DrawCircle(p, 6.5f);
 
-        var texto = _usuarioReal ? "Estás aquí" : "Ubicación aproximada";
-        var ancho = 96f;
-        var caja = new RectF(p.X - ancho / 2, p.Y + 12, ancho, 15);
-        canvas.FillColor = InfoFondo.WithAlpha(0.92f);
-        canvas.FillRoundedRectangle(caja, 7);
-        canvas.FontColor = InfoSuave;
-        canvas.FontSize = 7;
-        canvas.Font = GFont.Default;
+        var texto = _usuarioReal ? "Estás aquí" : "Ubicación aprox.";
+        var ancho = 102f;
+        var caja = new RectF(p.X - ancho / 2, p.Y + 14, ancho, 17);
+        canvas.FillColor = Color.FromArgb("#1A73E8");
+        canvas.FillRoundedRectangle(caja, 9);
+        canvas.FontColor = Colors.White;
+        canvas.FontSize = 7.5f;
+        canvas.Font = GFont.DefaultBold;
         canvas.DrawString(texto, caja, HorizontalAlignment.Center, VerticalAlignment.Center);
     }
 
@@ -476,32 +491,40 @@ public sealed class MapaSedes : GraphicsView, IDrawable
             if (ancla.X < 0 || ancla.Y < 0) continue;
 
             var elegida = _seleccionada == sede.Id;
-            var r = elegida ? 15f : 11.5f;
+            var libre = sede.PlazasLibresVehiculo > 0 || sede.PlazasLibres > 0;
+            var r = elegida ? 16f : 12f;
             var alto = r * 1.75f;
 
-            _pines[sede.Id] = new RectF(ancla.X - r - 4, ancla.Y - alto - r, (r + 4) * 2, alto + r + 8);
+            _pines[sede.Id] = new RectF(ancla.X - r - 6, ancla.Y - alto - r, (r + 6) * 2, alto + r + 10);
 
-            // sombra del marcador
-            canvas.FillColor = Color.FromArgb("#93A0AF").WithAlpha(0.35f);
-            canvas.FillEllipse(new RectF(ancla.X - r * 0.55f, ancla.Y + 1, r * 1.1f, r * 0.42f));
+            canvas.FillColor = Color.FromArgb("#64748B").WithAlpha(0.28f);
+            canvas.FillEllipse(new RectF(ancla.X - r * 0.62f, ancla.Y + 2, r * 1.24f, r * 0.48f));
+
+            if (elegida)
+            {
+                canvas.FillColor = Acento.WithAlpha(0.35f);
+                canvas.FillCircle(new PointF(ancla.X, ancla.Y - alto * 0.45f), r * 1.55f);
+            }
 
             var forma = FormaMarcador(ancla, r);
             canvas.FillColor = elegida ? Acento : PinBlanco;
             canvas.FillPath(forma);
             canvas.StrokeColor = elegida ? AcentoBorde : PinBorde;
-            canvas.StrokeSize = elegida ? 2f : 1.6f;
+            canvas.StrokeSize = elegida ? 2.2f : 1.5f;
             canvas.DrawPath(forma);
 
-            // código corto dentro de la cabeza del marcador
             canvas.FontColor = elegida ? Tinta : PinTexto;
             canvas.Font = GFont.DefaultBold;
-            canvas.FontSize = elegida ? 10.5f : 8.5f;
+            canvas.FontSize = elegida ? 11f : 9f;
             canvas.DrawString(sede.Codigo, ancla.X - r, ancla.Y - alto - r * 0.55f, r * 2, r * 1.1f,
                 HorizontalAlignment.Center, VerticalAlignment.Center);
 
-            // punto de disponibilidad
-            canvas.FillColor = sede.PlazasLibresVehiculo > 0 || sede.PlazasLibres > 0 ? Exito : Peligro;
-            canvas.FillCircle(new PointF(ancla.X + r, ancla.Y - alto - r * 0.2f), 2.6f);
+            var badgeR = 5.2f;
+            var badge = new PointF(ancla.X + r * 0.72f, ancla.Y - alto - r * 0.15f);
+            canvas.FillColor = Colors.White;
+            canvas.FillCircle(badge, badgeR + 1.2f);
+            canvas.FillColor = libre ? Exito : Peligro;
+            canvas.FillCircle(badge, badgeR);
 
             if (elegida)
                 DibujarVentanaInfo(canvas, sede, ancla, r, alto);
@@ -532,69 +555,134 @@ public sealed class MapaSedes : GraphicsView, IDrawable
     private void DibujarVentanaInfo(ICanvas canvas, SedeDto sede, PointF ancla, float r, float alto)
     {
         var nombre = sede.Nombre.Replace("Urban Park ", "");
+        var libres = sede.PlazasLibresVehiculo > 0 ? sede.PlazasLibresVehiculo : sede.PlazasLibres;
+        var estadoPlazas = libres > 0 ? $"{libres} libres" : "Sin plazas";
         var detalle = string.Join(" · ", new[]
         {
             sede.DistanciaTexto,
-            sede.LibreTexto
+            estadoPlazas
         }.Where(t => !string.IsNullOrWhiteSpace(t)));
 
-        var ancho = Math.Max(176f, Math.Min(nombre.Length * 6.4f + 80f, _areaPines.Width - 8));
-        var x = Math.Clamp(ancla.X - ancho / 2, _areaPines.Left + 2, _areaPines.Right - ancho - 2);
-        var arriba = ancla.Y - alto - r - 8;
-        var altoVentana = 60f;
+        var ancho = Math.Max(188f, Math.Min(nombre.Length * 6.6f + 88f, _areaPines.Width - 12));
+        var x = Math.Clamp(ancla.X - ancho / 2, _areaPines.Left + 4, _areaPines.Right - ancho - 4);
+        var arriba = ancla.Y - alto - r - 10;
+        var altoVentana = 68f;
         var y = arriba - altoVentana;
 
-        // si no cabe arriba, la ventana se pinta debajo del marcador
-        var debajo = y < _areaPines.Top + 2;
-        if (debajo) y = ancla.Y + 10;
+        var debajo = y < _areaPines.Top + 4;
+        if (debajo) y = ancla.Y + 12;
 
         var caja = new RectF(x, y, ancho, altoVentana);
 
-        canvas.FillColor = Color.FromArgb("#8A97A6").WithAlpha(0.22f);
-        canvas.FillRoundedRectangle(new RectF(caja.X + 1, caja.Y + 3, caja.Width, caja.Height), 8);
+        canvas.FillColor = Color.FromArgb("#334155").WithAlpha(0.12f);
+        canvas.FillRoundedRectangle(new RectF(caja.X + 2, caja.Y + 4, caja.Width, caja.Height), 10);
 
         canvas.FillColor = InfoFondo;
-        canvas.FillRoundedRectangle(caja, 8);
-        canvas.StrokeColor = Color.FromArgb("#E3E7EC");
-        canvas.StrokeSize = 1;
-        canvas.DrawRoundedRectangle(caja, 8);
+        canvas.FillRoundedRectangle(caja, 10);
+        canvas.StrokeColor = Color.FromArgb("#DDE3EA");
+        canvas.StrokeSize = 1.2f;
+        canvas.DrawRoundedRectangle(caja, 10);
 
-        // flecha hacia el marcador
+        var barra = new RectF(caja.X, caja.Y, caja.Width, 3.5f);
+        canvas.FillColor = Acento;
+        canvas.FillRoundedRectangle(barra, 10);
+
         var flecha = new PathF();
-        var fx = Math.Clamp(ancla.X, caja.X + 14, caja.Right - 14);
+        var fx = Math.Clamp(ancla.X, caja.X + 16, caja.Right - 16);
         if (!debajo)
         {
-            flecha.MoveTo(fx - 7, caja.Bottom - 1);
-            flecha.LineTo(fx + 7, caja.Bottom - 1);
-            flecha.LineTo(fx, caja.Bottom + 8);
+            flecha.MoveTo(fx - 8, caja.Bottom - 1);
+            flecha.LineTo(fx + 8, caja.Bottom - 1);
+            flecha.LineTo(fx, caja.Bottom + 9);
         }
         else
         {
-            flecha.MoveTo(fx - 7, caja.Top + 1);
-            flecha.LineTo(fx + 7, caja.Top + 1);
-            flecha.LineTo(fx, caja.Top - 8);
+            flecha.MoveTo(fx - 8, caja.Top + 1);
+            flecha.LineTo(fx + 8, caja.Top + 1);
+            flecha.LineTo(fx, caja.Top - 9);
         }
 
         flecha.Close();
         canvas.FillColor = InfoFondo;
         canvas.FillPath(flecha);
+        canvas.StrokeColor = Color.FromArgb("#DDE3EA");
+        canvas.StrokeSize = 1;
+        canvas.DrawPath(flecha);
 
         canvas.FontColor = InfoTexto;
         canvas.Font = GFont.DefaultBold;
-        canvas.FontSize = 10.5f;
-        canvas.DrawString(nombre, caja.X + 10, caja.Y + 6, caja.Width - 20, 15,
+        canvas.FontSize = 11f;
+        canvas.DrawString(nombre, caja.X + 10, caja.Y + 10, caja.Width - 20, 16,
             HorizontalAlignment.Left, VerticalAlignment.Center);
 
         canvas.FontColor = InfoSuave;
         canvas.Font = GFont.Default;
-        canvas.FontSize = 8.2f;
-        canvas.DrawString(Recortar(sede.Direccion, 38), caja.X + 10, caja.Y + 24, caja.Width - 20, 12,
+        canvas.FontSize = 8.5f;
+        canvas.DrawString(Recortar(sede.Direccion, 42), caja.X + 10, caja.Y + 28, caja.Width - 20, 13,
             HorizontalAlignment.Left, VerticalAlignment.Center, TextFlow.ClipBounds);
 
+        var pillAncho = Math.Min(caja.Width - 20, detalle.Length * 5.2f + 16);
+        var pill = new RectF(caja.X + 10, caja.Y + 46, pillAncho, 16);
+        canvas.FillColor = libres > 0 ? Color.FromArgb("#E8F8EF") : Color.FromArgb("#FEECEC");
+        canvas.FillRoundedRectangle(pill, 8);
+        canvas.FontColor = libres > 0 ? Exito : Peligro;
+        canvas.Font = GFont.DefaultBold;
+        canvas.FontSize = 8f;
+        canvas.DrawString(detalle, pill, HorizontalAlignment.Center, VerticalAlignment.Center);
+    }
+
+    private void DibujarLeyenda(ICanvas canvas, RectF dirtyRect)
+    {
+        var ancho = 118f;
+        var alto = 52f;
+        var x = dirtyRect.Right - ancho - 10;
+        var y = dirtyRect.Top + 42;
+
+        var caja = new RectF(x, y, ancho, alto);
+        canvas.FillColor = Colors.White.WithAlpha(0.94f);
+        canvas.FillRoundedRectangle(caja, 8);
+        canvas.StrokeColor = Color.FromArgb("#E2E8F0");
+        canvas.StrokeSize = 1;
+        canvas.DrawRoundedRectangle(caja, 8);
+
+        canvas.Font = GFont.Default;
+        canvas.FontSize = 7f;
         canvas.FontColor = InfoSuave;
-        canvas.FontSize = 7.8f;
-        canvas.DrawString(detalle, caja.X + 10, caja.Y + 40, caja.Width - 20, 13,
-            HorizontalAlignment.Left, VerticalAlignment.Center, TextFlow.ClipBounds);
+        canvas.DrawString("Leyenda", caja.X + 8, caja.Y + 4, caja.Width - 16, 10,
+            HorizontalAlignment.Left, VerticalAlignment.Center);
+
+        DibujarItemLeyenda(canvas, caja.X + 8, caja.Y + 18, Exito, "Plazas disponibles");
+        DibujarItemLeyenda(canvas, caja.X + 8, caja.Y + 32, Peligro, "Sin cupo");
+        DibujarItemLeyenda(canvas, caja.X + 8, caja.Y + 46, Acento, "Seleccionado", circulo: false);
+    }
+
+    private static void DibujarItemLeyenda(ICanvas canvas, float x, float y, Color color, string texto, bool circulo = true)
+    {
+        if (circulo)
+        {
+            canvas.FillColor = color;
+            canvas.FillCircle(new PointF(x + 4, y), 3.5f);
+        }
+        else
+        {
+            canvas.FillColor = color;
+            canvas.FillRoundedRectangle(new RectF(x, y - 3, 8, 6), 2);
+        }
+
+        canvas.FontColor = InfoTexto;
+        canvas.FontSize = 7f;
+        canvas.DrawString(texto, x + 12, y - 5, 100, 12, HorizontalAlignment.Left, VerticalAlignment.Center);
+    }
+
+    private static void DibujarAtribucion(ICanvas canvas, RectF dirtyRect)
+    {
+        var caja = new RectF(8, dirtyRect.Bottom - 22, 92, 14);
+        canvas.FillColor = Colors.White.WithAlpha(0.88f);
+        canvas.FillRoundedRectangle(caja, 6);
+        canvas.FontColor = Color.FromArgb("#94A3B8");
+        canvas.Font = GFont.DefaultBold;
+        canvas.FontSize = 6.5f;
+        canvas.DrawString("Urban Park · Quito", caja, HorizontalAlignment.Center, VerticalAlignment.Center);
     }
 
     // ================================================================ toque

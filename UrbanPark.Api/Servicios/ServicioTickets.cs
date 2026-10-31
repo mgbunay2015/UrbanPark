@@ -92,7 +92,8 @@ public sealed class ServicioTickets
             return new Resultado(false, 409, $"La plaza ID {espacioId} ya está ocupada. Elige una plaza LIBRE en la pestaña Plazas.", null);
 
         var id = await _tickets.CrearAsync(placa, espacioId, espacio!.Codigo, espacio.Zona, entrada,
-            espacio.TarifaHora, username, esReserva ? "RESERVA" : "AHORA", esReserva ? finReserva : null);
+            espacio.TarifaHora, username, esReserva ? "RESERVA" : "AHORA", esReserva ? finReserva : null,
+            espacio.SedeId);
 
         return new Resultado(true, 200, null, await _tickets.PorIdAsync(id));
     }

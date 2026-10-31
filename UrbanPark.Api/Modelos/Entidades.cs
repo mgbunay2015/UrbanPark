@@ -112,6 +112,12 @@ public sealed class Ticket
     public string? Usuario { get; set; }
     public bool LiberacionPendiente { get; set; }
 
+    /// <summary>Sede del parqueadero donde está la plaza del ticket.</summary>
+    public long? SedeId { get; set; }
+
+    /// <summary>Nombre de la sede (se completa al consultar).</summary>
+    public string? SedeNombre { get; set; }
+
     /// <summary>"AHORA" (entra ya) o "RESERVA" (guardado para una fecha y hora).</summary>
     public string Modo { get; set; } = "AHORA";
 

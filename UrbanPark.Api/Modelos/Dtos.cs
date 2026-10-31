@@ -78,7 +78,7 @@ public sealed record BiometriaDto(long Id, string Usuario, long? VehiculoId, str
 // ============================ Tickets ============================
 public sealed record TicketDto(long Id, string Codigo, string Placa, long EspacioId, string? EspacioCodigo, string? Zona,
     DateTime Entrada, DateTime? Salida, string Estado, double? TarifaHora, double? MontoTotal, string? Usuario, bool LiberacionPendiente,
-    double MontoDescuento = 0, string Modo = "AHORA", DateTime? SalidaPrevista = null);
+    double MontoDescuento = 0, string Modo = "AHORA", DateTime? SalidaPrevista = null, string? Sede = null);
 
 public sealed record AbrirTicketRequest(string? Placa, long? EspacioId);
 public sealed record OcupacionRemotaDto(bool Fallback, string Origen, string Mensaje, int Total, int Ocupados, int Libres, string? Resilience);

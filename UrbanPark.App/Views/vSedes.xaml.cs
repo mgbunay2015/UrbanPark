@@ -53,6 +53,7 @@ public partial class vSedes : ContentPage
         // La recomendación con IA es para CLIENTE y ADMIN (el OPERADOR asigna desde Tickets).
         btnIa.IsVisible = Sesion.RolPrincipal != "OPERADOR";
         await CargarAsync();
+        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(250), () => mapa.Invalidate());
     }
 
     private async void OnRefrescarClicked(object? sender, EventArgs e) => await CargarAsync();
@@ -158,21 +159,31 @@ public partial class vSedes : ContentPage
             var elegido = _tipo == codigo;
             var chip = new Border
             {
-                BackgroundColor = elegido ? Amarillo : SuperficieAlta,
-                Stroke = elegido ? Amarillo : Borde,
-                StrokeThickness = 1,
-                StrokeShape = new RoundRectangle { CornerRadius = 10 },
-                Padding = new Thickness(9, 4),
-                Margin = new Thickness(0, 0, 6, 4),
+                BackgroundColor = elegido ? Amarillo : Colors.White,
+                Stroke = elegido ? Amarillo : Color.FromArgb("#CBD5E1"),
+                StrokeThickness = elegido ? 1.5 : 1,
+                StrokeShape = new RoundRectangle { CornerRadius = 20 },
+                Padding = new Thickness(12, 6),
+                Margin = new Thickness(0, 0, 6, 0),
                 Content = new Label
                 {
                     Text = texto,
                     FontSize = 11,
                     FontFamily = "OpenSansSemibold",
-                    TextColor = elegido ? Tinta : Claro,
+                    TextColor = elegido ? Tinta : Color.FromArgb("#334155"),
                     LineBreakMode = LineBreakMode.NoWrap
                 }
             };
+            if (elegido)
+            {
+                chip.Shadow = new Shadow
+                {
+                    Brush = Amarillo,
+                    Offset = new Point(0, 2),
+                    Radius = 6,
+                    Opacity = 0.35f
+                };
+            }
             FlexLayout.SetShrink(chip, 0);
             FlexLayout.SetGrow(chip, 0);
 
@@ -193,6 +204,11 @@ public partial class vSedes : ContentPage
     private void PintarMapa(bool usuarioReal)
     {
         mapa.Pintar(_sedes, _seleccionada?.Id, Ubicacion.Latitud, Ubicacion.Longitud, usuarioReal);
+        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(80), () =>
+        {
+            if (mapa.Handler is not null)
+                mapa.Invalidate();
+        });
     }
 
     private void PintarLista()

@@ -245,6 +245,9 @@ public sealed class TicketDto
     public string Modo { get; set; } = "AHORA";
     public DateTime? SalidaPrevista { get; set; }
 
+    /// <summary>Sucursal del parqueadero (la completa el API).</summary>
+    public string? Sede { get; set; }
+
     public bool Abierto => Estado is "ABIERTO" or "RESERVADO";
 
     public bool EsReserva => string.Equals(Modo, "RESERVA", StringComparison.OrdinalIgnoreCase);

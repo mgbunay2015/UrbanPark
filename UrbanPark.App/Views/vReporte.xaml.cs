@@ -17,6 +17,9 @@ public partial class vReporte : ContentPage
     private static readonly double[] AnchoTabla = [0.8, 1.1, 1.3, 1.0, 1.2];
 
     private bool generando;
+    private ReporteDto? _reporteEnPantalla;
+    private string? _reporteDesde;
+    private string? _reporteHasta;
 
     // ---- filtro por sucursales (vacío = todas)
     private readonly HashSet<long> _sedesElegidas = [];
@@ -135,7 +138,22 @@ public partial class vReporte : ContentPage
 
     private void OnUltimos7Clicked(object? sender, EventArgs e) => FechasPorDefecto();
 
+    private void OnAnoClicked(object? sender, EventArgs e)
+    {
+        var hoy = DateTime.Today;
+        dtpDesde.Date = new DateTime(hoy.Year, 1, 1);
+        dtpHasta.Date = hoy;
+    }
+
     private static string Iso(DateTime fecha) => fecha.ToString("yyyy-MM-dd");
+
+    private void DeshabilitarAtajos(bool deshabilitar)
+    {
+        btnHoy.IsEnabled = !deshabilitar;
+        btnMes.IsEnabled = !deshabilitar;
+        btnUltimos7.IsEnabled = !deshabilitar;
+        btnAno.IsEnabled = !deshabilitar;
+    }
 
     // ================================================================ generar
     private async void OnGenerarClicked(object? sender, EventArgs e)
@@ -166,9 +184,9 @@ public partial class vReporte : ContentPage
 
         generando = true;
         btnGenerar.IsEnabled = false;
-        btnHoy.IsEnabled = false;
-        btnMes.IsEnabled = false;
-        btnUltimos7.IsEnabled = false;
+        btnDescargarPdf.IsEnabled = false;
+        btnDescargar.IsEnabled = false;
+        DeshabilitarAtajos(true);
 
         PrepararCaja();
         var motor = "Ollama";
@@ -198,10 +216,99 @@ public partial class vReporte : ContentPage
         {
             generando = false;
             btnGenerar.IsEnabled = true;
-            btnHoy.IsEnabled = true;
-            btnMes.IsEnabled = true;
-            btnUltimos7.IsEnabled = true;
+            btnDescargarPdf.IsEnabled = true;
+            btnDescargar.IsEnabled = true;
+            DeshabilitarAtajos(false);
         }
+    }
+
+    private async void OnDescargarPdfClicked(object? sender, EventArgs e)
+    {
+        btnDescargarPdf.IsEnabled = false;
+        try
+        {
+            var desdeElegido = dtpDesde.Date;
+            var hastaElegido = dtpHasta.Date;
+            if (desdeElegido is null || hastaElegido is null)
+            {
+                await Ui.Aviso(this, "Indica fecha desde y hasta");
+                return;
+            }
+
+            var desde = desdeElegido.Value.Date;
+            var hasta = hastaElegido.Value.Date;
+            if (hasta < desde)
+            {
+                await Ui.Aviso(this, "La fecha hasta no puede ser anterior a desde");
+                return;
+            }
+
+            var desdeIso = Iso(desde);
+            var hastaIso = Iso(hasta);
+
+            if (!_sucursalesCargadas)
+                await CargarSucursalesAsync();
+
+            var sedes = (_sedesElegidas.Count > 0
+                    ? _sucursales.Where(s => _sedesElegidas.Contains(s.Id))
+                    : _sucursales.AsEnumerable())
+                .OrderBy(s => s.Nombre, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (sedes.Count == 0)
+            {
+                await Ui.Aviso(this, "No hay parqueaderos cargados. Pulsa ↻ en el mapa o vuelve a abrir Reporte IA.");
+                return;
+            }
+
+            var paginas = new List<(string Parqueadero, ReporteDto Reporte)>(sedes.Count);
+            for (var i = 0; i < sedes.Count; i++)
+            {
+                var sede = sedes[i];
+                lblPie.Text = $"PDF: parqueadero {i + 1} de {sedes.Count} — {sede.Nombre}…";
+                var reporteSede = await ApiCliente.ReporteAsync(desdeIso, hastaIso, [sede.Id]);
+                paginas.Add((sede.Nombre, reporteSede));
+            }
+
+            var carpeta = CarpetaDescargas();
+            Directory.CreateDirectory(carpeta);
+            var ruta = System.IO.Path.Combine(carpeta, $"urbanpark-reporte-{desde:yyyyMMdd}-{hasta:yyyyMMdd}.pdf");
+            ReportePdf.Guardar(ruta, paginas, desde, hasta);
+            await Launcher.Default.OpenAsync(new OpenFileRequest("Reporte Urban Park", new ReadOnlyFile(ruta)));
+            lblPie.Text = $"PDF guardado: {System.IO.Path.GetFileName(ruta)} · {sedes.Count} hoja(s)";
+            await Ui.Exito(this,
+                $"PDF del {desde:dd/MM/yyyy} al {hasta:dd/MM/yyyy}.\n" +
+                $"{sedes.Count} hoja(s), una por parqueadero.\n" +
+                "Cada hoja incluye plazas, dinero, zonas, resumen IA y hallazgos de esa sede.");
+        }
+        catch (Exception ex)
+        {
+            await Ui.MostrarExcepcion(this, ex);
+        }
+        finally
+        {
+            btnDescargarPdf.IsEnabled = true;
+        }
+    }
+
+    private static string CarpetaDescargas()
+    {
+        try
+        {
+            var perfil = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (!string.IsNullOrWhiteSpace(perfil))
+            {
+                var descargas = System.IO.Path.Combine(perfil, "Downloads");
+                if (Directory.Exists(descargas) || perfil.Contains("Users", StringComparison.OrdinalIgnoreCase))
+                    return descargas;
+            }
+        }
+        catch (Exception)
+        {
+            // en móvil usamos la carpeta de la app
+        }
+
+        return FileSystem.AppDataDirectory;
     }
 
     private async void OnDescargarClicked(object? sender, EventArgs e)
@@ -237,7 +344,7 @@ public partial class vReporte : ContentPage
 
             var cultura = CultureInfo.GetCultureInfo("es-EC");
             var csv = new StringBuilder();
-            csv.AppendLine("codigo;placa;plaza;zona;estado;entrada;salida;tarifa_hora;valor_bruto;valor_pagado;valor_descuento;cuadra");
+            csv.AppendLine("codigo;sucursal;placa;plaza;zona;estado;entrada;salida;tarifa_hora;valor_bruto;valor_pagado;valor_descuento;cuadra");
 
             double brutoTotal = 0, pagadoTotal = 0, descuentoTotal = 0;
             foreach (var ticket in tickets)
@@ -258,6 +365,7 @@ public partial class vReporte : ContentPage
                 var cuadra = ticket.Estado != "CERRADO" || Math.Abs(bruto - (pagado + descuento)) < 0.02 ? "SI" : "NO";
 
                 csv.Append(Csv(ticket.Codigo)).Append(';')
+                    .Append(Csv(string.IsNullOrWhiteSpace(ticket.Sede) ? "Sin sucursal" : ticket.Sede)).Append(';')
                     .Append(Csv(ticket.Placa)).Append(';')
                     .Append(Csv(ticket.EspacioCodigo ?? ticket.EspacioId.ToString())).Append(';')
                     .Append(Csv(ticket.Zona)).Append(';')
@@ -271,19 +379,19 @@ public partial class vReporte : ContentPage
                     .AppendLine(cuadra);
             }
 
-            csv.Append("TOTAL;;;;;;;;")
+            csv.Append("TOTAL;;;;;;;;;")
                 .Append(brutoTotal.ToString("0.00", cultura)).Append(';')
                 .Append(pagadoTotal.ToString("0.00", cultura)).Append(';')
                 .Append(descuentoTotal.ToString("0.00", cultura)).Append(';')
                 .AppendLine(Math.Abs(brutoTotal - (pagadoTotal + descuentoTotal)) < 0.05 ? "SI" : "NO");
 
-            var carpeta = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+            var carpeta = CarpetaDescargas();
             Directory.CreateDirectory(carpeta);
             var ruta = System.IO.Path.Combine(carpeta, $"urbanpark-base-{desde:yyyyMMdd}-{hasta:yyyyMMdd}.csv");
             await File.WriteAllTextAsync(ruta, csv.ToString(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
 
             lblPie.Text = "Ollama está armando el Excel con gráficas…";
-            var modelo = "llama3.2:1b";
+            var modelo = "local";
             ReporteDto? reporte = null;
             try
             {
@@ -291,7 +399,7 @@ public partial class vReporte : ContentPage
                 if (!string.IsNullOrWhiteSpace(estado.Modelo))
                     modelo = estado.Modelo;
                 lblPie.Text = $"Ollama {modelo} está armando el Excel con gráficas…";
-                reporte = await ApiCliente.ReporteAsync(Iso(desde), Iso(hasta));
+                reporte = await ApiCliente.ReporteAsync(Iso(desde), Iso(hasta), _sedesElegidas);
             }
             catch (Exception)
             {
@@ -357,6 +465,9 @@ public partial class vReporte : ContentPage
     private void PintarReporte(ReporteDto r, string desde, string hasta)
     {
         PrepararCaja();
+        _reporteEnPantalla = r;
+        _reporteDesde = desde;
+        _reporteHasta = hasta;
 
         // ---------- encabezado ----------
         var periodo = desde == hasta ? $"Hoy / día {desde}" : $"{desde} → {hasta}";

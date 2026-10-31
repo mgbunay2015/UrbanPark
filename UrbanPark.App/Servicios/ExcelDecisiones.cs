@@ -38,7 +38,7 @@ public static class ExcelDecisiones
         var hoja = libro.CreateSheet("Base");
         var encabezados = new[]
         {
-            "codigo", "placa", "plaza", "zona", "estado", "entrada", "salida",
+            "codigo", "sucursal", "placa", "plaza", "zona", "estado", "entrada", "salida",
             "tarifa_hora", "valor_bruto", "valor_pagado", "valor_descuento", "minutos", "cuadra"
         };
         var fila = hoja.CreateRow(0);
@@ -62,27 +62,28 @@ public static class ExcelDecisiones
 
             var r = hoja.CreateRow(i + 1);
             r.CreateCell(0).SetCellValue(ticket.Codigo);
-            r.CreateCell(1).SetCellValue(ticket.Placa);
-            r.CreateCell(2).SetCellValue(ticket.EspacioCodigo ?? ticket.EspacioId.ToString());
-            r.CreateCell(3).SetCellValue(ticket.Zona ?? "");
-            r.CreateCell(4).SetCellValue(ticket.Estado);
-            r.CreateCell(5).SetCellValue(ticket.Entrada.ToString("yyyy-MM-dd HH:mm"));
-            r.CreateCell(6).SetCellValue(ticket.Salida?.ToString("yyyy-MM-dd HH:mm") ?? "");
-            r.CreateCell(7).SetCellValue(ticket.TarifaHora ?? 0);
-            r.CreateCell(8).SetCellValue(bruto);
-            r.CreateCell(9).SetCellValue(pagado);
-            r.CreateCell(10).SetCellValue(descuento);
-            if (minutos is not null) r.CreateCell(11).SetCellValue(minutos.Value);
-            r.CreateCell(12).SetCellValue(cuadra);
+            r.CreateCell(1).SetCellValue(Sucursal(ticket));
+            r.CreateCell(2).SetCellValue(ticket.Placa);
+            r.CreateCell(3).SetCellValue(ticket.EspacioCodigo ?? ticket.EspacioId.ToString());
+            r.CreateCell(4).SetCellValue(ticket.Zona ?? "");
+            r.CreateCell(5).SetCellValue(ticket.Estado);
+            r.CreateCell(6).SetCellValue(ticket.Entrada.ToString("yyyy-MM-dd HH:mm"));
+            r.CreateCell(7).SetCellValue(ticket.Salida?.ToString("yyyy-MM-dd HH:mm") ?? "");
+            r.CreateCell(8).SetCellValue(ticket.TarifaHora ?? 0);
+            r.CreateCell(9).SetCellValue(bruto);
+            r.CreateCell(10).SetCellValue(pagado);
+            r.CreateCell(11).SetCellValue(descuento);
+            if (minutos is not null) r.CreateCell(12).SetCellValue(minutos.Value);
+            r.CreateCell(13).SetCellValue(cuadra);
         }
 
         var total = hoja.CreateRow(tickets.Count + 1);
         var celdaTotal = total.CreateCell(0);
         celdaTotal.SetCellValue("TOTAL");
         celdaTotal.CellStyle = negrita;
-        total.CreateCell(8).SetCellValue(Math.Round(brutoTotal, 2));
-        total.CreateCell(9).SetCellValue(Math.Round(pagadoTotal, 2));
-        total.CreateCell(10).SetCellValue(Math.Round(descuentoTotal, 2));
+        total.CreateCell(9).SetCellValue(Math.Round(brutoTotal, 2));
+        total.CreateCell(10).SetCellValue(Math.Round(pagadoTotal, 2));
+        total.CreateCell(11).SetCellValue(Math.Round(descuentoTotal, 2));
         for (var c = 0; c < encabezados.Length; c++)
             hoja.SetColumnWidth(c, 16 * 256);
     }
@@ -150,10 +151,25 @@ public static class ExcelDecisiones
             Grafico(hoja, dibujo, "Tipo de persona", 72, personas.Length, 3, 72, 12, 88, columna: true);
         }
 
+        var porSucursal = tickets
+            .GroupBy(Sucursal)
+            .OrderByDescending(g => g.Count())
+            .Select(g => (g.Key, (double)g.Count()))
+            .ToArray();
+        if (porSucursal.Length > 0)
+        {
+            Tabla(hoja, negrita, 90, "Sucursal", "Tickets", porSucursal);
+            Grafico(hoja, dibujo, "Tickets por sucursal", 90, porSucursal.Length, 3, 90, 14, 106, columna: false);
+        }
+
         hoja.SetColumnWidth(0, 28 * 256);
         hoja.SetColumnWidth(1, 18 * 256);
         hoja.SetColumnWidth(2, 16 * 256);
     }
+
+    /// <summary>Nombre de la sucursal del ticket («Sin sucursal» si es antiguo).</summary>
+    private static string Sucursal(TicketDto ticket) =>
+        string.IsNullOrWhiteSpace(ticket.Sede) ? "Sin sucursal" : ticket.Sede!;
 
     private static void Decisiones(XSSFWorkbook libro, ICellStyle negrita, ICellStyle alerta,
         IReadOnlyList<TicketDto> tickets, ReporteDto? reporte, string modelo, DateTime desde, DateTime hasta)
@@ -220,6 +236,23 @@ public static class ExcelDecisiones
                     ? "Cuello de botella: esa hora concentra las llegadas. Conviene abrir más plazas o adelantar el ingreso."
                     : "Las llegadas están repartidas. Esa es solo la hora más cargada.",
                 alerta);
+        }
+
+        var sucursales = tickets
+            .GroupBy(Sucursal)
+            .Select(g => (Sede: g.Key, N: g.Count()))
+            .OrderByDescending(s => s.N)
+            .ToList();
+        if (sucursales.Count >= 2)
+        {
+            var mediaSede = sucursales.Average(s => s.N);
+            var alertaSede = sucursales[0].N >= mediaSede * 2;
+            yield return ("Sucursales",
+                $"{sucursales[0].Sede}: {sucursales[0].N} tickets · {sucursales[^1].Sede}: {sucursales[^1].N}",
+                alertaSede
+                    ? "Una sucursal concentra el doble o más del movimiento promedio. Revisa personal, tarifa y plazas libres en ella."
+                    : "El movimiento está repartido entre las sucursales.",
+                alertaSede);
         }
 
         var zonas = tickets

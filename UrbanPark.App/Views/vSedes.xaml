@@ -7,12 +7,12 @@
              BackgroundColor="{StaticResource Fondo}"
              Title="Parqueaderos">
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto">
+    <Grid RowDefinitions="Auto,2*,3*,Auto">
 
         <!-- ================= encabezado ================= -->
-        <VerticalStackLayout Grid.Row="0" Padding="14,12,14,6" Spacing="8">
+        <VerticalStackLayout Grid.Row="0" Padding="14,12,14,4" Spacing="4">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <VerticalStackLayout Spacing="1">
+                <VerticalStackLayout Spacing="2">
                     <Label Text="Elige tu parqueadero"
                            Style="{StaticResource TituloPagina}" />
                     <Label x:Name="lblUbicacion"
@@ -33,40 +33,74 @@
                         Padding="0"
                         VerticalOptions="Center" />
             </Grid>
-
-            <FlexLayout x:Name="contenedorTipos" Wrap="Wrap" Direction="Row" JustifyContent="Start" />
         </VerticalStackLayout>
 
         <!-- ================= mapa ================= -->
         <Border Grid.Row="1"
-                Margin="14,0,14,6"
-                BackgroundColor="#FFFFFF"
-                Stroke="#D5DAE0"
+                Margin="14,4,14,8"
+                BackgroundColor="#E8EDF2"
+                Stroke="#C5CDD8"
                 StrokeThickness="1"
-                StrokeShape="RoundRectangle 16"
-                Padding="3">
+                StrokeShape="RoundRectangle 18"
+                Padding="2">
             <Border.Shadow>
-                <Shadow Brush="#0A0E13" Offset="0,4" Radius="12" Opacity="0.18" />
+                <Shadow Brush="#0A0E13" Offset="0,6" Radius="16" Opacity="0.22" />
             </Border.Shadow>
-            <Grid RowDefinitions="Auto,*">
-                <views:MapaSedes x:Name="mapa" HeightRequest="262" />
+            <Grid RowDefinitions="*,Auto" MinimumHeightRequest="300">
+                <views:MapaSedes x:Name="mapa"
+                                 Grid.Row="0"
+                                 MinimumHeightRequest="240"
+                                 VerticalOptions="Fill"
+                                 HorizontalOptions="Fill" />
 
-                <!-- aviso flotante sobre el mapa -->
+                <!-- aviso flotante -->
                 <Border x:Name="avisoMapa"
+                        Grid.Row="0"
+                        ZIndex="2"
                         BackgroundColor="#FFFFFF"
-                        StrokeThickness="0"
-                        StrokeShape="RoundRectangle 10"
-                        Padding="8,5"
-                        Margin="6,6,6,0"
+                        Stroke="#E8ECF0"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 12"
+                        Padding="10,6"
+                        Margin="10,10,10,0"
                         VerticalOptions="Start"
                         HorizontalOptions="Start">
                     <Border.Shadow>
-                        <Shadow Brush="#0A0E13" Offset="0,2" Radius="6" Opacity="0.18" />
+                        <Shadow Brush="#0A0E13" Offset="0,2" Radius="8" Opacity="0.14" />
                     </Border.Shadow>
-                    <Label x:Name="lblAvisoMapa"
-                           Text="Toca un pin para ver el parqueadero"
-                           FontSize="10"
-                           TextColor="#5F6B7A" />
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="📍"
+                               FontSize="11"
+                               VerticalOptions="Center" />
+                        <Label x:Name="lblAvisoMapa"
+                               Text="Toca un pin para ver el parqueadero"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="10.5"
+                               TextColor="#3D4A5C"
+                               VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </Border>
+
+                <!-- filtros bajo el mapa (no tapar el canvas) -->
+                <Border Grid.Row="1"
+                        BackgroundColor="#F8FAFC"
+                        Stroke="#E2E8F0"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 14"
+                        Padding="6,5"
+                        Margin="6,4,6,6"
+                        HorizontalOptions="Fill">
+                    <Border.Shadow>
+                        <Shadow Brush="#0A0E13" Offset="0,2" Radius="10" Opacity="0.12" />
+                    </Border.Shadow>
+                    <ScrollView Orientation="Horizontal"
+                                HorizontalScrollBarVisibility="Never">
+                        <FlexLayout x:Name="contenedorTipos"
+                                    Wrap="NoWrap"
+                                    Direction="Row"
+                                    JustifyContent="Start"
+                                    AlignItems="Center" />
+                    </ScrollView>
                 </Border>
             </Grid>
         </Border>

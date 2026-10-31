@@ -116,8 +116,6 @@ public static class InicializadorDb
             UNIQUE KEY uq_biometrias_vehiculo (vehiculo_id),
             KEY ix_biometrias_usuario (usuario)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
-
-        // Equipos vinculados: permiten entrar solo con el código del autenticador.
         @"CREATE TABLE IF NOT EXISTS dispositivos (
             id         BIGINT AUTO_INCREMENT PRIMARY KEY,
             usuario    VARCHAR(50)  NOT NULL,
@@ -558,6 +556,36 @@ public static class InicializadorDb
             alterarTotpActivo.CommandText = "ALTER TABLE usuarios ADD COLUMN totp_activo TINYINT(1) NOT NULL DEFAULT 0";
             await alterarTotpActivo.ExecuteNonQueryAsync();
         }
+        // Sede de cada ticket (para reportes y exportaciones por sucursal).
+        if (!await ExisteColumnaAsync(cn, "tickets", "sede_id"))
+        {
+            await using var alterarSede = cn.CreateCommand();
+            alterarSede.CommandText = "ALTER TABLE tickets ADD COLUMN sede_id BIGINT NULL";
+            await alterarSede.ExecuteNonQueryAsync();
+        }
+
+        // Se rellena con la sede de la plaza que quedó guardada en el ticket.
+        await using (var rellenarSede = cn.CreateCommand())
+        {
+            rellenarSede.CommandText = @"
+                UPDATE tickets t
+                  JOIN espacios e ON e.codigo = t.espacio_codigo
+                   SET t.sede_id = e.sede_id
+                 WHERE t.sede_id IS NULL AND e.sede_id IS NOT NULL";
+            await rellenarSede.ExecuteNonQueryAsync();
+        }
+
+        // Los tickets antiguos pueden tener el código de plaza ya cambiado: se busca por id.
+        await using (var rellenarSedePorId = cn.CreateCommand())
+        {
+            rellenarSedePorId.CommandText = @"
+                UPDATE tickets t
+                  JOIN espacios e ON e.id = t.espacio_id
+                   SET t.sede_id = e.sede_id
+                 WHERE t.sede_id IS NULL AND e.sede_id IS NOT NULL";
+            await rellenarSedePorId.ExecuteNonQueryAsync();
+        }
+
 
         if (!await ExisteColumnaAsync(cn, "tickets", "modo"))
         {

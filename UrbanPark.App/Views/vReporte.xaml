@@ -46,23 +46,36 @@
                         </ScrollView>
                     </VerticalStackLayout>
 
-                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                    <Grid RowDefinitions="Auto,Auto"
+                          ColumnDefinitions="*,*"
+                          ColumnSpacing="10"
+                          RowSpacing="10">
                         <Button x:Name="btnHoy"
+                                Grid.Row="0"
                                 Grid.Column="0"
                                 Text="Hoy"
                                 Clicked="OnHoyClicked"
                                 Style="{StaticResource BotonSecundario}" />
 
                         <Button x:Name="btnMes"
+                                Grid.Row="0"
                                 Grid.Column="1"
                                 Text="Mes actual"
                                 Clicked="OnMesClicked"
                                 Style="{StaticResource BotonSecundario}" />
 
                         <Button x:Name="btnUltimos7"
-                                Grid.Column="2"
+                                Grid.Row="1"
+                                Grid.Column="0"
                                 Text="Últimos 7 días"
                                 Clicked="OnUltimos7Clicked"
+                                Style="{StaticResource BotonSecundario}" />
+
+                        <Button x:Name="btnAno"
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                Text="Año actual"
+                                Clicked="OnAnoClicked"
                                 Style="{StaticResource BotonSecundario}" />
                     </Grid>
 
@@ -70,6 +83,11 @@
                             Text="Generar reporte"
                             Clicked="OnGenerarClicked"
                             Style="{StaticResource BotonPrimario}" />
+
+                    <Button x:Name="btnDescargarPdf"
+                            Text="Descargar reporte en PDF"
+                            Clicked="OnDescargarPdfClicked"
+                            Style="{StaticResource BotonSecundario}" />
 
                     <Button x:Name="btnDescargar"
                             Text="Descargar base y gráficas"

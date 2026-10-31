@@ -36,7 +36,7 @@ public sealed class TicketsController : ControladorBase
 
     private static TicketDto A(Ticket t) => new(t.Id, t.Codigo, t.Placa, t.EspacioId, t.EspacioCodigo, t.Zona,
         t.Entrada, t.Salida, t.Estado, t.TarifaHora, t.MontoTotal, t.Usuario, t.LiberacionPendiente, t.MontoDescuento,
-        t.Modo, t.SalidaPrevista);
+        t.Modo, t.SalidaPrevista, t.SedeNombre);
 
     private bool Pertenece(Ticket t) =>
         !string.IsNullOrWhiteSpace(t.Usuario) && t.Usuario.Equals(Username, StringComparison.OrdinalIgnoreCase);

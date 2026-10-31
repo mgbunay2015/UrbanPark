@@ -351,7 +351,7 @@ public sealed class IaController : ControladorBase
         // 5) resumen narrativo con Ollama, con más contexto para un informe completo
         var datos = ConstruirDatosReporte(plazasTotal, plazasOcupadas, plazasLibres, plazasPct, abiertosAhora,
             cuadran, delPeriodo, cerradosPeriodo, recaudado, descuento, porCobrar, porZona, porDia, porPersona,
-            ocupacion, periodo);
+            ocupacion, periodo, porSede, sucursales);
 
         var resumen = "Ahora el parqueadero tiene plazas ocupadas que deben coincidir con tickets abiertos. " +
                       $"En el periodo {periodo} revisa lo cobrado y lo pendiente. Prioriza cerrar tickets abiertos antiguos.";
@@ -750,7 +750,8 @@ public sealed class IaController : ControladorBase
     private static string ConstruirDatosReporte(int total, int ocupadas, int libres, int pct, List<Ticket> abiertos,
         bool cuadran, List<Ticket> delPeriodo, List<Ticket> cerradosPeriodo, double recaudado, double descuento,
         double porCobrar, Dictionary<string, int> porZona, List<DiaMonto> porDia, List<PlazaUso> porPersona,
-        OcupacionDto? ocupacion, string periodo)
+        OcupacionDto? ocupacion, string periodo,
+        Dictionary<string, int>? porSede = null, List<string>? sucursales = null)
     {
         var inv = CultureInfo.InvariantCulture;
         var plazasConPlaca = abiertos.Count == 0
@@ -766,6 +767,14 @@ public sealed class IaController : ControladorBase
         var zonas = porZona.Count == 0
             ? "sin actividad"
             : string.Join(" · ", porZona.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key}: {kv.Value} tickets"));
+
+        var sedesTexto = sucursales is { Count: > 0 }
+            ? string.Join(", ", sucursales)
+            : "todas";
+
+        var sedesMovimiento = porSede is null || porSede.Count == 0
+            ? "sin movimiento en el periodo"
+            : string.Join(" · ", porSede.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key}: {kv.Value} tickets"));
 
         var ocupacionZonas = ocupacion is null || ocupacion.Zonas.Count == 0
             ? "sin dato"
@@ -824,6 +833,8 @@ public sealed class IaController : ControladorBase
                $"- Pagado: ${recaudado.ToString("0.00", inv)}\n" +
                $"- Descuento otorgado: ${descuento.ToString("0.00", inv)} ({pctDescuento.ToString("0", inv)}% del valor bruto)\n" +
                $"- Por cobrar ahora: ${porCobrar.ToString("0.00", inv)}\n" +
+               $"- Sucursales incluidas: {sedesTexto}\n" +
+               $"- Tickets por sucursal: {sedesMovimiento}\n" +
                $"- Tickets por zona: {zonas}\n" +
                $"- HORA PICO: {horaPico}\n" +
                $"- Entradas de cada hora, contadas por separado:\n{horas}\n" +
