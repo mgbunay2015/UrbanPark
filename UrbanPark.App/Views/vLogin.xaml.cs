@@ -523,9 +523,21 @@ public partial class vLogin : ContentPage
             return;
         }
 
+        if (!string.Equals(usuario.Trim(), CredencialLocal.Usuario, StringComparison.OrdinalIgnoreCase))
+        {
+            var cuenta = string.IsNullOrWhiteSpace(CredencialLocal.Usuario) ? "otra cuenta" : CredencialLocal.Usuario;
+            await Ui.Error(this,
+                $"{problema}\n\nEn este equipo la última sesión guardada es «{cuenta}». " +
+                "Enciende el API (puerto 8090) y entra con tu usuario, o usa la cuenta guardada.");
+            return;
+        }
+
         if (!await CredencialLocal.VerificarAsync(usuario, password))
         {
-            await Ui.Error(this, $"{problema} La contraseña no coincide con la guardada en este equipo.");
+            await Ui.Error(this,
+                $"{problema}\n\nLa contraseña no coincide con la guardada aquí para «{CredencialLocal.Usuario}». " +
+                "Verifica la clave (demo: cliente1 / cliente123, admin1 / admin123) o levanta el API con " +
+                "iniciar-urbanpark.bat y vuelve a iniciar sesión para actualizarla.");
             return;
         }
 

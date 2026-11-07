@@ -360,6 +360,26 @@ public sealed class ReporteDto
     public MetricasReporteDto Metricas { get; set; } = new();
 }
 
+// ------------------------------------------------------------------ admin tarifas
+public sealed class TarifaSedeResumenDto
+{
+    public long SedeId { get; set; }
+    public string Codigo { get; set; } = "";
+    public string Nombre { get; set; } = "";
+    public double TarifaBase { get; set; }
+    public double TarifaMin { get; set; }
+    public double TarifaMax { get; set; }
+    public int Plazas { get; set; }
+}
+
+public sealed class TarifasMasivasResultDto
+{
+    public int Sedes { get; set; }
+    public int Plazas { get; set; }
+    public string Detalle { get; set; } = "";
+    public string Mensaje { get; set; } = "";
+}
+
 // ------------------------------------------------------------------ demo / resiliencia
 public sealed class DemoEstadoDto
 {

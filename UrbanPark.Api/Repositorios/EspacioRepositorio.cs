@@ -1,6 +1,7 @@
 using MySqlConnector;
 using UrbanPark.Api.Data;
 using UrbanPark.Api.Modelos;
+using UrbanPark.Api.Servicios;
 
 namespace UrbanPark.Api.Repositorios;
 
@@ -172,5 +173,85 @@ public sealed class EspacioRepositorio
         }
 
         return new OcupacionDto(total, ocupados, libres, porcentaje, zonas);
+    }
+
+    public async Task<List<TarifaSedeResumen>> ResumenTarifasPorSedeAsync()
+    {
+        await using var cn = _fabrica.Crear();
+        return await cn.ConsultarAsync(
+            @"SELECT s.id AS sede_id, s.codigo, s.nombre, s.tarifa_base,
+                     COALESCE(MIN(e.tarifa_hora), 0) AS tarifa_min,
+                     COALESCE(MAX(e.tarifa_hora), 0) AS tarifa_max,
+                     COUNT(e.id) AS plazas
+              FROM sedes s
+              LEFT JOIN espacios e ON e.sede_id = s.id
+              GROUP BY s.id, s.codigo, s.nombre, s.tarifa_base
+              ORDER BY s.nombre",
+            rd => new TarifaSedeResumen(
+                rd.Long("sede_id"),
+                rd.TextoObligatorio("codigo"),
+                rd.TextoObligatorio("nombre"),
+                rd.DobleNulo("tarifa_base") ?? 0,
+                rd.DobleNulo("tarifa_min") ?? 0,
+                rd.DobleNulo("tarifa_max") ?? 0,
+                Convert.ToInt32(Convert.ToInt64(rd.GetValue(rd.GetOrdinal("plazas"))))));
+    }
+
+    public async Task<int> AjustarTarifaMasivoAsync(IReadOnlyList<long> sedeIds, string? zonaLetra, string? tipoVehiculo,
+        double? factor, double? valorFijo)
+    {
+        if (sedeIds.Count == 0) return 0;
+
+        await using var cn = _fabrica.Crear();
+        var ids = string.Join(",", sedeIds);
+        var condiciones = new List<string> { $"e.sede_id IN ({ids})" };
+
+        var parametros = new List<(string, object?)>();
+        if (!string.IsNullOrWhiteSpace(zonaLetra))
+        {
+            var z = zonaLetra.Trim().ToUpperInvariant();
+            condiciones.Add("e.codigo LIKE CONCAT('%-', @z, '-%')");
+            parametros.Add(("@z", z));
+        }
+
+        if (!string.IsNullOrWhiteSpace(tipoVehiculo))
+        {
+            condiciones.Add("UPPER(e.tipo_vehiculo) = @tipo");
+            parametros.Add(("@tipo", tipoVehiculo.Trim().ToUpperInvariant()));
+        }
+
+        string set;
+        if (valorFijo is > 0)
+        {
+            set = "e.tarifa_hora = @valor";
+            parametros.Add(("@valor", valorFijo.Value));
+        }
+        else if (factor is > 0)
+        {
+            set = "e.tarifa_hora = ROUND(e.tarifa_hora * @factor, 2)";
+            parametros.Add(("@factor", factor.Value));
+        }
+        else return 0;
+
+        var where = string.Join(" AND ", condiciones);
+        var sql = $"UPDATE espacios e SET {set} WHERE {where}";
+        return await cn.EjecutarAsync(sql, parametros.ToArray());
+    }
+
+    public async Task<int> RecalcularTarifasSedeAsync(long sedeId, string sedeCodigo, double tarifaBase)
+    {
+        var plazas = await ListarPorSedeAsync(sedeId);
+        var actualizadas = 0;
+        foreach (var p in plazas)
+        {
+            var letra = ReglasTarifa.LetraZona(p.Codigo);
+            var nueva = ReglasTarifa.TarifaHora(sedeCodigo, letra, p.TipoVehiculo, tarifaBase);
+            if (Math.Abs(nueva - p.TarifaHora) < 0.001) continue;
+
+            await ActualizarAsync(p.Id, p.Codigo, p.Zona, p.TipoVehiculo, nueva, p.Nivel, p.Descripcion);
+            actualizadas++;
+        }
+
+        return actualizadas;
     }
 }

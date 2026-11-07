@@ -7,11 +7,23 @@
     <ScrollView>
         <VerticalStackLayout Padding="10,10,10,12" Spacing="8" MaximumWidthRequest="680">
 
-            <VerticalStackLayout Spacing="4">
-                <Label Text="Reporte IA" Style="{StaticResource TituloPagina}" />
-                <Label Text="Elige el rango y genera el reporte. Ollama lo resume y ese reporte se guarda para asignar plazas de forma más equilibrada."
-                       Style="{StaticResource SubtituloPagina}" />
-            </VerticalStackLayout>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <VerticalStackLayout Grid.Column="0" Spacing="4">
+                    <Label Text="Reporte IA" Style="{StaticResource TituloPagina}" />
+                    <Label Text="Elige el rango y genera el reporte. Ollama lo resume y ese reporte se guarda para asignar plazas de forma más equilibrada."
+                           Style="{StaticResource SubtituloPagina}" />
+                </VerticalStackLayout>
+                <Button x:Name="btnTarifas"
+                        Grid.Column="1"
+                        Text="💲 Precios"
+                        Clicked="OnTarifasClicked"
+                        IsVisible="False"
+                        Style="{StaticResource BotonSecundario}"
+                        FontSize="11"
+                        HeightRequest="36"
+                        Padding="10,0"
+                        VerticalOptions="Start" />
+            </Grid>
 
             <!-- ================= fechas ================= -->
             <Border Style="{StaticResource Tarjeta}">

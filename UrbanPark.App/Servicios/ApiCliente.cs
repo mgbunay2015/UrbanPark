@@ -400,6 +400,21 @@ public static class ApiCliente
     public static Task<JsonElement> ResetPasswordAsync(string id, string password) =>
         PutAsync<JsonElement>($"/api/admin/users/{id}/password", new { password });
 
+    // ================================================================ admin tarifas
+    public static Task<List<TarifaSedeResumenDto>> TarifasResumenAsync() =>
+        GetAsync<List<TarifaSedeResumenDto>>("/api/admin/tarifas/resumen");
+
+    public static Task<TarifasMasivasResultDto> TarifasAplicarAsync(string modo, double valor,
+        IReadOnlyCollection<long>? sedes, string? zona, string? tipoVehiculo) =>
+        PostAsync<TarifasMasivasResultDto>("/api/admin/tarifas/aplicar", new
+        {
+            modo,
+            valor,
+            sedes = sedes is { Count: > 0 } ? sedes.ToArray() : null,
+            zona = string.IsNullOrWhiteSpace(zona) ? null : zona,
+            tipoVehiculo = string.IsNullOrWhiteSpace(tipoVehiculo) ? null : tipoVehiculo
+        });
+
     // ================================================================ sedes (parqueaderos)
     public static Task<List<SedeDto>> SedesAsync(double? lat = null, double? lng = null, string? tipo = null,
         string? preferencia = null)

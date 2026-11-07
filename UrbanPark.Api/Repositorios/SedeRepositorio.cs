@@ -99,4 +99,24 @@ public sealed class SedeRepositorio
         await using var cn = _fabrica.Crear();
         return await cn.EscalarAsync("SELECT COUNT(*) FROM sedes");
     }
+
+    public async Task<int> ActualizarTarifaBaseMasivoAsync(IReadOnlyList<long> sedeIds, double tarifaBase)
+    {
+        if (sedeIds.Count == 0) return 0;
+        await using var cn = _fabrica.Crear();
+        var ids = string.Join(",", sedeIds);
+        return await cn.EjecutarAsync(
+            $"UPDATE sedes SET tarifa_base = @t WHERE id IN ({ids})",
+            ("@t", tarifaBase));
+    }
+
+    public async Task<int> AjustarTarifaBaseMasivoAsync(IReadOnlyList<long> sedeIds, double factor)
+    {
+        if (sedeIds.Count == 0) return 0;
+        await using var cn = _fabrica.Crear();
+        var ids = string.Join(",", sedeIds);
+        return await cn.EjecutarAsync(
+            $"UPDATE sedes SET tarifa_base = ROUND(tarifa_base * @f, 2) WHERE id IN ({ids})",
+            ("@f", factor));
+    }
 }

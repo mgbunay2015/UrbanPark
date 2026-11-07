@@ -133,6 +133,7 @@ builder.Services.AddScoped<ServicioEspacios>();
 builder.Services.AddScoped<ServicioTickets>();
 builder.Services.AddScoped<ServicioSedes>();
 builder.Services.AddScoped<ServicioEstacionamiento>();
+builder.Services.AddScoped<ServicioTarifasAdmin>();
 builder.Services.AddHttpClient<DeepSeekService>(cliente => cliente.Timeout = TimeSpan.FromSeconds(180));
 
 var app = builder.Build();

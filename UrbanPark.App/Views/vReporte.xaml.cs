@@ -45,8 +45,12 @@ public partial class vReporte : ContentPage
             return;
         }
 
+        btnTarifas.IsVisible = Sesion.EsAdmin;
         if (!_sucursalesCargadas) await CargarSucursalesAsync();
     }
+
+    private async void OnTarifasClicked(object? sender, EventArgs e) =>
+        await Navigation.PushAsync(new vTarifas());
 
     // ================================================================ sucursales
     /// <summary>Pinta los chips «Todas» y una por cada sucursal (se puede elegir una o varias).</summary>

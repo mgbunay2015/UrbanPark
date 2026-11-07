@@ -24,6 +24,7 @@ public partial class vMas : ContentPage
         {
             Boton("Reporte", "Dinero, descuentos y gráficos", () => Navigation.PushAsync(new vReporte()));
             Boton("Usuarios", "Cuentas del parqueadero", () => Navigation.PushAsync(new vUsuarios()));
+            Boton("Precios", "Tarifas masivas por sede y zona", () => Navigation.PushAsync(new vTarifas()));
         }
         Boton("Perfil", "Datos de la cuenta", () => Navigation.PushAsync(new vPerfil()));
         Boton("Sesión", "Token y datos de acceso", () => Navigation.PushAsync(new vToken()));

@@ -3,7 +3,7 @@ using UrbanPark.App.Servicios;
 namespace UrbanPark.App.Views;
 
 /// <summary>
-/// Barra inferior: Mapa de parqueaderos, Autos, Cómo Llegar (o Reportería si es ADMIN), Perfil y Salir.
+/// Barra inferior: Mapa, Autos, Reportería y Cambiar precios (ADMIN), Perfil y Salir.
 /// La primera pestaña es el mapa con las sedes: el cliente elige el parqueadero antes que nada.
 /// Mientras hay un pase de salida vigente aparece la pestaña "Salida" con la cuenta atrás.
 /// </summary>
@@ -28,7 +28,10 @@ public class vPrincipal : Shell
         _barra.Items.Add(Pestana("Mapa", "tab_mapa.png", typeof(vSedes)));
         _barra.Items.Add(Pestana("Autos", "tab_auto.png", typeof(vVehiculos)));
         if (Sesion.EsAdmin)
+        {
             _barra.Items.Add(Pestana("Reportería", "tab_reporte.png", typeof(vReporte)));
+            _barra.Items.Add(Pestana("Cambiar precios", "tab_precios.png", typeof(vTarifas)));
+        }
         else
             _barra.Items.Add(Pestana("Llegar", "tab_llegar.png", typeof(vLlegada)));
         _barra.Items.Add(Pestana("Perfil", "tab_perfil.png", typeof(vPerfil)));
