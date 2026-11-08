@@ -134,6 +134,20 @@ public partial class vRegistrados : ContentPage
         btnUsar.Clicked += async (_, _) =>
         {
             vVehiculos.PlacaPendiente = placa;
+            var stack = Navigation.NavigationStack;
+            var indicePlazas = -1;
+            for (var i = stack.Count - 1; i >= 0; i--)
+            {
+                if (stack[i] is vPlazas) { indicePlazas = i; break; }
+            }
+
+            if (indicePlazas >= 0)
+            {
+                while (Navigation.NavigationStack.Count - 1 > indicePlazas)
+                    await Navigation.PopAsync();
+                return;
+            }
+
             if (Navigation.NavigationStack.Count > 1)
                 await Navigation.PopAsync();
             else
@@ -208,6 +222,7 @@ public partial class vRegistrados : ContentPage
         try
         {
             await ApiCliente.CambiarActivoVehiculoAsync(id, activar);
+            vPlazas.NotificarVehiculosActualizados(activar ? placa : null);
             await Ui.Exito(this, activar ? $"{placa} quedó activo." : $"{placa} quedó de baja.");
             await CargarAsync();
         }

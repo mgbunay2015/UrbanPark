@@ -21,18 +21,25 @@ public sealed class ServicioTarifasAdmin
         var modo = (peticion.Modo ?? "").Trim().ToUpperInvariant();
         if (peticion.Valor <= 0 && modo is "FIJO" or "TARIFA_BASE")
             throw new ArgumentException("El valor debe ser mayor que cero.");
+        if (modo is "FIJO" or "TARIFA_BASE" && (peticion.Valor < ReglasTarifa.Minima || peticion.Valor > ReglasTarifa.Maxima))
+            throw new ArgumentException(
+                $"La tarifa debe estar entre ${ReglasTarifa.Minima:0.00} y ${ReglasTarifa.Maxima:0.00} por hora.");
 
         var ids = await ResolverSedesAsync(peticion.Sedes);
         if (ids.Count == 0)
             throw new ArgumentException("No hay sedes para actualizar.");
 
-        return modo switch
+        var resultado = modo switch
         {
             "PORCENTAJE" => await AplicarPorcentajeAsync(ids, peticion),
             "FIJO" => await AplicarFijoAsync(ids, peticion),
             "TARIFA_BASE" => await AplicarTarifaBaseAsync(ids, peticion.Valor),
             _ => throw new ArgumentException("Modo inválido. Use PORCENTAJE, FIJO o TARIFA_BASE.")
         };
+
+        await _espacios.AcotarTarifasAlRangoAsync(ids);
+        await _sedes.AcotarTarifaBaseAlRangoAsync(ids);
+        return resultado;
     }
 
     private async Task<List<long>> ResolverSedesAsync(long[]? pedidas)

@@ -113,6 +113,29 @@ public partial class vVehiculos : ContentPage
         txtPlaca.Text = texto;
         txtPlaca.CursorPosition = texto.Length;
         _ajustandoPlaca = false;
+
+        ProgramarConsultaAutomatica(texto);
+    }
+
+    /// <summary>
+    /// Al terminar de escribir la placa se pide la ficha sola (sin pulsar el botón).
+    /// La espera corta evita consultar en cada tecla y no gasta créditos dos veces por la misma placa.
+    /// </summary>
+    private void ProgramarConsultaAutomatica(string placa)
+    {
+        _esperaConsulta?.Cancel();
+        if (!Ui.PlacaValida(placa)) return;
+        if (string.Equals(placa, _ultimaPlacaConsultada, StringComparison.OrdinalIgnoreCase)) return;
+
+        _esperaConsulta = new CancellationTokenSource();
+        var token = _esperaConsulta.Token;
+
+        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(700), async () =>
+        {
+            if (token.IsCancellationRequested) return;
+            if (!string.Equals((txtPlaca.Text ?? "").Trim(), placa, StringComparison.OrdinalIgnoreCase)) return;
+            await ConsultarPlacaAsync(placa, automatica: true);
+        });
     }
 
     private static readonly (string Nombre, string Hex)[] Colores =
@@ -137,6 +160,13 @@ public partial class vVehiculos : ContentPage
     private string? _color;
     private string? _modelo;
     private string? _perfil;
+    private string? _anioConsulta;
+
+    /// <summary>Ficha de EcuadorAPI para la placa escrita; null si no se ha consultado.</summary>
+    private ConsultaVehiculoDto? _consulta;
+
+    private CancellationTokenSource? _esperaConsulta;
+    private string? _ultimaPlacaConsultada;
 
     public vVehiculos()
     {
@@ -158,6 +188,264 @@ public partial class vVehiculos : ContentPage
 
     private async void OnRegistradosClicked(object? sender, EventArgs e) =>
         await Navigation.PushAsync(new vRegistrados());
+
+    // ================================================================ consulta de placa (EcuadorAPI)
+    /// <summary>
+    /// Con la placa escrita se piden marca, modelo, año y color. Todo queda seleccionado en la
+    /// pantalla; si la consulta falla se avisa y el registro manual sigue disponible.
+    /// </summary>
+    private async void OnConsultarPlacaClicked(object? sender, EventArgs e)
+    {
+        var placa = (txtPlaca.Text ?? "").Trim().ToUpperInvariant();
+        if (!Ui.PlacaValida(placa))
+        {
+            await Ui.Error(this, "Escribe una placa válida antes de consultar. Ej: ABC-1234");
+            return;
+        }
+
+        await ConsultarPlacaAsync(placa, automatica: false);
+    }
+
+    private async Task ConsultarPlacaAsync(string placa, bool automatica)
+    {
+        btnConsultarPlaca.IsEnabled = false;
+        var textoPrevio = btnConsultarPlaca.Text;
+        btnConsultarPlaca.Text = "Buscando…";
+        try
+        {
+            var ficha = await ApiCliente.ConsultarPlacaAsync(placa);
+            _consulta = ficha.Encontrado ? ficha : null;
+            _ultimaPlacaConsultada = ficha.Encontrado ? placa : null;
+
+            if (!ficha.Encontrado)
+            {
+                panelConsulta.IsVisible = true;
+                panelMatricula.IsVisible = false;
+                contenedorMatricula.Children.Clear();
+                lblConsultaTitulo.Text = $"Sin datos para {PlacaEcuador.Formatear(placa)}";
+                lblConsultaTitulo.TextColor = Ui.ColorDe("Advertencia");
+                lblConsultaDetalle.Text = ficha.Error ?? "Escribe la marca, el modelo y el color a mano.";
+                btnMatricula.IsVisible = true;
+                return;
+            }
+
+            AplicarFicha(ficha);
+        }
+        catch (Exception ex)
+        {
+            panelConsulta.IsVisible = true;
+            lblConsultaTitulo.Text = "No se pudo consultar";
+            lblConsultaTitulo.TextColor = Ui.ColorDe("Peligro");
+            lblConsultaDetalle.Text = ex is ApiExcepcion ? ex.Message : "Revisa la conexión e intenta de nuevo.";
+        }
+        finally
+        {
+            btnConsultarPlaca.IsEnabled = true;
+            btnConsultarPlaca.Text = textoPrevio;
+        }
+    }
+
+    private async void OnCerrarConsultaTapped(object? sender, TappedEventArgs e)
+    {
+        panelConsulta.IsVisible = false;
+        panelMatricula.IsVisible = false;
+        contenedorMatricula.Children.Clear();
+        await Task.CompletedTask;
+    }
+
+    /// <summary>Matrícula registrada (año, última matrícula, caducidad y entidad).</summary>
+    private async void OnMatriculaClicked(object? sender, EventArgs e)
+    {
+        if (panelMatricula.IsVisible)
+        {
+            panelMatricula.IsVisible = false;
+            return;
+        }
+
+        var placa = (txtPlaca.Text ?? "").Trim().ToUpperInvariant();
+        if (!Ui.PlacaValida(placa))
+        {
+            await Ui.Error(this, "Escribe una placa válida para consultar su matrícula. Ej: ABC-1234");
+            return;
+        }
+
+        btnMatricula.IsEnabled = false;
+        btnMatricula.Text = "Consultando…";
+        try
+        {
+            var m = await ApiCliente.ConsultarMatriculaAsync(placa);
+            PintarMatricula(m);
+        }
+        catch (Exception ex)
+        {
+            contenedorMatricula.Children.Clear();
+            contenedorMatricula.Children.Add(LineaMatricula("No se pudo consultar",
+                ex is ApiExcepcion ? ex.Message : "Revisa la conexión e intenta de nuevo.", Ui.ColorDe("Peligro")));
+            panelMatricula.IsVisible = true;
+        }
+        finally
+        {
+            btnMatricula.IsEnabled = true;
+            btnMatricula.Text = "📋 Ver matrícula registrada";
+        }
+    }
+
+    private void PintarMatricula(MatriculaVehiculoDto m)
+    {
+        contenedorMatricula.Children.Clear();
+        panelMatricula.IsVisible = true;
+
+        if (!m.Encontrado)
+        {
+            contenedorMatricula.Children.Add(LineaMatricula("Sin matrícula",
+                m.Error ?? "EcuadorAPI no devolvió la matrícula de esa placa.", Ui.ColorDe("Advertencia")));
+            return;
+        }
+
+        contenedorMatricula.Children.Add(LineaMatricula("MATRÍCULA",
+            PlacaEcuador.Formatear(m.Placa), Ui.ColorDe("Acento")));
+        if (m.AnioMatricula is not null)
+            contenedorMatricula.Children.Add(LineaMatricula("AÑO", m.AnioMatricula.Value.ToString()));
+        if (!string.IsNullOrWhiteSpace(m.UltimaMatricula))
+            contenedorMatricula.Children.Add(LineaMatricula("ÚLTIMA", m.UltimaMatricula!));
+        if (!string.IsNullOrWhiteSpace(m.Caduca))
+            contenedorMatricula.Children.Add(LineaMatricula("CADUCA", m.Caduca!));
+        if (!string.IsNullOrWhiteSpace(m.Entidad))
+            contenedorMatricula.Children.Add(LineaMatricula("ENTIDAD", m.Entidad!));
+    }
+
+    private static View LineaMatricula(string etiqueta, string valor, Color? color = null)
+    {
+        var grilla = new Grid
+        {
+            ColumnDefinitions = [new(new GridLength(64)), new(GridLength.Star)],
+            ColumnSpacing = 6
+        };
+        grilla.Add(new Label
+        {
+            Text = etiqueta,
+            FontFamily = "OpenSansSemibold",
+            FontSize = 8.5,
+            CharacterSpacing = 0.6,
+            TextColor = Ui.ColorDe("TextoClaroSuave"),
+            VerticalOptions = LayoutOptions.Start
+        }, 0);
+        grilla.Add(new Label
+        {
+            Text = valor,
+            FontSize = 10,
+            TextColor = color ?? Ui.ColorDe("TextoClaro"),
+            LineBreakMode = LineBreakMode.WordWrap
+        }, 1);
+        return grilla;
+    }
+
+    /// <summary>Vuelca la ficha de EcuadorAPI en los selectores de la pantalla.</summary>
+    private void AplicarFicha(ConsultaVehiculoDto ficha)
+    {
+        var clase = (ficha.Clase ?? "").ToUpperInvariant();
+        var tipo = clase switch
+        {
+            var c when c.Contains("MOTOCICLETA") || c.Contains("MOTO") => "MOTO",
+            var c when c.Contains("CAMIONETA") || c.Contains("CAMION") => "CAMIONETA",
+            _ => _tipo
+        };
+
+        if (tipo != _tipo)
+        {
+            _tipo = tipo;
+            _marca = null;
+            _modelo = null;
+            _masMarcas = false;
+            bordeMarcaOtra.IsVisible = false;
+            panelModelo.IsVisible = false;
+        }
+
+        // Marca: se busca en el catálogo para reutilizar el emblema; si no está, queda "Otra".
+        var marca = (ficha.Marca ?? "").Trim();
+        var conocida = !string.IsNullOrWhiteSpace(marca) && BuscarMarca(marca) is not null;
+        if (conocida)
+        {
+            _marca = marca;
+            _masMarcas = false;
+            bordeMarcaOtra.IsVisible = false;
+        }
+        else if (marca.Length > 0)
+        {
+            _marca = "Otra";
+            _masMarcas = true;
+            bordeMarcaOtra.IsVisible = true;
+            txtMarca.Text = marca;
+        }
+
+        // Modelo: si la marca es conocida se intenta seleccionar uno del catálogo.
+        var modelo = (ficha.Modelo ?? "").Trim();
+        _modelo = null;
+        if (modelo.Length > 0)
+        {
+            if (conocida)
+            {
+                var catalogo = BuscarMarca(_marca!);
+                var coincidencia = catalogo?.Modelos
+                    .FirstOrDefault(m => modelo.Contains(m, StringComparison.OrdinalIgnoreCase) ||
+                                         m.Contains(modelo, StringComparison.OrdinalIgnoreCase));
+                _modelo = coincidencia ?? modelo;
+            }
+            else if (marca.Length > 0)
+            {
+                // Marca fuera del catálogo: el modelo viaja en el texto de "Otra".
+                txtMarca.Text = $"{marca} {modelo}".Trim();
+            }
+        }
+
+        // Color: "PLATEADO" del proveedor se aproxima al token más cercano.
+        var color = NormalizarColor(ficha.Color);
+        if (color is not null) _color = color;
+
+        _anioConsulta = ficha.Anio?.ToString();
+
+        PintarSelectores();
+
+        panelConsulta.IsVisible = true;
+        panelMatricula.IsVisible = false;
+        contenedorMatricula.Children.Clear();
+        lblConsultaTitulo.TextColor = Ui.ColorDe("Acento");
+        var partes = new List<string>();
+        if (!string.IsNullOrWhiteSpace(ficha.Marca)) partes.Add(ficha.Marca!);
+        if (!string.IsNullOrWhiteSpace(ficha.Modelo)) partes.Add(ficha.Modelo!);
+        if (ficha.Anio is not null) partes.Add(ficha.Anio.Value.ToString());
+        if (!string.IsNullOrWhiteSpace(ficha.Color)) partes.Add(ficha.Color!);
+
+        lblConsultaTitulo.Text = $"🔎 {PlacaEcuador.Formatear(ficha.Placa)}";
+        var detalle = partes.Count == 0 ? "Sin datos de fábrica" : string.Join(" · ", partes);
+        if (ficha.Cilindraje is { } cc) detalle += $" · {cc} cc";
+        if (!string.IsNullOrWhiteSpace(ficha.Clase)) detalle += $"\n{ficha.Clase}";
+        lblConsultaDetalle.Text = detalle + "\nDatos traídos de EcuadorAPI. Puedes ajustarlos antes de registrar.";
+    }
+
+    /// <summary>PLATEADO → Plata, GUINDA → Rojo, etc. Null si el color no está en la paleta.</summary>
+    private static string? NormalizarColor(string? color)
+    {
+        var c = (color ?? "").Trim().ToUpperInvariant();
+        if (c.Length == 0) return null;
+
+        foreach (var (nombre, _) in Colores)
+        {
+            if (c.Contains(nombre.ToUpperInvariant(), StringComparison.Ordinal)) return nombre;
+        }
+
+        if (c.Contains("PLATEAD") || c.Contains("PLATA")) return "Plata";
+        if (c.Contains("GRIS") || c.Contains("GRAFITO")) return "Gris";
+        if (c.Contains("BLANC")) return "Blanco";
+        if (c.Contains("NEGR")) return "Negro";
+        if (c.Contains("ROJ") || c.Contains("GUINDA") || c.Contains("VINO")) return "Rojo";
+        if (c.Contains("AZUL")) return "Azul";
+        if (c.Contains("VERD")) return "Verde";
+        if (c.Contains("AMARILL") || c.Contains("DORAD")) return "Amarillo";
+        if (c.Contains("NARANJ")) return "Naranja";
+        if (c.Contains("CAF") || c.Contains("MARRON") || c.Contains("MARRÓN")) return "Café";
+        return null;
+    }
 
     // ================================================================ alta
     private async void OnRegistrarClicked(object? sender, EventArgs e)
@@ -227,11 +515,17 @@ public partial class vVehiculos : ContentPage
             _masMarcas = false;
             _color = null;
             _perfil = null;
+            _consulta = null;
+            _anioConsulta = null;
+            _ultimaPlacaConsultada = null;
+            panelConsulta.IsVisible = false;
             bordeMarcaOtra.IsVisible = false;
             panelModelo.IsVisible = false;
             PintarSelectores();
 
-            await Ui.Exito(this, "Vehículo registrado");
+            vPlazas.NotificarVehiculosActualizados(creado.Placa);
+            await Ui.Exito(this, $"Vehículo {creado.Placa} registrado. Vuelve al mapa: ya aparece en «Elige tu plaza».");
+            vPlazas.IrATabMapa();
         }
         catch (Exception ex)
         {
@@ -245,11 +539,12 @@ public partial class vVehiculos : ContentPage
 
     private string MarcaElegida()
     {
+        var anio = string.IsNullOrWhiteSpace(_anioConsulta) ? "" : $" {_anioConsulta}";
         if (_marca == "Otra")
-            return (txtMarca.Text ?? "").Trim();
+            return ((txtMarca.Text ?? "").Trim() + anio).Trim();
         if (string.IsNullOrWhiteSpace(_marca) || string.IsNullOrWhiteSpace(_modelo))
             return _marca ?? "";
-        return $"{_marca} {_modelo}";
+        return $"{_marca} {_modelo}{anio}";
     }
 
     private void PintarSelectores()

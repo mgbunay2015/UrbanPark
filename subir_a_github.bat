@@ -4,6 +4,7 @@ title Urban Park - Subir el proyecto a GitHub
 
 rem ============================================================
 rem  Sube este proyecto a GitHub (crea el repositorio si no existe).
+rem  Al terminar bien, levanta MySQL (3306), API (8090) y Ollama (11434).
 rem
 rem  Antes de ejecutarlo, revisa estas tres lineas:
 rem    GITHUB_USUARIO : tu usuario de GitHub
@@ -119,6 +120,13 @@ echo ============================================================
 echo.
 echo Si el repositorio es nuevo, entra a GitHub para comprobar
 echo que no se subieron las carpetas bin, obj ni .vs.
+echo.
+echo [6/6] Levantando servicios locales (puertos necesarios)...
+if exist "%~dp0iniciar-urbanpark.bat" (
+  call "%~dp0iniciar-urbanpark.bat" /nopause
+) else (
+  echo     No se encontro iniciar-urbanpark.bat en esta carpeta.
+)
 goto :fin
 
 rem ---------- errores ----------

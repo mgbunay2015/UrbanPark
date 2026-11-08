@@ -15,6 +15,9 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     ContentRootPath = AppContext.BaseDirectory
 });
 
+// Claves de este equipo (API keys, etc.). El archivo no se sube al repositorio.
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: false);
+
 // ------------------------------------------------------------------ validacion temprana
 // Si falta la clave JWT, la autenticacion fallaria en cada peticion con un error 500 confuso.
 // Es mejor avisar al arrancar con un mensaje claro y no levantar el servidor.
@@ -135,6 +138,7 @@ builder.Services.AddScoped<ServicioSedes>();
 builder.Services.AddScoped<ServicioEstacionamiento>();
 builder.Services.AddScoped<ServicioTarifasAdmin>();
 builder.Services.AddHttpClient<DeepSeekService>(cliente => cliente.Timeout = TimeSpan.FromSeconds(180));
+builder.Services.AddHttpClient<ConsultaVehiculoService>(cliente => cliente.Timeout = TimeSpan.FromSeconds(20));
 
 var app = builder.Build();
 

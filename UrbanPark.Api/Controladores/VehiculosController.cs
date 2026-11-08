@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UrbanPark.Api.Modelos;
 using UrbanPark.Api.Repositorios;
+using UrbanPark.Api.Servicios;
 
 namespace UrbanPark.Api.Controladores;
 
@@ -11,8 +12,13 @@ namespace UrbanPark.Api.Controladores;
 public sealed class VehiculosController : ControladorBase
 {
     private readonly VehiculoRepositorio _repo;
+    private readonly ConsultaVehiculoService _consulta;
 
-    public VehiculosController(VehiculoRepositorio repo) => _repo = repo;
+    public VehiculosController(VehiculoRepositorio repo, ConsultaVehiculoService consulta)
+    {
+        _repo = repo;
+        _consulta = consulta;
+    }
 
     private static VehiculoDto A(Vehiculo v) =>
         new(v.Id, v.Placa, v.Tipo, v.Marca, v.Color, v.Propietario, v.PropietarioEmail, v.PropietarioUsername, v.Descuento, v.Activo);
@@ -50,6 +56,39 @@ public sealed class VehiculosController : ControladorBase
             return Prohibido("Solo puedes gestionar tus propios vehículos");
 
         return Ok(A(vehiculo));
+    }
+
+    /// <summary>
+    /// Ficha del vehículo en EcuadorAPI: con solo la placa se completan marca, modelo, año,
+    /// color y clase. Nunca falla la pantalla: cuando no hay créditos o la placa no existe,
+    /// responde 200 con <c>encontrado = false</c> y el motivo para que se escriba a mano.
+    /// </summary>
+    [HttpGet("consultar/{placa}")]
+    public async Task<IActionResult> Consultar(string placa)
+    {
+        var (datos, error) = await _consulta.ConsultarAsync(placa);
+
+        if (datos is not null) return Ok(datos);
+
+        return Ok(new ConsultaVehiculoDto(false, error, ConsultaVehiculoService.Limpiar(placa),
+            null, null, null, null, null, null, null,
+            _consulta.Configurado ? "ecuadorapi" : "sin-configurar"));
+    }
+
+    /// <summary>
+    /// Matrícula registrada del vehículo (año, última matrícula, caducidad y entidad).
+    /// Igual que la ficha, responde 200 con <c>encontrado = false</c> cuando no se puede consultar.
+    /// </summary>
+    [HttpGet("consultar/{placa}/matricula")]
+    public async Task<IActionResult> ConsultarMatricula(string placa)
+    {
+        var (datos, error) = await _consulta.ConsultarMatriculaAsync(placa);
+
+        if (datos is not null) return Ok(datos);
+
+        return Ok(new MatriculaVehiculoDto(false, error, ConsultaVehiculoService.Limpiar(placa),
+            null, null, null, null,
+            _consulta.Configurado ? "ecuadorapi" : "sin-configurar"));
     }
 
     [HttpPost]

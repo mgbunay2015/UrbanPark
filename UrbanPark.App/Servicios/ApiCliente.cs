@@ -77,7 +77,13 @@ public static class ApiCliente
 
     public static async Task<T> DeleteAsync<T>(string ruta) => await EnviarAsync<T>(HttpMethod.Delete, ruta, null);
 
-    private static async Task<T> EnviarAsync<T>(HttpMethod metodo, string ruta, object? cuerpo, bool reintento = false, bool encolar = true)
+    /// <summary>Variantes para la IA (DeepSeek/Ollama): pueden tardar más que una llamada normal.</summary>
+    private static Task<T> GetLentoAsync<T>(string ruta) => EnviarAsync<T>(HttpMethod.Get, ruta, null, timeoutSegundos: 120);
+
+    private static Task<T> PostLentoAsync<T>(string ruta, object? cuerpo = null) =>
+        EnviarAsync<T>(HttpMethod.Post, ruta, cuerpo, timeoutSegundos: 120);
+
+    private static async Task<T> EnviarAsync<T>(HttpMethod metodo, string ruta, object? cuerpo, bool reintento = false, bool encolar = true, int timeoutSegundos = 20)
     {
         // refresco preventivo (el original refrescaba si faltaban menos de 15 s)
         if (Sesion.PorExpirar && !ruta.Contains("/api/auth/") && !reintento)
@@ -102,7 +108,8 @@ public static class ApiCliente
         HttpResponseMessage respuesta;
         try
         {
-            respuesta = await Http.SendAsync(peticion);
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSegundos));
+            respuesta = await Http.SendAsync(peticion, cts.Token);
         }
         catch (TaskCanceledException)
         {
@@ -136,7 +143,7 @@ public static class ApiCliente
             if (respuesta.StatusCode == HttpStatusCode.Unauthorized && !reintento)
             {
                 if (await RefrescarAsync())
-                    return await EnviarAsync<T>(metodo, ruta, cuerpo, reintento: true);
+                    return await EnviarAsync<T>(metodo, ruta, cuerpo, reintento: true, encolar: encolar, timeoutSegundos: timeoutSegundos);
                 Sesion.Cerrar();
             }
 
@@ -239,7 +246,8 @@ public static class ApiCliente
                 JsonSerializer.Serialize(new { refreshToken = Sesion.Actual.RefreshToken }, JsonUrbanPark.Opciones),
                 Encoding.UTF8, "application/json");
 
-            using var respuesta = await Http.SendAsync(peticion);
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            using var respuesta = await Http.SendAsync(peticion, cts.Token);
             if (!respuesta.IsSuccessStatusCode) return false;
 
             var texto = await respuesta.Content.ReadAsStringAsync();
@@ -443,7 +451,7 @@ public static class ApiCliente
     /// <summary>La IA elige el parqueadero que más conviene según ubicación, plazas y precio.</summary>
     public static Task<RecomendacionSedeDto> RecomendarSedeAsync(string tipoVehiculo, double? lat, double? lng,
         string? preferencia, string? placa) =>
-        PostAsync<RecomendacionSedeDto>("/api/sedes/recomendar",
+        PostLentoAsync<RecomendacionSedeDto>("/api/sedes/recomendar",
             new { tipoVehiculo, latitud = lat, longitud = lng, preferencia, placa });
 
     public static Task<List<EspacioDto>> EspaciosDeSedeAsync(long sedeId) =>
@@ -510,6 +518,14 @@ public static class ApiCliente
     public static Task<VehiculoDto> CambiarActivoVehiculoAsync(long id, bool activo) =>
         PatchAsync<VehiculoDto>($"/api/vehiculos/{id}/activo", new { activo });
 
+    /// <summary>Ficha del vehículo por placa (EcuadorAPI). No falla: si no hay datos, encontrado = false.</summary>
+    public static Task<ConsultaVehiculoDto> ConsultarPlacaAsync(string placa) =>
+        GetAsync<ConsultaVehiculoDto>($"/api/vehiculos/consultar/{Uri.EscapeDataString(placa)}");
+
+    /// <summary>Matrícula registrada del vehículo (EcuadorAPI). Consulta aparte, con su propio costo.</summary>
+    public static Task<MatriculaVehiculoDto> ConsultarMatriculaAsync(string placa) =>
+        GetAsync<MatriculaVehiculoDto>($"/api/vehiculos/consultar/{Uri.EscapeDataString(placa)}/matricula");
+
     public static Task<VehiculoDto> ActualizarVehiculoAsync(long id, string tipo, string? marca, string? color,
         string propietario, string? email) =>
         PutAsync<VehiculoDto>($"/api/vehiculos/{id}",
@@ -565,10 +581,10 @@ public static class ApiCliente
 
     // ================================================================ IA
     public static Task<RecomendacionDto> RecomendarAsync(string tipoVehiculo, string? preferencia, string? placa) =>
-        PostAsync<RecomendacionDto>("/api/ia/recomendar", new { tipoVehiculo, preferencia, placa });
+        PostLentoAsync<RecomendacionDto>("/api/ia/recomendar", new { tipoVehiculo, preferencia, placa });
 
     public static Task<AsignacionDto> AsignarAsync(string placa, string tipoVehiculo, string? preferencia) =>
-        PostAsync<AsignacionDto>("/api/ia/asignar", new { placa, tipoVehiculo, preferencia });
+        PostLentoAsync<AsignacionDto>("/api/ia/asignar", new { placa, tipoVehiculo, preferencia });
 
     /// <summary>Reporte del administrador; <paramref name="sedes"/> vacío o null = todas.</summary>
     /// <summary>
@@ -577,7 +593,7 @@ public static class ApiCliente
     /// </summary>
     public static Task<ReporteDto> ReporteAsync(string desde, string hasta,
         IReadOnlyCollection<long>? sedes = null, bool conIa = false) =>
-        PostAsync<ReporteDto>("/api/ia/reporte-tickets", new
+        PostLentoAsync<ReporteDto>("/api/ia/reporte-tickets", new
         {
             fechaDesde = desde,
             fechaHasta = hasta,
@@ -588,5 +604,5 @@ public static class ApiCliente
     public static Task<IaEstadoDto> EstadoIaAsync() => GetAsync<IaEstadoDto>("/api/ia/estado");
 
     public static Task<ChatRespuestaDto> ChatAsync(string mensaje, List<object> historial) =>
-        PostAsync<ChatRespuestaDto>("/api/ia/chat", new { mensaje, historial });
+        PostLentoAsync<ChatRespuestaDto>("/api/ia/chat", new { mensaje, historial });
 }

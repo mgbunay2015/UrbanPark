@@ -11,16 +11,45 @@
 
         <!-- ================= encabezado ================= -->
         <VerticalStackLayout Grid.Row="0" Padding="14,12,14,4" Spacing="4">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <HorizontalStackLayout Spacing="8" Margin="0,0,0,2">
+                <Border BackgroundColor="Transparent"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 6"
+                        WidthRequest="22"
+                        HeightRequest="22">
+                    <Image Source="logo_urbanpark.png"
+                           Aspect="AspectFill" />
+                </Border>
+                <Label Text="Urban Park"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="12"
+                       TextColor="{StaticResource TextoClaro}"
+                       VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                 <VerticalStackLayout Spacing="2">
-                    <Label Text="Elige tu parqueadero"
+                    <Label x:Name="lblTitulo"
+                           Text="Elige tu parqueadero"
                            Style="{StaticResource TituloPagina}" />
                     <Label x:Name="lblUbicacion"
                            Text="Ubicando tu posición…"
                            Style="{StaticResource SubtituloPagina}" />
                 </VerticalStackLayout>
-                <Button x:Name="btnRefrescar"
+                <Button x:Name="btnMiPuesto"
                         Grid.Column="1"
+                        Text="Mi puesto"
+                        Clicked="OnVolverMiParqueaderoClicked"
+                        IsVisible="False"
+                        BackgroundColor="{StaticResource Acento}"
+                        TextColor="{StaticResource TextoFuerte}"
+                        FontFamily="OpenSansSemibold"
+                        FontSize="11"
+                        CornerRadius="10"
+                        HeightRequest="34"
+                        Padding="10,0"
+                        VerticalOptions="Center" />
+                <Button x:Name="btnRefrescar"
+                        Grid.Column="2"
                         Text="↻"
                         Clicked="OnRefrescarClicked"
                         BackgroundColor="{StaticResource SuperficieAlta}"
@@ -36,7 +65,8 @@
         </VerticalStackLayout>
 
         <!-- ================= mapa ================= -->
-        <Border Grid.Row="1"
+        <Border x:Name="panelMapa"
+                Grid.Row="1"
                 Margin="14,4,14,8"
                 BackgroundColor="#E8EDF2"
                 Stroke="#C5CDD8"
@@ -105,8 +135,20 @@
             </Grid>
         </Border>
 
+        <!-- ============ mi parqueadero (cuando ya hay puesto o reserva) ============ -->
+        <!-- Sustituye al mapa: si el cliente ya tiene un puesto ocupado o una reserva,
+             no necesita volver a elegir parqueadero, sino ver el suyo. -->
+        <ScrollView x:Name="scrollMiParqueadero"
+                    Grid.Row="1"
+                    Grid.RowSpan="2"
+                    IsVisible="False">
+            <VerticalStackLayout x:Name="contenidoMiParqueadero"
+                                 Padding="14,4,14,12"
+                                 Spacing="10" />
+        </ScrollView>
+
         <!-- ================= lista y recomendación ================= -->
-        <ScrollView Grid.Row="2">
+        <ScrollView x:Name="scrollLista" Grid.Row="2">
             <VerticalStackLayout Padding="14,2,14,12" Spacing="8">
 
                 <Border x:Name="panelIa"

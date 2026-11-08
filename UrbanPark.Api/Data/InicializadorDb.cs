@@ -1,5 +1,7 @@
 using System.Globalization;
 using MySqlConnector;
+using UrbanPark.Api.Modelos;
+using UrbanPark.Api.Servicios;
 
 namespace UrbanPark.Api.Data;
 
@@ -145,29 +147,29 @@ public static class InicializadorDb
         double Latitud, double Longitud, double Tarifa, bool Techado, string Horario, string Servicios)[] Sedes =
     [
         ("CEN", "Urban Park Centro Histórico", "Av. 10 de Agosto N21-56 y Av. Roca", "Centro",
-            -0.20776, -78.49184, 3.5, true, "24 horas", "Techado · Cámaras · Baños · Wi-Fi"),
+            -0.20776, -78.49184, 0.70, true, "24 horas", "Techado · Cámaras · Baños · Wi-Fi"),
         ("PLA", "Urban Park Plaza Grande", "García Moreno y Sucre, frente a la Catedral", "Centro Histórico",
-            -0.22010, -78.51230, 4.2, false, "06:00 a 23:00", "Cámaras · Baños · Cuidadores"),
+            -0.22010, -78.51230, 0.90, false, "06:00 a 23:00", "Cámaras · Baños · Cuidadores"),
         ("ALA", "Urban Park La Alameda", "Av. Gran Colombia y Av. 10 de Agosto", "La Alameda",
-            -0.21450, -78.50600, 3.0, false, "24 horas", "Cámaras · Baños · Lavado"),
+            -0.21450, -78.50600, 0.61, false, "24 horas", "Cámaras · Baños · Lavado"),
         ("SAN", "Urban Park San Blas", "Calle Chimborazo y Av. Pichincha", "San Blas",
-            -0.21750, -78.50650, 2.4, true, "06:00 a 22:00", "Techado · Cámaras · Aseo"),
+            -0.21750, -78.50650, 0.50, true, "06:00 a 22:00", "Techado · Cámaras · Aseo"),
         ("GON", "Urban Park González Suárez", "Av. González Suárez y Av. Patria", "González Suárez",
-            -0.20650, -78.49750, 3.8, true, "24 horas", "Techado · Cámaras · Baños · Wi-Fi"),
+            -0.20650, -78.49750, 0.79, true, "24 horas", "Techado · Cámaras · Baños · Wi-Fi"),
         ("COL", "Urban Park Colón", "Av. Colón y Av. 6 de Diciembre", "La Colón",
-            -0.19900, -78.48900, 3.2, true, "24 horas", "Techado · Cámaras · Baños"),
+            -0.19900, -78.48900, 0.67, true, "24 horas", "Techado · Cámaras · Baños"),
         ("FOC", "Urban Park La Foch", "Av. Reina Victoria N24-56 y La Pinta", "La Foch",
-            -0.20180, -78.48850, 2.8, false, "24 horas", "Cámaras · Baños · Carga eléctrica"),
+            -0.20180, -78.48850, 0.58, false, "24 horas", "Cámaras · Baños · Carga eléctrica"),
         ("MAR", "Urban Park Mariscal", "Av. Amazonas N30-12 y Av. Eloy Alfaro", "La Mariscal",
-            -0.18700, -78.48800, 2.6, false, "24 horas", "Cámaras · Aseo · Lavado"),
+            -0.18700, -78.48800, 0.54, false, "24 horas", "Cámaras · Aseo · Lavado"),
         ("CAR", "Urban Park La Carolina", "Av. Naciones Unidas y Núñez de Vela", "La Carolina",
-            -0.17950, -78.48130, 3.6, false, "24 horas", "Cámaras · Baños · Zona verde"),
+            -0.17950, -78.48130, 0.76, false, "24 horas", "Cámaras · Baños · Zona verde"),
         ("QUI", "Urban Park Quicentro", "Av. Naciones Unidas y Av. 6 de Diciembre", "Iñaquito",
-            -0.17580, -78.48300, 4.2, true, "24 horas", "Techado · Cámaras · Baños · Wi-Fi · Valet"),
+            -0.17580, -78.48300, 0.90, true, "24 horas", "Techado · Cámaras · Baños · Wi-Fi · Valet"),
         ("NAC", "Urban Park Naciones Unidas", "Av. Naciones Unidas y Av. Japón", "Naciones Unidas",
-            -0.17320, -78.48650, 3.4, true, "24 horas", "Techado · Cámaras · Baños · Carga eléctrica"),
+            -0.17320, -78.48650, 0.73, true, "24 horas", "Techado · Cámaras · Baños · Carga eléctrica"),
         ("EBA", "Urban Park El Batán", "Av. Eloy Alfaro y Av. Naciones Unidas", "El Batán",
-            -0.18000, -78.47300, 2.9, false, "06:00 a 23:00", "Cámaras · Baños · Aseo")
+            -0.18000, -78.47300, 0.64, false, "06:00 a 23:00", "Cámaras · Baños · Aseo")
     ];
 
     /// <summary>
@@ -175,41 +177,49 @@ public static class InicializadorDb
     /// (Centro, Norte, Sur y Este) con sus mismas tarifas; las demás sedes replican
     /// el mismo esquema A/B/C/D con tarifas derivadas de su tarifa base.
     /// </summary>
-    private static readonly Dictionary<string, (string Prefijo, string Zona, int Nivel, double Auto, double Moto,
-        double Camioneta, double Disc)[]> ZonasPorSede = CrearZonas();
+    private static readonly Dictionary<string, ZonaTarifa[]> ZonasPorSede = CrearZonas();
 
-    private static Dictionary<string, (string, string, int, double, double, double, double)[]> CrearZonas()
+    private sealed record ZonaTarifa(string Prefijo, string Zona, int Nivel, double Auto, double Moto, double Camioneta, double Disc);
+
+    private static Dictionary<string, ZonaTarifa[]> CrearZonas()
     {
-        var mapa = new Dictionary<string, (string, string, int, double, double, double, double)[]>
-        {
-            // Sede historica: se mantienen los nombres y las tarifas que ya usaba la aplicacion.
-            ["CEN"] =
-            [
-                ("A", "Zona A - Centro", 1, 3.5, 1.5, 4.0, 2.0),
-                ("B", "Zona B - Norte", 2, 2.8, 1.5, 4.0, 2.0),
-                ("C", "Zona C - Sur", -1, 2.5, 1.5, 3.8, 2.0),
-                ("D", "Zona D - Este", 1, 3.0, 1.5, 4.2, 2.0)
-            ]
-        };
+        var mapa = new Dictionary<string, ZonaTarifa[]>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var sede in Sedes)
         {
-            if (mapa.ContainsKey(sede.Codigo)) continue;
+            var nombres = sede.Codigo == "CEN"
+                ? new (string Pref, string Nombre, int Nivel, char Letra)[]
+                {
+                    ("A", "Zona A - Centro", 1, 'A'),
+                    ("B", "Zona B - Norte", 2, 'B'),
+                    ("C", "Zona C - Sur", -1, 'C'),
+                    ("D", "Zona D - Este", 1, 'D')
+                }
+                :
+                [
+                    ("A", $"Zona A - {sede.Sector} PB", 1, 'A'),
+                    ("B", $"Zona B - {sede.Sector} P1", 2, 'B'),
+                    ("C", $"Zona C - {sede.Sector} S1", -1, 'C'),
+                    ("D", $"Zona D - {sede.Sector} Exterior", 1, 'D')
+                ];
 
-            var b = sede.Tarifa;
-            mapa[sede.Codigo] =
-            [
-                ("A", $"Zona A - {sede.Sector} PB", 1, UnDecimal(b), 1.5, UnDecimal(b * 1.15), 2.0),
-                ("B", $"Zona B - {sede.Sector} P1", 2, UnDecimal(b * 0.9), 1.5, UnDecimal(b * 1.10), 2.0),
-                ("C", $"Zona C - {sede.Sector} S1", -1, UnDecimal(b * 0.8), 1.5, UnDecimal(b * 1.10), 2.0),
-                ("D", $"Zona D - {sede.Sector} Exterior", 1, UnDecimal(b * 1.05), 1.5, UnDecimal(b * 1.20), 2.0)
-            ];
+            mapa[sede.Codigo] = ConstruirZonas(sede.Codigo, sede.Tarifa, nombres);
         }
 
         return mapa;
     }
 
-    private static double UnDecimal(double valor) => Math.Round(valor, 1, MidpointRounding.AwayFromZero);
+    private static ZonaTarifa[] ConstruirZonas(string codigo, double baseTarifa,
+        (string Pref, string Nombre, int Nivel, char Letra)[] defs) =>
+        defs.Select(d => new ZonaTarifa(
+            d.Pref,
+            d.Nombre,
+            d.Nivel,
+            ReglasTarifa.TarifaHora(codigo, d.Letra, "AUTO", baseTarifa),
+            ReglasTarifa.TarifaHora(codigo, d.Letra, "MOTO", baseTarifa),
+            ReglasTarifa.TarifaHora(codigo, d.Letra, "CAMIONETA", baseTarifa),
+            ReglasTarifa.TarifaHora(codigo, d.Letra, "DISCAPACIDAD", baseTarifa)
+        )).ToArray();
 
     private static readonly (string Placa, string Tipo, string Marca, string Color, string Propietario, string Email, string Usuario)[] Vehiculos =
     [
@@ -275,6 +285,9 @@ public static class InicializadorDb
             await MigrarSedeIdAsync(cn);
             await SembrarSedesAsync(cn, logger);
             var plazas = await SembrarEspaciosAsync(cn, logger);
+            await AcotarTarifasAlRangoAsync(cn, logger);
+            await SincronizarTarifasDesdeReglasAsync(cn, logger);
+            await NormalizarTicketsHistoricosAsync(cn, logger);
             logger.LogInformation("Plazas semilla verificadas: {Plazas} en {Sedes} sedes.", plazas, Sedes.Length);
         }
 
@@ -352,6 +365,170 @@ public static class InicializadorDb
         logger.LogInformation("Sedes verificadas: {Cantidad} parqueaderos con dirección y coordenadas.", Sedes.Length);
     }
 
+    private static async Task AcotarTarifasAlRangoAsync(MySqlConnection cn, ILogger logger)
+    {
+        await using var cmd = cn.CreateCommand();
+        cmd.CommandText = $"""
+            UPDATE sedes SET tarifa_base = LEAST({ReglasTarifa.Maxima}, GREATEST({ReglasTarifa.Minima}, tarifa_base));
+            UPDATE espacios SET tarifa_hora = LEAST({ReglasTarifa.Maxima}, GREATEST({ReglasTarifa.Minima}, tarifa_hora));
+            """;
+        await cmd.ExecuteNonQueryAsync();
+        logger.LogInformation("Tarifas acotadas al rango ${Min:0.00}–${Max:0.00}/h.",
+            ReglasTarifa.Minima, ReglasTarifa.Maxima);
+    }
+
+    /// <summary>
+    /// Aplica <see cref="ReglasTarifa"/> a sedes y plazas (corrige importes viejos o semillas en cero).
+    /// </summary>
+    private static async Task SincronizarTarifasDesdeReglasAsync(MySqlConnection cn, ILogger logger)
+    {
+        var sedes = await LeerIdsSedesAsync(cn);
+        var plazasActualizadas = 0;
+
+        foreach (var sede in Sedes)
+        {
+            if (!sedes.TryGetValue(sede.Codigo, out var sedeId)) continue;
+            var baseTarifa = ReglasTarifa.Acotar(sede.Tarifa);
+
+            await using (var updSede = cn.CreateCommand())
+            {
+                updSede.CommandText = "UPDATE sedes SET tarifa_base = @t WHERE id = @id";
+                updSede.Parameters.AddWithValue("@t", baseTarifa);
+                updSede.Parameters.AddWithValue("@id", sedeId);
+                await updSede.ExecuteNonQueryAsync();
+            }
+
+            await using var leer = cn.CreateCommand();
+            leer.CommandText = "SELECT id, codigo, tipo_vehiculo FROM espacios WHERE sede_id = @s";
+            leer.Parameters.AddWithValue("@s", sedeId);
+
+            List<(long Id, string Codigo, string Tipo)> plazas;
+            await using (var rd = await leer.ExecuteReaderAsync())
+            {
+                plazas = [];
+                while (await rd.ReadAsync())
+                    plazas.Add((rd.GetInt64(0), rd.GetString(1), rd.GetString(2)));
+            }
+
+            foreach (var p in plazas)
+            {
+                var letra = ReglasTarifa.LetraZona(p.Codigo);
+                var nueva = ReglasTarifa.TarifaHora(sede.Codigo, letra, p.Tipo, baseTarifa);
+
+                await using var upd = cn.CreateCommand();
+                upd.CommandText = "UPDATE espacios SET tarifa_hora = @t WHERE id = @id";
+                upd.Parameters.AddWithValue("@t", nueva);
+                upd.Parameters.AddWithValue("@id", p.Id);
+                plazasActualizadas += await upd.ExecuteNonQueryAsync();
+            }
+        }
+
+        logger.LogInformation(
+            "Tarifas de {Plazas} plazas y {Sedes} sedes alineadas con ReglasTarifa (${Min:0.00}–${Max:0.00}/h).",
+            plazasActualizadas, Sedes.Length, ReglasTarifa.Minima, ReglasTarifa.Maxima);
+    }
+
+    /// <summary>
+    /// Alinea tickets históricos al rango $0.50–$0.90: tarifa de la plaza y montos con la misma fórmula de cierre.
+    /// </summary>
+    private static async Task NormalizarTicketsHistoricosAsync(MySqlConnection cn, ILogger logger)
+    {
+        var min = ReglasTarifa.Minima;
+        var max = ReglasTarifa.Maxima;
+        var minS = min.ToString(CultureInfo.InvariantCulture);
+        var maxS = max.ToString(CultureInfo.InvariantCulture);
+
+        await using (var porId = cn.CreateCommand())
+        {
+            porId.CommandText = """
+                UPDATE tickets t
+                  INNER JOIN espacios e ON e.id = t.espacio_id
+                   SET t.tarifa_hora = e.tarifa_hora
+                 WHERE t.tarifa_hora IS NULL
+                    OR ABS(t.tarifa_hora - e.tarifa_hora) > 0.001;
+                """;
+            await porId.ExecuteNonQueryAsync();
+        }
+
+        await using (var acotar = cn.CreateCommand())
+        {
+            acotar.CommandText = $"""
+                UPDATE tickets
+                   SET tarifa_hora = LEAST({maxS}, GREATEST({minS}, tarifa_hora))
+                 WHERE tarifa_hora IS NOT NULL
+                   AND (tarifa_hora < {minS} OR tarifa_hora > {maxS});
+                """;
+            await acotar.ExecuteNonQueryAsync();
+        }
+
+        var descuentos = await CargarDescuentosPorPlacaAsync(cn);
+        var recalculados = 0;
+
+        await using var leer = cn.CreateCommand();
+        leer.CommandText = """
+            SELECT id, placa, entrada, salida, tarifa_hora
+              FROM tickets
+             WHERE estado = 'CERRADO'
+               AND salida IS NOT NULL
+               AND tarifa_hora IS NOT NULL
+               AND tarifa_hora > 0;
+            """;
+
+        List<(long Id, string Placa, DateTime Entrada, DateTime Salida, double Tarifa)> pendientes;
+        await using (var rd = await leer.ExecuteReaderAsync())
+        {
+            pendientes = [];
+            while (await rd.ReadAsync())
+            {
+                pendientes.Add((
+                    rd.GetInt64(0),
+                    rd.GetString(1),
+                    rd.GetDateTime(2),
+                    rd.GetDateTime(3),
+                    rd.GetDouble(4)));
+            }
+        }
+
+        foreach (var t in pendientes)
+        {
+            var placa = Reglas.NormalizarPlaca(t.Placa);
+            var pct = descuentos.GetValueOrDefault(placa, 0);
+            var bruto = Reglas.CalcularMonto(t.Entrada, t.Salida, t.Tarifa);
+            var monto = Reglas.CalcularMonto(t.Entrada, t.Salida, t.Tarifa, pct);
+            var descuento = Math.Round(Math.Max(0, bruto - monto), 2, MidpointRounding.AwayFromZero);
+
+            await using var upd = cn.CreateCommand();
+            upd.CommandText = "UPDATE tickets SET monto_total = @m, monto_descuento = @d WHERE id = @id";
+            upd.Parameters.AddWithValue("@m", monto);
+            upd.Parameters.AddWithValue("@d", descuento);
+            upd.Parameters.AddWithValue("@id", t.Id);
+            recalculados += await upd.ExecuteNonQueryAsync();
+        }
+
+        logger.LogInformation(
+            "Tickets históricos alineados al rango ${Min:0.00}–${Max:0.00}/h; {Cerrados} cierres recalculados.",
+            min, max, recalculados);
+    }
+
+    private static async Task<Dictionary<string, int>> CargarDescuentosPorPlacaAsync(MySqlConnection cn)
+    {
+        var mapa = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        await using var cmd = cn.CreateCommand();
+        cmd.CommandText = "SELECT placa, descuento, propietario FROM vehiculos";
+        await using var rd = await cmd.ExecuteReaderAsync();
+        while (await rd.ReadAsync())
+        {
+            var placa = Reglas.NormalizarPlaca(rd.GetString(0));
+            var d = rd.IsDBNull(1) ? 0 : Convert.ToInt32(rd.GetValue(1), CultureInfo.InvariantCulture);
+            var prop = rd.IsDBNull(2) ? "" : rd.GetString(2);
+            var pct = Math.Max(d, Reglas.DescuentoDe(prop));
+            if (!mapa.TryGetValue(placa, out var prev) || pct > prev)
+                mapa[placa] = pct;
+        }
+
+        return mapa;
+    }
+
     private static string TelefonoDe(string codigo) =>
         (codigo.GetHashCode() & 0x7FFFFFFF) % 2 == 0 ? "02 258 7410" : "02 394 5520";
 
@@ -393,7 +570,9 @@ public static class InicializadorDb
                     filas.Add(($"{sede.Codigo}-{z.Prefijo}-{i:00}", z.Zona, sedeId, tipo, tarifa, z.Nivel, descripcion));
                 }
 
-                filas.Add(($"{sede.Codigo}-{z.Prefijo}-16", z.Zona, sedeId, "EMBARAZADA", z.Auto, z.Nivel,
+                var tarifaEmb = ReglasTarifa.TarifaHora(sede.Codigo, ReglasTarifa.LetraZona($"{sede.Codigo}-{z.Prefijo}-16"),
+                    "EMBARAZADA", sede.Tarifa);
+                filas.Add(($"{sede.Codigo}-{z.Prefijo}-16", z.Zona, sedeId, "EMBARAZADA", tarifaEmb, z.Nivel,
                     "Plaza para embarazadas"));
             }
         }

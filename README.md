@@ -122,7 +122,7 @@ La regla de roles es la misma del sistema original: **rol efectivo único y jer�
 | Pantalla | Roles | Qué hace |
 |---|---|---|
 | **Iniciar sesión** | público | Login local, **huella o código de Google Authenticator**, registro público y panel de perfiles demo (la dirección del API se configura en *Mi perfil*) |
-| **Mapa de parqueaderos** | todos | Los **12 parqueaderos** en el mapa (calles, manzanas y parques de Quito), con distancia a pie, plazas libres y precio. Es la **primera pantalla** al entrar |
+| **Mapa de parqueaderos** | todos | Los **12 parqueaderos** en el mapa (calles, manzanas y parques de Quito), con distancia a pie, plazas libres y precio. Es la **primera pantalla** al entrar. **Si el cliente ya tiene un puesto ocupado o una reserva, esta pantalla muestra su parqueadero en lugar del mapa** |
 | **Recomendación de la IA** | CLIENTE, ADMIN | «¿Cuál me conviene?»: la IA elige el parqueadero por distancia, disponibilidad, precio y servicios, y explica por qué |
 | **Puestos del parqueadero** | todos | Zonas y cuadrícula del parqueadero elegido. Al tocar un puesto libre se eligen las **dos formas de entrar**: «Entrar ahora» o «Reservar» |
 | **Reservar fecha y hora** | todos | Fecha, **hora de ingreso** y **hora de salida**; muestra la duración y el total estimado antes de confirmar |
@@ -136,6 +136,22 @@ La regla de roles es la misma del sistema original: **rol efectivo único y jer�
 | **Usuarios** | ADMIN | Crear, editar, cambiar contraseña y activar/desactivar usuarios |
 | **Mi perfil** | todos | Datos personales, contraseña, huella y **autenticador de Google** (activar/desactivar) |
 | **Sesión y JWT** | todos | Claims del token y el JWT completo |
+
+### El mapa solo aparece cuando hay que elegir
+
+En cuanto el cliente **entra a un puesto** o **reserva**, la pestaña *Mapa* deja de mostrar el mapa de
+los 12 parqueaderos y pasa a mostrar **su parqueadero**: sede y dirección, puesto, zona, nivel, placa,
+ticket, la hora de entrada (o la franja reservada), el **valor de ahora** —o el estimado de la reserva—
+con el tiempo corriendo, y los botones **Ver mi QR**, **Cómo llegar**, **Pagar y salir** o, si es una
+reserva, **Ya llegué: activar** y **Anular reserva**.
+
+Si aun así quiere ver el mapa, tiene **«🗺 Ver el mapa y otros parqueaderos»** al pie de su tarjeta; en
+ese modo el aviso «Estás en la plaza …» queda arriba de la lista y el botón **Mi puesto** del encabezado
+lo devuelve a su parqueadero. Al volver a la pestaña se abre siempre en *su parqueadero*.
+
+| Mi parqueadero (con un puesto ocupado) | Con una reserva | El mapa, si el cliente lo pide |
+|---|---|---|
+| ![Mi parqueadero](docs/capturas/mi-parqueadero.png) | ![Mi reserva](docs/capturas/mi-reserva.png) | ![Mapa con mi puesto](docs/capturas/mapa-con-mi-puesto.png) |
 
 ---
 
@@ -157,25 +173,31 @@ La regla de roles es la misma del sistema original: **rol efectivo único y jer�
   `RESERVA` (el ticket nace RESERVADO con fecha, hora de ingreso y hora de salida; el puesto queda
   guardado y el QR muestra el importe estimado de la franja). Al llegar, «Ya llegué: activar» lo
   convierte en una estancia normal. Una reserva se puede anular sin costo.
+- **El mapa solo sirve para elegir**: si el cliente ya tiene un ticket `ABIERTO` o `RESERVADO`, la
+  pestaña *Mapa* muestra **su parqueadero** en lugar del mapa. Un puesto ocupado tiene prioridad sobre
+  una reserva para más tarde. El valor se recalcula cada segundo en el equipo con la misma fórmula del
+  API, así que se sigue viendo aunque se caiga la conexión.
 
 ---
 
 ## 6. Los 12 parqueaderos
 
-| Código | Parqueadero | Dirección | Tarifa/h |
+| Código | Parqueadero | Dirección | Tarifa base/h |
 |---|---|---|---|
-| CEN | Urban Park Centro Histórico | Av. 10 de Agosto N21-56 y Av. Roca | 3.50 |
-| PLA | Urban Park Plaza Grande | García Moreno y Sucre, frente a la Catedral | 4.20 |
-| ALA | Urban Park La Alameda | Av. Gran Colombia y Av. 10 de Agosto | 3.00 |
-| SAN | Urban Park San Blas | Calle Chimborazo y Av. Pichincha | 2.40 |
-| GON | Urban Park González Suárez | Av. González Suárez y Av. Patria | 3.80 |
-| COL | Urban Park Colón | Av. Colón y Av. 6 de Diciembre | 3.20 |
-| FOC | Urban Park La Foch | Av. Reina Victoria N24-56 y La Pinta | 2.80 |
-| MAR | Urban Park Mariscal | Av. Amazonas N30-12 y Av. Eloy Alfaro | 2.60 |
-| CAR | Urban Park La Carolina | Av. Naciones Unidas y Núñez de Vela | 3.60 |
-| QUI | Urban Park Quicentro | Av. Naciones Unidas y Av. 6 de Diciembre | 4.20 |
-| NAC | Urban Park Naciones Unidas | Av. Naciones Unidas y Av. Japón | 3.40 |
-| EBA | Urban Park El Batán | Av. Eloy Alfaro y Av. Naciones Unidas | 2.90 |
+| CEN | Urban Park Centro Histórico | Av. 10 de Agosto N21-56 y Av. Roca | 0.70 |
+| PLA | Urban Park Plaza Grande | García Moreno y Sucre, frente a la Catedral | 0.90 |
+| ALA | Urban Park La Alameda | Av. Gran Colombia y Av. 10 de Agosto | 0.61 |
+| SAN | Urban Park San Blas | Calle Chimborazo y Av. Pichincha | 0.50 |
+| GON | Urban Park González Suárez | Av. González Suárez y Av. Patria | 0.79 |
+| COL | Urban Park Colón | Av. Colón y Av. 6 de Diciembre | 0.67 |
+| FOC | Urban Park La Foch | Av. Reina Victoria N24-56 y La Pinta | 0.58 |
+| MAR | Urban Park Mariscal | Av. Amazonas N30-12 y Av. Eloy Alfaro | 0.54 |
+| CAR | Urban Park La Carolina | Av. Naciones Unidas y Núñez de Vela | 0.76 |
+| QUI | Urban Park Quicentro | Av. Naciones Unidas y Av. 6 de Diciembre | 0.90 |
+| NAC | Urban Park Naciones Unidas | Av. Naciones Unidas y Av. Japón | 0.73 |
+| EBA | Urban Park El Batán | Av. Eloy Alfaro y Av. Naciones Unidas | 0.64 |
+
+Todas las tarifas por plaza quedan entre **$0.50 y $0.90** por hora (según zona y tipo de vehículo).
 
 > El mapa se dibuja con `Microsoft.Maui.Graphics`: no necesita clave de Google Maps ni internet.
 > Las avenidas y los parques están en su latitud/longitud real, y los pines son tocables.

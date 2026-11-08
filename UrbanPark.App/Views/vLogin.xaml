@@ -15,15 +15,13 @@
 
             <!-- Marca -->
             <VerticalStackLayout Spacing="5" Margin="0,2,0,6">
-                <Border Style="{StaticResource Avatar}"
-                        WidthRequest="48" HeightRequest="48"
+                <Border BackgroundColor="Transparent"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 16"
+                        WidthRequest="68" HeightRequest="68"
                         HorizontalOptions="Center">
-                    <Label Text="P"
-                           FontFamily="OpenSansSemibold"
-                           FontSize="18"
-                           TextColor="{StaticResource TextoFuerte}"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Center" />
+                    <Image Source="logo_urbanpark.png"
+                           Aspect="AspectFill" />
                 </Border>
 
                 <Label Text="URBAN PARK"

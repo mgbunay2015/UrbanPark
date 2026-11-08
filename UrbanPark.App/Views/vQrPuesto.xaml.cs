@@ -12,7 +12,7 @@ namespace UrbanPark.App.Views;
 /// </summary>
 public partial class vQrPuesto : ContentPage
 {
-    private readonly PasePuestoDto _pase;
+    private PasePuestoDto _pase = null!;
     private IDispatcherTimer? _reloj;
     private DateTime _ultimoRefresco = DateTime.MinValue;
     private double _montoPintado = -1;
@@ -26,6 +26,12 @@ public partial class vQrPuesto : ContentPage
         InitializeComponent();
         _pase = pase;
         PintarTodo();
+    }
+
+    /// <summary>Pestaña QR: busca el puesto vigente del cliente y lo muestra.</summary>
+    public vQrPuesto()
+    {
+        InitializeComponent();
     }
 
     /// <summary>Se entra desde un ticket abierto (pestaña Tickets): el pase se pide al API.</summary>
@@ -51,8 +57,65 @@ public partial class vQrPuesto : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        IniciarReloj();
-        await RefrescarAsync(forzar: true);
+
+        try
+        {
+            if (_pase is null && !await CargarPuestoAsync())
+            {
+                MostrarSinPuesto();
+                return;
+            }
+
+            if (_pase is null) return;
+
+            IniciarReloj();
+            await RefrescarAsync(forzar: true);
+        }
+        catch (Exception ex)
+        {
+            // La pantalla del QR nunca debe tumbar la app: se deja el estado vacío.
+            try { MostrarSinPuesto(); } catch (Exception) { /* sin nada más que hacer */ }
+            System.Diagnostics.Debug.WriteLine($"vQrPuesto.OnAppearing: {ex}");
+        }
+    }
+
+    /// <summary>Carga el puesto vigente (lo usa la pestaña QR).</summary>
+    private async Task<bool> CargarPuestoAsync()
+    {
+        var pase = await PuestoActual.CargarAsync();
+        if (pase is null) return false;
+
+        _pase = pase;
+        _montoPintado = -1;
+        PintarTodo();
+        return true;
+    }
+
+    /// <summary>Estado vacío: el cliente no tiene puesto ocupado ni reserva.</summary>
+    private void MostrarSinPuesto()
+    {
+        _reloj?.Stop();
+        _finalizado = false;
+
+        lblTituloQr.Text = "Sin puesto activo";
+        lblSubtitulo.Text = "Todavía no tienes un puesto ocupado ni una reserva";
+        lblTicketNumero.Text = "N: —";
+        lblTicketFecha.Text = DateTime.Now.ToString("dd/MM/yyyy", CultureInfo.GetCultureInfo("es-EC"));
+        lblTicketPlaca.Text = "—";
+        lblTicketEntrada.Text = "E: —";
+        lblTicketHora.Text = "--:--";
+        lblTicketSede.Text = "URBAN PARK";
+        imgQr.Source = null;
+        lblDireccion.Text = "Cuando entres a un puesto o reserves uno, aquí verás tu QR.";
+        lblEtiquetaMonto.Text = "EL QR APARECE CON TU PUESTO";
+        lblMonto.Text = "$0.00";
+        lblTiempo.Text = "";
+        lblCalculo.Text = "";
+        contenidoDatos.Clear();
+        btnLlegar.IsVisible = false;
+        btnPagar.IsVisible = false;
+        btnAnular.IsVisible = false;
+        lblNota.Text = "Elige un parqueadero en la pestaña Mapa y tu QR aparecerá aquí.";
     }
 
     protected override void OnDisappearing()
@@ -64,10 +127,21 @@ public partial class vQrPuesto : ContentPage
     // ================================================================ pintado
     private void PintarTodo()
     {
-        lblSede.Text = string.IsNullOrWhiteSpace(_pase.SedeNombre) ? "Urban Park" : _pase.SedeNombre;
-        lblPuesto.Text = string.IsNullOrWhiteSpace(_pase.EspacioCodigo)
-            ? $"Puesto {_pase.EspacioId}"
-            : _pase.EspacioCodigo;
+        if (_pase is null) return;
+
+        lblTituloQr.Text = EsReserva ? "Tu puesto está reservado" : "Tu QR";
+
+        // Cabecera del ticket impreso: número, fecha, placa, entrada y hora.
+        var cultura = CultureInfo.GetCultureInfo("es-EC");
+        lblTicketNumero.Text = $"N: {CodigoTicket()}";
+        lblTicketFecha.Text = _pase.Entrada.ToString("dd/MM/yyyy", cultura);
+        lblTicketPlaca.Text = PlacaEcuador.Formatear(_pase.Placa).Replace("-", "");
+        lblTicketEntrada.Text = $"E: {NumeroEntrada()}";
+        lblTicketHora.Text = _pase.Entrada.ToString("HH:mm", cultura);
+        lblTicketSede.Text = string.IsNullOrWhiteSpace(_pase.SedeNombre)
+            ? "URBAN PARK"
+            : _pase.SedeNombre!.ToUpperInvariant();
+
         lblDireccion.Text = string.IsNullOrWhiteSpace(_pase.SedeDireccion)
             ? "Consultando la dirección del parqueadero…"
             : "📍 " + _pase.SedeDireccion;
@@ -77,12 +151,15 @@ public partial class vQrPuesto : ContentPage
             lblSubtitulo.Text = "Reserva confirmada · muestra este QR al llegar";
             lblEtiquetaMonto.Text = "VALOR ESTIMADO DE LA RESERVA";
             btnPagar.Text = "Ya llegué: activar";
+            btnAnular.IsVisible = true;
         }
         else
         {
             lblSubtitulo.Text = "Muestra este QR en la entrada del parqueadero";
             lblEtiquetaMonto.Text = "VALOR A PAGAR EN ESTE MOMENTO";
             btnPagar.Text = "Cerrar y pagar";
+            // anular solo tiene sentido con una reserva: una estancia se cierra y se paga
+            btnAnular.IsVisible = false;
         }
 
         PintarMonto();
@@ -90,11 +167,29 @@ public partial class vQrPuesto : ContentPage
     }
 
     private bool EsReserva =>
-        string.Equals(_pase.Estado, "RESERVADO", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(_pase.Modo, "RESERVA", StringComparison.OrdinalIgnoreCase);
+        _pase is not null &&
+        (string.Equals(_pase.Estado, "RESERVADO", StringComparison.OrdinalIgnoreCase) ||
+         string.Equals(_pase.Modo, "RESERVA", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Número del ticket como en el papel: 0433656.</summary>
+    private string CodigoTicket()
+    {
+        var digitos = new string((_pase.TicketCodigo ?? "").Where(char.IsDigit).ToArray());
+        if (digitos.Length == 0) return _pase.TicketId.ToString("D7");
+        return digitos.Length > 7 ? digitos[^7..] : digitos.PadLeft(7, '0');
+    }
+
+    /// <summary>Número de entrada (011 en el ticket físico): sale de la plaza asignada.</summary>
+    private string NumeroEntrada()
+    {
+        var digitos = new string((_pase.EspacioCodigo ?? "").Where(char.IsDigit).ToArray());
+        return digitos.Length == 0 ? "000" : digitos.PadLeft(3, '0');
+    }
 
     private void PintarMonto()
     {
+        if (_pase is null) return;
+
         var descuento = _pase.Descuento;
 
         if (EsReserva)
@@ -158,6 +253,7 @@ public partial class vQrPuesto : ContentPage
     private void PintarDatos()
     {
         contenidoDatos.Clear();
+        if (_pase is null) return;
         contenidoDatos.Add(Encabezado("DATOS DEL PASE"));
         contenidoDatos.Add(Fila("Placa", _pase.Placa, "Ticket", _pase.TicketCodigo));
         contenidoDatos.Add(Fila("Puesto", string.IsNullOrWhiteSpace(_pase.EspacioCodigo) ? "—" : _pase.EspacioCodigo,
@@ -229,12 +325,20 @@ public partial class vQrPuesto : ContentPage
         _reloj.Interval = TimeSpan.FromSeconds(1);
         _reloj.Tick += async (_, _) =>
         {
-            if (_finalizado) return;
-            PintarMonto();
+            try
+            {
+                if (_finalizado || _pase is null) return;
+                PintarMonto();
 
-            // Cada minuto se confirma con el servidor el descuento y el estado del ticket.
-            if (DateTime.Now - _ultimoRefresco > TimeSpan.FromSeconds(60))
-                await RefrescarAsync();
+                // Cada minuto se confirma con el servidor el descuento y el estado del ticket.
+                if (DateTime.Now - _ultimoRefresco > TimeSpan.FromSeconds(60))
+                    await RefrescarAsync();
+            }
+            catch (Exception ex)
+            {
+                // un fallo al repintar no debe detener la cuenta ni cerrar la pantalla
+                System.Diagnostics.Debug.WriteLine($"vQrPuesto reloj: {ex.Message}");
+            }
         };
         _reloj.Start();
     }
@@ -273,22 +377,27 @@ public partial class vQrPuesto : ContentPage
 
     private async Task RefrescarAsync(bool forzar = false)
     {
-        if (_refrescando || _finalizado) return;
+        if (_refrescando || _finalizado || _pase is null) return;
         if (!forzar && _pase.TicketId <= 0) return;
 
         _refrescando = true;
         try
         {
-            var pase = await ApiCliente.PaseAsync(_pase.TicketId);
-            if (pase is null) return;
+            var id = _pase.TicketId;
+            var pase = await ApiCliente.PaseAsync(id);
+
+            // La página pudo cerrarse mientras llegaba la respuesta.
+            if (pase is null || _pase is null || _finalizado) return;
 
             CopiarPase(pase);
             _montoPintado = -1;
             _ultimoRefresco = DateTime.Now;
             PintarTodo();
 
-            if (!string.Equals(_pase.Estado, "ABIERTO", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(_pase.Estado, "RESERVADO", StringComparison.OrdinalIgnoreCase))
+            // Estado nulo (respuesta incompleta) se trata como abierto: no se cierra la vista.
+            var estado = _pase.Estado ?? "";
+            if (!string.Equals(estado, "ABIERTO", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(estado, "RESERVADO", StringComparison.OrdinalIgnoreCase))
                 await CerrarVistaAsync();
         }
         catch (Exception ex) when (ex is ApiExcepcion)
@@ -309,6 +418,8 @@ public partial class vQrPuesto : ContentPage
     // ================================================================ acciones
     private async void OnLlegarClicked(object? sender, EventArgs e)
     {
+        if (_pase is null) return;
+
         try
         {
             if (_pase.SedeLatitud == 0 && _pase.SedeLongitud == 0)
@@ -330,6 +441,8 @@ public partial class vQrPuesto : ContentPage
 
     private async void OnPagarClicked(object? sender, EventArgs e)
     {
+        if (_pase is null) return;
+
         // En una reserva, este botón la activa: el QR pasa a contar el tiempo real.
         if (EsReserva)
         {
@@ -342,7 +455,7 @@ public partial class vQrPuesto : ContentPage
 
     private async Task ActivarReservaAsync()
     {
-        if (_activando) return;
+        if (_activando || _pase is null) return;
         _activando = true;
         btnPagar.IsEnabled = false;
         btnPagar.Text = "Activando…";
@@ -368,7 +481,7 @@ public partial class vQrPuesto : ContentPage
 
     private async void OnAnularClicked(object? sender, EventArgs e)
     {
-        if (_finalizado) return;
+        if (_finalizado || _pase is null) return;
 
         if (!await Ui.Confirmar(this, "Anular reserva",
                 "Se liberará el puesto y no se cobrará nada. ¿Continuar?"))
@@ -397,11 +510,32 @@ public partial class vQrPuesto : ContentPage
         _finalizado = true;
         _reloj?.Stop();
 
-        if (!string.IsNullOrWhiteSpace(mensaje))
-            await Ui.Exito(this, mensaje);
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(mensaje))
+                await Ui.Exito(this, mensaje);
+        }
+        catch (Exception)
+        {
+            // la página pudo quedar fuera de pantalla: el aviso es opcional
+        }
 
-        if (Navigation.NavigationStack.Count > 1)
-            await Navigation.PopAsync();
+        try
+        {
+            // Solo se puede volver atrás si esta página sigue en la pila de navegación.
+            var pila = Navigation?.NavigationStack;
+            if (pila is not null && pila.Count > 1 && pila[^1] == this)
+                await Navigation.PopAsync();
+            else if (pila is not null && pila.Contains(this) && pila.Count > 1)
+                await Navigation.PopAsync();
+            else
+                MostrarSinPuesto();   // pestaña QR o página ya cerrada: estado vacío
+        }
+        catch (Exception)
+        {
+            // si la navegación ya no está disponible, se deja el estado vacío pintado
+            try { MostrarSinPuesto(); } catch (Exception) { /* nada más que hacer */ }
+        }
     }
 
     // ================================================================ QR

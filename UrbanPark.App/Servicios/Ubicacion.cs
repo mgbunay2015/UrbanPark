@@ -41,11 +41,13 @@ public static class Ubicacion
 
             if (estado == PermissionStatus.Granted)
             {
-                var punto = await Geolocation.Default.GetLastKnownLocationAsync();
+                var punto = await ConLimiteAsync(Geolocation.Default.GetLastKnownLocationAsync(), TimeSpan.FromSeconds(3));
                 if (punto is null || punto.Timestamp < DateTimeOffset.Now.AddMinutes(-10))
                 {
-                    punto = await Geolocation.Default.GetLocationAsync(
-                        new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(8)));
+                    punto = await ConLimiteAsync(
+                        Geolocation.Default.GetLocationAsync(
+                            new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(8))),
+                        TimeSpan.FromSeconds(9));
                 }
 
                 if (punto is not null)
@@ -65,6 +67,23 @@ public static class Ubicacion
 
         Cambio?.Invoke(null, EventArgs.Empty);
         return (Latitud, Longitud, EsReal);
+    }
+
+    /// <summary>
+    /// En Windows el GPS a veces no responde y deja la rueda girando sin fin. Con esto la
+    /// lectura se corta en <paramref name="limite"/> y se cae al punto de referencia.
+    /// </summary>
+    private static async Task<Location?> ConLimiteAsync(Task<Location?> tarea, TimeSpan limite)
+    {
+        try
+        {
+            var primera = await Task.WhenAny(tarea, Task.Delay(limite));
+            return primera == tarea ? await tarea : null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
 
     private static async Task<string> NombreDelLugarAsync(Location punto)

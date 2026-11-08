@@ -17,4 +17,9 @@
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.*" />
   </ItemGroup>
 
+  <!-- Claves locales de cada equipo (API keys, etc.). No se publican ni se suben al repo. -->
+  <ItemGroup>
+    <Content Update="appsettings.Local.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
 </Project>

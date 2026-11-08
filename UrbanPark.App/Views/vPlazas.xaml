@@ -12,17 +12,13 @@
 
                 <!-- ================= marca ================= -->
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-                    <Border BackgroundColor="{StaticResource Acento}"
+                    <Border BackgroundColor="Transparent"
                             StrokeThickness="0"
-                            StrokeShape="RoundRectangle 8"
-                            WidthRequest="24"
-                            HeightRequest="24">
-                        <Label Text="P"
-                               FontFamily="OpenSansSemibold"
-                               FontSize="12"
-                               TextColor="{StaticResource Fondo}"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Center" />
+                            StrokeShape="RoundRectangle 7"
+                            WidthRequest="26"
+                            HeightRequest="26">
+                        <Image Source="logo_urbanpark.png"
+                               Aspect="AspectFill" />
                     </Border>
                     <Label Grid.Column="1"
                            Text="Urban Park"
@@ -80,16 +76,57 @@
                 </Border>
 
                 <!-- ================= vehículo con el que se reserva ================= -->
-                <VerticalStackLayout x:Name="panelVehiculo" IsVisible="False" Spacing="4">
-                    <Label Text="Vas a reservar con"
-                           FontFamily="OpenSansSemibold"
-                           FontSize="11"
-                           TextColor="{StaticResource TextoClaroSuave}" />
-                    <FlexLayout x:Name="contenedorVehiculos"
-                                Wrap="Wrap"
-                                Direction="Row"
-                                JustifyContent="Start"
-                                AlignItems="Start" />
+                <VerticalStackLayout x:Name="panelVehiculo" IsVisible="False" Spacing="5">
+                    <Border BackgroundColor="{StaticResource Superficie}"
+                            Stroke="{StaticResource SuperficieBorde}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 14"
+                            Padding="9,8">
+
+                        <!-- tres columnas: selector · placa · datos -->
+                        <Grid ColumnDefinitions="Auto,*,Auto"
+                              ColumnSpacing="8">
+
+                            <!-- 1) selector de vehículo -->
+                            <VerticalStackLayout Grid.Column="0"
+                                                 Spacing="3"
+                                                 VerticalOptions="Center">
+                                <Label x:Name="lblVehiculosTitulo"
+                                       Text="Vas a reservar con"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="7.5"
+                                       CharacterSpacing="0.4"
+                                       TextColor="{StaticResource TextoClaroSuave}"
+                                       LineBreakMode="TailTruncation" />
+                                <VerticalStackLayout x:Name="contenedorVehiculos" Spacing="3" />
+                                <Button x:Name="btnAsignarIa"
+                                        IsVisible="False"
+                                        Text="🤖 Asignar IA"
+                                        Clicked="OnAsignarIaClicked"
+                                        BackgroundColor="{StaticResource SuperficieAlta}"
+                                        TextColor="{StaticResource Acento}"
+                                        FontFamily="OpenSansSemibold"
+                                        FontSize="8.5"
+                                        CornerRadius="7"
+                                        HeightRequest="24"
+                                        HorizontalOptions="Fill"
+                                        Padding="4,0" />
+                            </VerticalStackLayout>
+
+                            <!-- 2) placa oficial -->
+                            <VerticalStackLayout x:Name="contenedorPlaca"
+                                                 Grid.Column="1"
+                                                 Spacing="0"
+                                                 VerticalOptions="Center"
+                                                 HorizontalOptions="Center" />
+
+                            <!-- 3) datos del vehículo -->
+                            <VerticalStackLayout x:Name="contenedorDatosVehiculo"
+                                                 Grid.Column="2"
+                                                 Spacing="0"
+                                                 VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
                 </VerticalStackLayout>
 
                 <!-- ================= sesión y ocupación ================= -->

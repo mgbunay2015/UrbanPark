@@ -35,14 +35,15 @@ Console.WriteLine("=============================================================
 Console.WriteLine("\n[1] Fórmula de cobro (mínimo 1 hora, horas hacia arriba, 2 decimales)");
 var t0 = new DateTime(2025, 1, 1, 10, 0, 0);
 
-Comprobar("1 minuto -> 1 hora ($3.50)", Reglas.CalcularMonto(t0, t0.AddMinutes(1), 3.5) == 3.5,
-    Reglas.CalcularMonto(t0, t0.AddMinutes(1), 3.5).ToString());
-Comprobar("30 minutos -> 1 hora ($3.50)", Reglas.CalcularMonto(t0, t0.AddMinutes(30), 3.5) == 3.5);
-Comprobar("60 minutos exactos -> 1 hora ($3.50)", Reglas.CalcularMonto(t0, t0.AddMinutes(60), 3.5) == 3.5);
-Comprobar("61 minutos -> 2 horas ($7.00)", Reglas.CalcularMonto(t0, t0.AddMinutes(61), 3.5) == 7.0,
-    Reglas.CalcularMonto(t0, t0.AddMinutes(61), 3.5).ToString());
-Comprobar("121 minutos -> 3 horas ($10.50)", Reglas.CalcularMonto(t0, t0.AddMinutes(121), 3.5) == 10.5,
-    Reglas.CalcularMonto(t0, t0.AddMinutes(121), 3.5).ToString());
+const double tarifa = 0.70;
+Comprobar("1 minuto -> 1 hora ($0.70)", Reglas.CalcularMonto(t0, t0.AddMinutes(1), tarifa) == tarifa,
+    Reglas.CalcularMonto(t0, t0.AddMinutes(1), tarifa).ToString());
+Comprobar("30 minutos -> 1 hora ($0.70)", Reglas.CalcularMonto(t0, t0.AddMinutes(30), tarifa) == tarifa);
+Comprobar("60 minutos exactos -> 1 hora ($0.70)", Reglas.CalcularMonto(t0, t0.AddMinutes(60), tarifa) == tarifa);
+Comprobar("61 minutos -> 2 horas ($1.40)", Reglas.CalcularMonto(t0, t0.AddMinutes(61), tarifa) == 1.4,
+    Reglas.CalcularMonto(t0, t0.AddMinutes(61), tarifa).ToString());
+Comprobar("121 minutos -> 3 horas ($2.10)", Reglas.CalcularMonto(t0, t0.AddMinutes(121), tarifa) == 2.1,
+    Reglas.CalcularMonto(t0, t0.AddMinutes(121), tarifa).ToString());
 Comprobar("Tarifa 1.5 y 4 horas -> $6.00", Reglas.CalcularMonto(t0, t0.AddHours(4), 1.5) == 6.0);
 Comprobar("Tarifa nula -> $0.00", Reglas.CalcularMonto(t0, t0.AddHours(2), null) == 0.0);
 Comprobar("Sin salida (estimado en vivo) devuelve un valor > 0",

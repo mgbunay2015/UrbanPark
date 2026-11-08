@@ -11,6 +11,9 @@ namespace UrbanPark.App.Views;
 /// </summary>
 public partial class vTarifas : ContentPage
 {
+    private const double TarifaMin = 0.50;
+    private const double TarifaMax = 0.90;
+
     private static readonly string[] Modos = ["PORCENTAJE", "FIJO", "TARIFA_BASE"];
     private static readonly string?[] Zonas = [null, "A", "B", "C", "D"];
     private static readonly string?[] Tipos = [null, "AUTO", "MOTO", "CAMIONETA", "DISCAPACIDAD", "EMBARAZADA"];
@@ -55,9 +58,9 @@ public partial class vTarifas : ContentPage
     {
         lblModoAyuda.Text = pickerModo.SelectedIndex switch
         {
-            1 => "Precio fijo por hora en las plazas filtradas (ej.: 2.75).",
-            2 => "Nueva tarifa base de la sede; recalcula AUTO/MOTO/CAMIONETA por zona.",
-            _ => "Ej.: 10 sube un 10 %; -5 baja un 5 %. Afecta plazas (y sedes si no filtras zona/tipo)."
+            1 => $"Precio fijo por hora en las plazas filtradas (entre ${TarifaMin:0.00} y ${TarifaMax:0.00}).",
+            2 => $"Nueva tarifa base de la sede (${TarifaMin:0.00}–${TarifaMax:0.00}); recalcula plazas por zona.",
+            _ => "Ej.: 10 sube un 10 %; -5 baja un 5 %. El resultado se mantiene entre $0.50 y $0.90."
         };
     }
 
@@ -207,6 +210,12 @@ public partial class vTarifas : ContentPage
 
         var idx = pickerModo.SelectedIndex < 0 ? 0 : pickerModo.SelectedIndex;
         var modo = Modos[Math.Min(idx, Modos.Length - 1)];
+
+        if (modo is "FIJO" or "TARIFA_BASE" && (valor < TarifaMin || valor > TarifaMax))
+        {
+            await Ui.Aviso(this, $"La tarifa debe estar entre ${TarifaMin:0.00} y ${TarifaMax:0.00} por hora.");
+            return;
+        }
         var zona = Zonas[Math.Clamp(pickerZona.SelectedIndex, 0, Zonas.Length - 1)];
         var tipo = Tipos[Math.Clamp(pickerTipo.SelectedIndex, 0, Tipos.Length - 1)];
 
