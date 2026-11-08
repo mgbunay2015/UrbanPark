@@ -40,3 +40,4 @@ capturas-temp/
 # ===== Datos locales / secretos =====
 *.local.json
 appsettings.Local.json
+

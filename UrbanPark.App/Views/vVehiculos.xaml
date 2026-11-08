@@ -26,25 +26,93 @@
                               RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                               RowSpacing="8">
 
-                            <Grid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
-                                  ColumnDefinitions="200,Auto" ColumnSpacing="12">
-                                <VerticalStackLayout Grid.Column="0" Spacing="6" WidthRequest="200">
-                                    <Label Text="Placa" Style="{StaticResource EtiquetaCampo}" />
-                                    <Border Style="{StaticResource Campo}">
-                                        <Entry x:Name="txtPlaca"
-                                               Placeholder="ABC-1234"
-                                               MaxLength="9"
-                                               TextChanged="OnPlacaChanged" />
-                                    </Border>
-                                </VerticalStackLayout>
-                                <Button Grid.Column="1"
-                                        Text="Registrados"
-                                        Clicked="OnRegistradosClicked"
-                                        Style="{StaticResource BotonPrimario}"
-                                        VerticalOptions="End"
-                                        HeightRequest="36"
-                                        Padding="12,0" />
-                            </Grid>
+                            <VerticalStackLayout Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Spacing="8">
+                                <Grid ColumnDefinitions="200,Auto,Auto" ColumnSpacing="12">
+                                    <VerticalStackLayout Grid.Column="0" Spacing="6" WidthRequest="200">
+                                        <Label Text="Placa" Style="{StaticResource EtiquetaCampo}" />
+                                        <Border Style="{StaticResource Campo}">
+                                            <Entry x:Name="txtPlaca"
+                                                   Placeholder="ABC-1234"
+                                                   MaxLength="9"
+                                                   TextChanged="OnPlacaChanged"
+                                                   Completed="OnConsultarPlacaClicked" />
+                                        </Border>
+                                    </VerticalStackLayout>
+                                    <Button x:Name="btnConsultarPlaca"
+                                            Grid.Column="1"
+                                            Text="🔎 Consultar placa"
+                                            Clicked="OnConsultarPlacaClicked"
+                                            Style="{StaticResource BotonAcento}"
+                                            VerticalOptions="End"
+                                            HeightRequest="36"
+                                            Padding="12,0" />
+                                    <Button Grid.Column="2"
+                                            Text="Registrados"
+                                            Clicked="OnRegistradosClicked"
+                                            Style="{StaticResource BotonPrimario}"
+                                            VerticalOptions="End"
+                                            HeightRequest="36"
+                                            Padding="12,0" />
+                                </Grid>
+
+                                <!-- ficha traída de EcuadorAPI: marca, modelo, año y color -->
+                                <Border x:Name="panelConsulta"
+                                        IsVisible="False"
+                                        BackgroundColor="{StaticResource Superficie}"
+                                        Stroke="{StaticResource Acento}"
+                                        StrokeThickness="1"
+                                        StrokeShape="RoundRectangle 12"
+                                        Padding="10,8">
+                                    <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="5">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                            <Label x:Name="lblConsultaTitulo"
+                                                   FontFamily="OpenSansSemibold"
+                                                   FontSize="12"
+                                                   TextColor="{StaticResource TextoClaro}"
+                                                   LineBreakMode="TailTruncation"
+                                                   VerticalOptions="Center" />
+                                            <Label x:Name="lblConsultaCerrar"
+                                                   Grid.Column="1"
+                                                   Text="✕"
+                                                   FontSize="12"
+                                                   TextColor="{StaticResource TextoClaroSuave}"
+                                                   VerticalOptions="Center">
+                                                <Label.GestureRecognizers>
+                                                    <TapGestureRecognizer Tapped="OnCerrarConsultaTapped" />
+                                                </Label.GestureRecognizers>
+                                            </Label>
+                                        </Grid>
+                                        <Label x:Name="lblConsultaDetalle"
+                                               Grid.Row="1"
+                                               FontSize="10"
+                                               TextColor="{StaticResource TextoClaroSuave}"
+                                               LineBreakMode="WordWrap" />
+
+                                        <!-- matrícula registrada: consulta aparte -->
+                                        <VerticalStackLayout Grid.Row="2" Spacing="4">
+                                            <Button x:Name="btnMatricula"
+                                                    Text="📋 Ver matrícula registrada"
+                                                    Clicked="OnMatriculaClicked"
+                                                    BackgroundColor="{StaticResource SuperficieAlta}"
+                                                    TextColor="{StaticResource Acento}"
+                                                    FontFamily="OpenSansSemibold"
+                                                    FontSize="10"
+                                                    CornerRadius="8"
+                                                    HeightRequest="28"
+                                                    HorizontalOptions="Start"
+                                                    Padding="10,0" />
+                                            <Border x:Name="panelMatricula"
+                                                    IsVisible="False"
+                                                    BackgroundColor="{StaticResource SuperficieAlta}"
+                                                    StrokeThickness="0"
+                                                    StrokeShape="RoundRectangle 8"
+                                                    Padding="8,6">
+                                                <VerticalStackLayout x:Name="contenedorMatricula" Spacing="2" />
+                                            </Border>
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </Border>
+                            </VerticalStackLayout>
 
                             <VerticalStackLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Spacing="8">
                                 <Label Text="Tipo" Style="{StaticResource EtiquetaCampo}" />

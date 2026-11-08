@@ -12,6 +12,8 @@ echo.
 call :DockerListo
 if errorlevel 1 goto fin_error
 
+call :Firewall8090
+
 call :MySqlListo
 if errorlevel 1 goto fin_error
 
@@ -38,15 +40,34 @@ echo --------------------------------------------
 echo Si la aplicacion ya estaba abierta, cierra el aviso
 echo de error y vuelve a entrar.
 echo.
-pause
+if /I not "%~1"=="/nopause" pause
 exit /b 0
 
 :fin_error
 echo.
 echo No se pudieron levantar todos los servicios. Revisa los mensajes de arriba.
+echo Si la app mostro "sesion expiro o credenciales invalidas", ejecuta antes:
+echo   detener-stack-viejo-8090.bat
+echo Luego vuelve a correr este archivo (iniciar-urbanpark.bat).
 echo.
-pause
+if /I not "%~1"=="/nopause" pause
 exit /b 1
+
+REM ------------------------------------------------------------------ Firewall Windows (celular en WiFi)
+:Firewall8090
+netsh advfirewall firewall show rule name="Urban Park API 8090" >nul 2>&1
+if not errorlevel 1 (
+  echo [Firewall] Puerto 8090 ya permitido en red privada.
+  exit /b 0
+)
+echo [Firewall] Permitiendo entrar al API por TCP 8090 (red privada)...
+netsh advfirewall firewall add rule name="Urban Park API 8090" dir=in action=allow protocol=TCP localport=8090 profile=private,domain >nul 2>&1
+if errorlevel 1 (
+  echo [Firewall] No se pudo crear la regla. Si el movil no conecta, ejecuta este .bat como administrador.
+) else (
+  echo [Firewall] Regla creada.
+)
+exit /b 0
 
 REM ------------------------------------------------------------------ Docker
 :DockerListo
@@ -170,14 +191,35 @@ exit /b 0
 
 REM ------------------------------------------------------------------ API
 :ApiLista
-call :HttpOk "http://127.0.0.1:8090/"
+call :ApiUrbanPark
 if not errorlevel 1 (
-  echo [API] Ya responde en http://127.0.0.1:8090
+  echo [API] Ya responde en http://127.0.0.1:8090 ^(API .NET^)
   exit /b 0
 )
 
-echo [API] No responde. Revisando si otro contenedor tiene el puerto 8090...
+call :ApiPuertoAjeno
+if not errorlevel 1 (
+  echo [API] AVISO: En 8090 hay la web/nginx del proyecto VIEJO, no la API MAUI.
+  echo       Eso hace que la app diga "sesion expiro o credenciales invalidas" ^(401^).
+)
+
+echo [API] Liberando el puerto 8090...
 call :LiberarPuerto8090
+ping -n 3 127.0.0.1 >nul
+
+call :ApiUrbanPark
+if not errorlevel 1 (
+  echo [API] Ya responde en http://127.0.0.1:8090 ^(API .NET^)
+  exit /b 0
+)
+
+call :ApiPuertoAjeno
+if not errorlevel 1 (
+  echo [API] El puerto 8090 sigue con el servicio equivocado.
+  echo       Ejecuta: detener-stack-viejo-8090.bat
+  echo       O reinicia Docker Desktop y vuelve a intentar.
+  exit /b 1
+)
 
 where dotnet >nul 2>&1
 if errorlevel 1 (
@@ -195,7 +237,7 @@ if !N! GTR 45 (
   echo [API] No respondio en http://127.0.0.1:8090. Mira la ventana "Urban Park API".
   exit /b 1
 )
-call :HttpOk "http://127.0.0.1:8090/"
+call :ApiUrbanPark
 if errorlevel 1 (
   ping -n 4 127.0.0.1 >nul
   goto bucle_api
@@ -209,7 +251,21 @@ echo.
 echo Comprobando que cada servicio responda...
 call :ApiUrbanPark
 if errorlevel 1 (
-  echo [FALLO] http://127.0.0.1:8090 no responde como Urban Park.
+  echo [FALLO] http://127.0.0.1:8090 no es la API .NET Urban Park.
+  call :ApiPuertoAjeno
+  if not errorlevel 1 (
+    echo        Causa habitual: contenedor nginx del stack antiguo en el puerto 8090.
+  )
+  exit /b 1
+)
+call :ApiPuertoAjeno
+if not errorlevel 1 (
+  echo [FALLO] El puerto 8090 contesta HTML/web, no JSON de la API. La app fallaria al iniciar sesion.
+  exit /b 1
+)
+call :ApiSwaggerOk
+if errorlevel 1 (
+  echo [FALLO] No hay Swagger de Urban Park API en /swagger/v1/swagger.json
   exit /b 1
 )
 call :HttpOk "http://localhost:8090/"
@@ -222,7 +278,7 @@ if errorlevel 1 (
   echo [FALLO] MySQL no tiene la base urbanpark.
   exit /b 1
 )
-echo [OK] API, localhost y MySQL responden.
+echo [OK] API .NET, Swagger, localhost y MySQL listos. Login cliente1 deberia funcionar.
 exit /b 0
 
 REM ------------------------------------------------------------------ App Windows
@@ -243,20 +299,42 @@ exit /b 0
 
 REM Si otro contenedor publico el 8090, el API de Urban Park no puede enlazar.
 :LiberarPuerto8090
-for /f "delims=" %%L in ('docker ps --format "{{.Names}}|{{.Ports}}"') do (
+for %%C in (urban-park-proyecto-main-nginx-1 estacionamiento-nginx-1) do (
+  docker container inspect %%C >nul 2>&1
+  if not errorlevel 1 (
+    docker ps -q -f name=%%C 2>nul | findstr /R "." >nul
+    if not errorlevel 1 (
+      echo [API] Deteniendo contenedor conocido %%C en 8090...
+      docker stop %%C >nul 2>&1
+      if errorlevel 1 echo [API] docker stop %%C fallo. Reinicia Docker Desktop si persiste.
+    )
+  )
+)
+for /f "delims=" %%L in ('docker ps --format "{{.Names}}|{{.Ports}}" 2^>nul') do (
   echo %%L | findstr /C:":8090->" >nul
   if not errorlevel 1 (
     for /f "tokens=1 delims=|" %%N in ("%%L") do (
       echo [API] Deteniendo %%N porque ocupa el puerto 8090.
-      docker stop %%N >nul
+      docker stop %%N >nul 2>&1
+      if errorlevel 1 echo [API] No se pudo detener %%N. Reinicia Docker Desktop.
     )
   )
 )
 exit /b 0
 
-REM ApiUrbanPark -> 0 solo si el cuerpo es el de esta API.
+REM ApiPuertoAjeno -> 0 si en 8090 hay HTTP pero NO es nuestra API (nginx, HTML, stack viejo).
+:ApiPuertoAjeno
+powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8090/' -UseBasicParsing -TimeoutSec 4; if ($r.Content -match 'Urban Park API') { exit 1 }; if ($r.Content -match '<(html|!DOCTYPE)') { exit 0 }; if ($r.Headers['Content-Type'] -match 'text/html') { exit 0 }; if ($r.Content -match 'Urban Park' -and $r.Content -notmatch 'Urban Park API') { exit 0 }; exit 1 } catch { exit 1 }"
+exit /b %errorlevel%
+
+REM ApiSwaggerOk -> 0 si existe el OpenAPI de esta API.
+:ApiSwaggerOk
+powershell -NoProfile -Command "try { $j = Invoke-RestMethod -Uri 'http://127.0.0.1:8090/swagger/v1/swagger.json' -TimeoutSec 6; if ($j.info.title -match 'Urban Park API') { exit 0 } else { exit 1 } } catch { exit 1 }"
+exit /b %errorlevel%
+
+REM ApiUrbanPark -> 0 solo si el cuerpo es el de esta API (JSON, no la web antigua).
 :ApiUrbanPark
-powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8090/' -UseBasicParsing -TimeoutSec 4; if ($r.Content -match 'Urban Park') { exit 0 } else { exit 1 } } catch { exit 1 }"
+powershell -NoProfile -Command "try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8090/' -UseBasicParsing -TimeoutSec 4; if ($r.Content -match 'Urban Park API') { exit 0 }; if ($r.Content -match 'servicio' -and $r.Headers['Content-Type'] -match 'application/json') { exit 0 }; exit 1 } catch { exit 1 }"
 exit /b %errorlevel%
 
 REM HttpOk URL  -> errorlevel 0 si contesta, 1 si no.

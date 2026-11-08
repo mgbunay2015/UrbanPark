@@ -213,6 +213,35 @@ public sealed class VehiculoDto
     public bool Activo { get; set; } = true;
 }
 
+/// <summary>Ficha que devuelve el API al consultar una placa (EcuadorAPI).</summary>
+public sealed class ConsultaVehiculoDto
+{
+    public bool Encontrado { get; set; }
+    public string? Error { get; set; }
+    public string Placa { get; set; } = "";
+    public string? Marca { get; set; }
+    public string? Modelo { get; set; }
+    public int? Anio { get; set; }
+    public string? Color { get; set; }
+    public int? Cilindraje { get; set; }
+    public string? Clase { get; set; }
+    public string? Servicio { get; set; }
+    public string Proveedor { get; set; } = "";
+}
+
+/// <summary>Matrícula registrada del vehículo (EcuadorAPI).</summary>
+public sealed class MatriculaVehiculoDto
+{
+    public bool Encontrado { get; set; }
+    public string? Error { get; set; }
+    public string Placa { get; set; } = "";
+    public int? AnioMatricula { get; set; }
+    public string? UltimaMatricula { get; set; }
+    public string? Caduca { get; set; }
+    public string? Entidad { get; set; }
+    public string Proveedor { get; set; } = "";
+}
+
 public sealed class BiometriaDto
 {
     public long Id { get; set; }

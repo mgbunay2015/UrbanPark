@@ -71,6 +71,14 @@ public sealed record OcupacionDto(int Total, int Ocupados, int Libres, int Porce
 // ============================ Vehiculos ============================
 public sealed record VehiculoDto(long Id, string Placa, string Tipo, string? Marca, string? Color, string Propietario, string? PropietarioEmail, string? PropietarioUsername, int Descuento, bool Activo = true);
 public sealed record ActivoVehiculoDto(bool Activo);
+
+/// <summary>Ficha que devuelve EcuadorAPI al consultar una placa (solo lectura, no se guarda).</summary>
+public sealed record ConsultaVehiculoDto(bool Encontrado, string? Error, string Placa, string? Marca, string? Modelo,
+    int? Anio, string? Color, int? Cilindraje, string? Clase, string? Servicio, string Proveedor);
+
+/// <summary>Matrícula registrada del vehículo (EcuadorAPI, <c>/placas/{placa}/matricula</c>).</summary>
+public sealed record MatriculaVehiculoDto(bool Encontrado, string? Error, string Placa, int? AnioMatricula,
+    string? UltimaMatricula, string? Caduca, string? Entidad, string Proveedor);
 public sealed record GuardarVehiculoDto(string? Placa, string? Tipo, string? Marca, string? Color, string? Propietario, string? PropietarioEmail, string? PropietarioUsername);
 public sealed record GuardarBiometriaDto(long? VehiculoId, string? Placa, string? Tipo, string? TokenHash, string? FotoBase64, string? Dispositivo);
 public sealed record BiometriaDto(long Id, string Usuario, long? VehiculoId, string Placa, string Tipo, string? Dispositivo, bool TieneFoto, DateTime CreadoEn);

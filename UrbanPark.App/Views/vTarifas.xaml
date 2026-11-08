@@ -10,7 +10,7 @@
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <VerticalStackLayout Spacing="2">
                     <Label Text="Precios masivos" Style="{StaticResource TituloPagina}" />
-                    <Label Text="Cambia tarifas por sede, zona o tipo de plaza. Solo ADMIN."
+                    <Label Text="Rango oficial: $0.50 – $0.90 por hora. Solo ADMIN."
                            Style="{StaticResource SubtituloPagina}" />
                 </VerticalStackLayout>
                 <Button Grid.Column="1"
@@ -56,7 +56,7 @@
                             <Border Style="{StaticResource CampoOscuro}">
                                 <Entry x:Name="txtValor"
                                        Keyboard="Numeric"
-                                       Placeholder="10 o 2.50"
+                                       Placeholder="10 o 0.70"
                                        Style="{StaticResource FechaOscura}" />
                             </Border>
                         </VerticalStackLayout>

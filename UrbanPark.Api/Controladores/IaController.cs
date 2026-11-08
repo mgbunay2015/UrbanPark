@@ -164,6 +164,12 @@ public sealed class IaController : ControladorBase
     /// <summary>Segundos que se espera a la IA al redactar el reporte.</summary>
     private const int SegundosMaximosIa = 25;
 
+    /// <summary>
+    /// Tope para elegir plaza. Es más corto que el de la IA conversacional porque el cliente
+    /// tiene su propio límite y, si Ollama tarda, se contesta con la heurística local.
+    /// </summary>
+    private const int SegundosMaximosAsignacion = 12;
+
     // ================================================================ reporte del administrador
     [HttpPost("reporte-tickets")]
     [Authorize(Roles = "ADMIN")]
@@ -494,7 +500,10 @@ public sealed class IaController : ControladorBase
             try
             {
                 var prompt = ConstruirPromptAsignacion(tipo, preferencia, ocupacion, ordenadas, balance);
-                var texto = await _deepseek.GenerarAsync(prompt, json: true, maxTokens: 200);
+                // Tope corto: en un equipo con Ollama local puede tardar 100 s o más y el
+                // cliente ya no espera. Pasado el tope se responde con la heurística local.
+                using var topeIa = new CancellationTokenSource(TimeSpan.FromSeconds(SegundosMaximosAsignacion));
+                var texto = await _deepseek.GenerarAsync(prompt, json: true, maxTokens: 200, ct: topeIa.Token);
                 var json = DeepSeekService.ExtraerObjetoJson(texto)
                            ?? throw new InvalidOperationException($"{_deepseek.Nombre} no devolvió un objeto JSON");
 

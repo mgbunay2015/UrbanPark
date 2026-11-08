@@ -134,18 +134,18 @@ CREATE TABLE IF NOT EXISTS tickets (
 -- --- 12 parqueaderos de Quito, cada uno en una dirección distinta -----------
 INSERT INTO sedes (codigo, nombre, direccion, sector, latitud, longitud, telefono, horario,
                    techado, vigilancia, acepta_reserva, tarifa_base, servicios, activa) VALUES
-('CEN', 'Urban Park Centro Histórico', 'Av. 10 de Agosto N21-56 y Av. Roca',            'Centro',            -0.20776, -78.49184, '02 258 7410', '24 horas',      1, 1, 1, 3.5, 'Techado · Cámaras · Baños · Wi-Fi',     1),
-('PLA', 'Urban Park Plaza Grande',     'García Moreno y Sucre, frente a la Catedral',   'Centro Histórico',  -0.22010, -78.51230, '02 394 5520', '06:00 a 23:00', 0, 1, 1, 4.2, 'Cámaras · Baños · Cuidadores',          1),
-('ALA', 'Urban Park La Alameda',       'Av. Gran Colombia y Av. 10 de Agosto',          'La Alameda',        -0.21450, -78.50600, '02 258 7410', '24 horas',      0, 1, 1, 3.0, 'Cámaras · Baños · Lavado',              1),
-('SAN', 'Urban Park San Blas',         'Calle Chimborazo y Av. Pichincha',              'San Blas',          -0.21750, -78.50650, '02 394 5520', '06:00 a 22:00', 1, 1, 1, 2.4, 'Techado · Cámaras · Aseo',              1),
-('GON', 'Urban Park González Suárez',  'Av. González Suárez y Av. Patria',              'González Suárez',   -0.20650, -78.49750, '02 258 7410', '24 horas',      1, 1, 1, 3.8, 'Techado · Cámaras · Baños · Wi-Fi',     1),
-('COL', 'Urban Park Colón',            'Av. Colón y Av. 6 de Diciembre',                'La Colón',          -0.19900, -78.48900, '02 394 5520', '24 horas',      1, 1, 1, 3.2, 'Techado · Cámaras · Baños',             1),
-('FOC', 'Urban Park La Foch',          'Av. Reina Victoria N24-56 y La Pinta',          'La Foch',           -0.20180, -78.48850, '02 258 7410', '24 horas',      0, 1, 1, 2.8, 'Cámaras · Baños · Carga eléctrica',     1),
-('MAR', 'Urban Park Mariscal',         'Av. Amazonas N30-12 y Av. Eloy Alfaro',         'La Mariscal',       -0.18700, -78.48800, '02 394 5520', '24 horas',      0, 1, 1, 2.6, 'Cámaras · Aseo · Lavado',               1),
-('CAR', 'Urban Park La Carolina',      'Av. Naciones Unidas y Núñez de Vela',           'La Carolina',       -0.17950, -78.48130, '02 258 7410', '24 horas',      0, 1, 1, 3.6, 'Cámaras · Baños · Zona verde',          1),
-('QUI', 'Urban Park Quicentro',        'Av. Naciones Unidas y Av. 6 de Diciembre',      'Iñaquito',          -0.17580, -78.48300, '02 394 5520', '24 horas',      1, 1, 1, 4.2, 'Techado · Cámaras · Baños · Wi-Fi · Valet', 1),
-('NAC', 'Urban Park Naciones Unidas',  'Av. Naciones Unidas y Av. Japón',               'Naciones Unidas',   -0.17320, -78.48650, '02 258 7410', '24 horas',      1, 1, 1, 3.4, 'Techado · Cámaras · Baños · Carga eléctrica', 1),
-('EBA', 'Urban Park El Batán',         'Av. Eloy Alfaro y Av. Naciones Unidas',         'El Batán',          -0.18000, -78.47300, '02 394 5520', '06:00 a 23:00', 0, 1, 1, 2.9, 'Cámaras · Baños · Aseo',                1)
+('CEN', 'Urban Park Centro Histórico', 'Av. 10 de Agosto N21-56 y Av. Roca',            'Centro',            -0.20776, -78.49184, '02 258 7410', '24 horas',      1, 1, 1, 0.70, 'Techado · Cámaras · Baños · Wi-Fi',     1),
+('PLA', 'Urban Park Plaza Grande',     'García Moreno y Sucre, frente a la Catedral',   'Centro Histórico',  -0.22010, -78.51230, '02 394 5520', '06:00 a 23:00', 0, 1, 1, 0.90, 'Cámaras · Baños · Cuidadores',          1),
+('ALA', 'Urban Park La Alameda',       'Av. Gran Colombia y Av. 10 de Agosto',          'La Alameda',        -0.21450, -78.50600, '02 258 7410', '24 horas',      0, 1, 1, 0.61, 'Cámaras · Baños · Lavado',              1),
+('SAN', 'Urban Park San Blas',         'Calle Chimborazo y Av. Pichincha',              'San Blas',          -0.21750, -78.50650, '02 394 5520', '06:00 a 22:00', 1, 1, 1, 0.50, 'Techado · Cámaras · Aseo',              1),
+('GON', 'Urban Park González Suárez',  'Av. González Suárez y Av. Patria',              'González Suárez',   -0.20650, -78.49750, '02 258 7410', '24 horas',      1, 1, 1, 0.79, 'Techado · Cámaras · Baños · Wi-Fi',     1),
+('COL', 'Urban Park Colón',            'Av. Colón y Av. 6 de Diciembre',                'La Colón',          -0.19900, -78.48900, '02 394 5520', '24 horas',      1, 1, 1, 0.67, 'Techado · Cámaras · Baños',             1),
+('FOC', 'Urban Park La Foch',          'Av. Reina Victoria N24-56 y La Pinta',          'La Foch',           -0.20180, -78.48850, '02 258 7410', '24 horas',      0, 1, 1, 0.58, 'Cámaras · Baños · Carga eléctrica',     1),
+('MAR', 'Urban Park Mariscal',         'Av. Amazonas N30-12 y Av. Eloy Alfaro',         'La Mariscal',       -0.18700, -78.48800, '02 394 5520', '24 horas',      0, 1, 1, 0.54, 'Cámaras · Aseo · Lavado',               1),
+('CAR', 'Urban Park La Carolina',      'Av. Naciones Unidas y Núñez de Vela',           'La Carolina',       -0.17950, -78.48130, '02 258 7410', '24 horas',      0, 1, 1, 0.76, 'Cámaras · Baños · Zona verde',          1),
+('QUI', 'Urban Park Quicentro',        'Av. Naciones Unidas y Av. 6 de Diciembre',      'Iñaquito',          -0.17580, -78.48300, '02 394 5520', '24 horas',      1, 1, 1, 0.90, 'Techado · Cámaras · Baños · Wi-Fi · Valet', 1),
+('NAC', 'Urban Park Naciones Unidas',  'Av. Naciones Unidas y Av. Japón',               'Naciones Unidas',   -0.17320, -78.48650, '02 258 7410', '24 horas',      1, 1, 1, 0.73, 'Techado · Cámaras · Baños · Carga eléctrica', 1),
+('EBA', 'Urban Park El Batán',         'Av. Eloy Alfaro y Av. Naciones Unidas',         'El Batán',          -0.18000, -78.47300, '02 394 5520', '06:00 a 23:00', 0, 1, 1, 0.64, 'Cámaras · Baños · Aseo',                1)
 ON DUPLICATE KEY UPDATE
     nombre = VALUES(nombre), direccion = VALUES(direccion), sector = VALUES(sector),
     latitud = VALUES(latitud), longitud = VALUES(longitud), telefono = VALUES(telefono),
@@ -244,6 +244,53 @@ CROSS JOIN numeros n;
 -- --- cualquier plaza huérfana se asigna a la sede principal -----------------
 UPDATE espacios SET sede_id = (SELECT id FROM sedes WHERE codigo = 'CEN')
 WHERE sede_id IS NULL OR sede_id = 0;
+
+-- Rango oficial $0.50 – $0.90 / h (ajusta importes antiguos; la API recalcula plazas al arrancar)
+UPDATE sedes SET tarifa_base = LEAST(0.90, GREATEST(0.50, tarifa_base));
+UPDATE espacios SET tarifa_hora = LEAST(0.90, GREATEST(0.50, tarifa_hora));
+
+UPDATE tickets t
+  INNER JOIN espacios e ON e.id = t.espacio_id
+   SET t.tarifa_hora = e.tarifa_hora
+ WHERE t.tarifa_hora IS NULL OR ABS(t.tarifa_hora - e.tarifa_hora) > 0.001;
+
+UPDATE tickets t
+  INNER JOIN espacios e ON e.codigo = t.espacio_codigo
+   SET t.tarifa_hora = e.tarifa_hora
+ WHERE t.tarifa_hora IS NULL OR t.tarifa_hora < 0.50 OR t.tarifa_hora > 0.90;
+
+UPDATE tickets
+   SET tarifa_hora = LEAST(0.90, GREATEST(0.50, tarifa_hora))
+ WHERE tarifa_hora IS NOT NULL AND (tarifa_hora < 0.50 OR tarifa_hora > 0.90);
+
+UPDATE tickets t
+  LEFT JOIN (
+      SELECT UPPER(TRIM(placa)) AS placa_norm,
+             MAX(COALESCE(descuento, 0)) AS descuento,
+             MAX(propietario) AS propietario
+        FROM vehiculos
+       GROUP BY UPPER(TRIM(placa))
+  ) v ON v.placa_norm = UPPER(TRIM(t.placa))
+   SET t.monto_total = ROUND(
+         CEILING(GREATEST(1, TIMESTAMPDIFF(MINUTE, t.entrada, t.salida)) / 60.0) * t.tarifa_hora
+         * (1 - LEAST(100, GREATEST(COALESCE(v.descuento, 0),
+             CASE WHEN v.propietario IS NULL THEN 0
+                  WHEN LOWER(v.propietario) LIKE '%capacidades%' OR LOWER(v.propietario) LIKE '%discapacit%' OR LOWER(v.propietario) LIKE '%especial%' THEN 50
+                  WHEN LOWER(v.propietario) LIKE '%tercera%' OR LOWER(v.propietario) LIKE '%anciano%' OR LOWER(v.propietario) LIKE '%mayor%' THEN 50
+                  WHEN LOWER(v.propietario) LIKE '%embaraz%' THEN 25
+                  WHEN LOWER(v.propietario) LIKE '%estudiante%' OR LOWER(v.propietario) LIKE '%estudiate%' THEN 25
+                  ELSE 0 END)) / 100.0), 2),
+       t.monto_descuento = GREATEST(0, ROUND(
+         CEILING(GREATEST(1, TIMESTAMPDIFF(MINUTE, t.entrada, t.salida)) / 60.0) * t.tarifa_hora
+         - ROUND(CEILING(GREATEST(1, TIMESTAMPDIFF(MINUTE, t.entrada, t.salida)) / 60.0) * t.tarifa_hora
+           * (1 - LEAST(100, GREATEST(COALESCE(v.descuento, 0),
+             CASE WHEN v.propietario IS NULL THEN 0
+                  WHEN LOWER(v.propietario) LIKE '%capacidades%' OR LOWER(v.propietario) LIKE '%discapacit%' OR LOWER(v.propietario) LIKE '%especial%' THEN 50
+                  WHEN LOWER(v.propietario) LIKE '%tercera%' OR LOWER(v.propietario) LIKE '%anciano%' OR LOWER(v.propietario) LIKE '%mayor%' THEN 50
+                  WHEN LOWER(v.propietario) LIKE '%embaraz%' THEN 25
+                  WHEN LOWER(v.propietario) LIKE '%estudiante%' OR LOWER(v.propietario) LIKE '%estudiate%' THEN 25
+                  ELSE 0 END)) / 100.0), 2), 2))
+ WHERE t.estado = 'CERRADO' AND t.salida IS NOT NULL AND t.tarifa_hora IS NOT NULL AND t.tarifa_hora > 0;
 
 -- --- 4 vehículos precargados ------------------------------------------------
 INSERT IGNORE INTO vehiculos (placa, tipo, marca, color, propietario, propietario_email, propietario_username) VALUES

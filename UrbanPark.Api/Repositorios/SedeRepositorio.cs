@@ -1,6 +1,7 @@
 using MySqlConnector;
 using UrbanPark.Api.Data;
 using UrbanPark.Api.Modelos;
+using UrbanPark.Api.Servicios;
 
 namespace UrbanPark.Api.Repositorios;
 
@@ -107,7 +108,22 @@ public sealed class SedeRepositorio
         var ids = string.Join(",", sedeIds);
         return await cn.EjecutarAsync(
             $"UPDATE sedes SET tarifa_base = @t WHERE id IN ({ids})",
-            ("@t", tarifaBase));
+            ("@t", ReglasTarifa.Acotar(tarifaBase)));
+    }
+
+    public async Task AcotarTarifaBaseAlRangoAsync(IReadOnlyList<long> sedeIds)
+    {
+        await using var cn = _fabrica.Crear();
+        if (sedeIds.Count == 0)
+        {
+            await cn.EjecutarAsync(
+                $"UPDATE sedes SET tarifa_base = LEAST({ReglasTarifa.Maxima}, GREATEST({ReglasTarifa.Minima}, tarifa_base))");
+            return;
+        }
+
+        var ids = string.Join(",", sedeIds);
+        await cn.EjecutarAsync(
+            $"UPDATE sedes SET tarifa_base = LEAST({ReglasTarifa.Maxima}, GREATEST({ReglasTarifa.Minima}, tarifa_base)) WHERE id IN ({ids})");
     }
 
     public async Task<int> AjustarTarifaBaseMasivoAsync(IReadOnlyList<long> sedeIds, double factor)
@@ -116,7 +132,11 @@ public sealed class SedeRepositorio
         await using var cn = _fabrica.Crear();
         var ids = string.Join(",", sedeIds);
         return await cn.EjecutarAsync(
-            $"UPDATE sedes SET tarifa_base = ROUND(tarifa_base * @f, 2) WHERE id IN ({ids})",
+            $"""
+            UPDATE sedes SET tarifa_base = LEAST({ReglasTarifa.Maxima},
+                GREATEST({ReglasTarifa.Minima}, ROUND(tarifa_base * @f, 2)))
+            WHERE id IN ({ids})
+            """,
             ("@f", factor));
     }
 }

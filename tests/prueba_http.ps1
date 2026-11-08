@@ -132,7 +132,8 @@ $r = Req GET "/api/espacios" $tokenCliente
 Comprobar "cliente1 lista las 768 plazas" ($r.datos.Count -eq 768) $r.datos.Count
 $plazas = $r.datos
 $plazaA01 = $plazas | Where-Object { $_.codigo -eq "CEN-A-07" }
-Comprobar "la plaza CEN-A-07 existe con tarifa 3.5" ($plazaA01.tarifaHora -eq 3.5) $plazaA01.tarifaHora
+Comprobar "la plaza CEN-A-07 existe con tarifa entre 0.50 y 0.90" (
+    ($plazaA01.tarifaHora -ge 0.50) -and ($plazaA01.tarifaHora -le 0.90)) $plazaA01.tarifaHora
 
 $r = Req GET "/api/espacios/ocupacion" $tokenCliente
 Comprobar "ocupacion total = 768" ($r.datos.total -eq 768) $r.datos.total
@@ -181,7 +182,7 @@ Comprobar "la plaza CEN-A-01 queda OCUPADA" ($r.datos.ocupado -eq $true)
 $r = Req POST "/api/tickets/$($ticket.id)/cerrar" $tokenCliente
 Comprobar "cerrar ticket -> 200" ($r.status -eq 200) $r.crudo
 Comprobar "el ticket queda CERRADO" ($r.datos.estado -eq "CERRADO") $r.datos.estado
-Comprobar "cobra 1 hora de tarifa ($3.50)" ($r.datos.montoTotal -eq 3.5) $r.datos.montoTotal
+Comprobar "cobra 1 hora de tarifa de la plaza" ($r.datos.montoTotal -eq $plazaA01.tarifaHora) $r.datos.montoTotal
 Comprobar "guarda la fecha de salida" ($null -ne $r.datos.salida)
 Comprobar "no queda liberacion pendiente" ($r.datos.liberacionPendiente -eq $false)
 
@@ -231,7 +232,7 @@ Comprobar "generar reporte -> 200" ($r.status -eq 200) $r.crudo
 $rep = $r.datos
 Comprobar "informa de las 768 plazas" ($rep.plazasTotal -eq 768) $rep.plazasTotal
 Comprobar "cuenta tickets del periodo" ($rep.totalTickets -ge 1) $rep.totalTickets
-Comprobar "el recaudado acumula los tickets cerrados del periodo" ($rep.recaudado -ge 3.5) $rep.recaudado
+Comprobar "el recaudado acumula los tickets cerrados del periodo" ($rep.recaudado -ge $plazaA01.tarifaHora) $rep.recaudado
 Comprobar "estima lo pendiente por cobrar" ($rep.porCobrarEstimado -ge 0) $rep.porCobrarEstimado
 Comprobar "genera al menos 5 hallazgos" ($rep.hallazgos.Count -ge 5) $rep.hallazgos.Count
 Comprobar "el resumen narrativo no esta vacio" (-not [string]::IsNullOrWhiteSpace($rep.resumenIa))

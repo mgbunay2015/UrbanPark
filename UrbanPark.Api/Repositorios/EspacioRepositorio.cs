@@ -223,12 +223,15 @@ public sealed class EspacioRepositorio
         string set;
         if (valorFijo is > 0)
         {
-            set = "e.tarifa_hora = @valor";
-            parametros.Add(("@valor", valorFijo.Value));
+            set = $"e.tarifa_hora = LEAST({ReglasTarifa.Maxima}, GREATEST({ReglasTarifa.Minima}, @valor))";
+            parametros.Add(("@valor", ReglasTarifa.Acotar(valorFijo.Value)));
         }
         else if (factor is > 0)
         {
-            set = "e.tarifa_hora = ROUND(e.tarifa_hora * @factor, 2)";
+            set = $"""
+                e.tarifa_hora = LEAST({ReglasTarifa.Maxima},
+                    GREATEST({ReglasTarifa.Minima}, ROUND(e.tarifa_hora * @factor, 2)))
+                """;
             parametros.Add(("@factor", factor.Value));
         }
         else return 0;
@@ -238,6 +241,23 @@ public sealed class EspacioRepositorio
         return await cn.EjecutarAsync(sql, parametros.ToArray());
     }
 
+    public async Task AcotarTarifasAlRangoAsync(IReadOnlyList<long> sedeIds)
+    {
+        await using var cn = _fabrica.Crear();
+        var min = ReglasTarifa.Minima;
+        var max = ReglasTarifa.Maxima;
+        if (sedeIds.Count == 0)
+        {
+            await cn.EjecutarAsync(
+                $"UPDATE espacios SET tarifa_hora = LEAST({max}, GREATEST({min}, tarifa_hora))");
+            return;
+        }
+
+        var ids = string.Join(",", sedeIds);
+        await cn.EjecutarAsync(
+            $"UPDATE espacios SET tarifa_hora = LEAST({max}, GREATEST({min}, tarifa_hora)) WHERE sede_id IN ({ids})");
+    }
+
     public async Task<int> RecalcularTarifasSedeAsync(long sedeId, string sedeCodigo, double tarifaBase)
     {
         var plazas = await ListarPorSedeAsync(sedeId);
@@ -245,7 +265,7 @@ public sealed class EspacioRepositorio
         foreach (var p in plazas)
         {
             var letra = ReglasTarifa.LetraZona(p.Codigo);
-            var nueva = ReglasTarifa.TarifaHora(sedeCodigo, letra, p.TipoVehiculo, tarifaBase);
+            var nueva = ReglasTarifa.TarifaHora(sedeCodigo, letra, p.TipoVehiculo, ReglasTarifa.Acotar(tarifaBase));
             if (Math.Abs(nueva - p.TarifaHora) < 0.001) continue;
 
             await ActualizarAsync(p.Id, p.Codigo, p.Zona, p.TipoVehiculo, nueva, p.Nivel, p.Descripcion);

@@ -42,6 +42,23 @@ public partial class vPlazas : ContentPage
     private List<SedeDto> _sedes = [];
     private string? _placaReserva;
     private bool _reservando;
+    private bool _iaBuscando;
+
+    /// <summary>True cuando el usuario desplegó la ficha completa del vehículo elegido.</summary>
+    private bool _fichaAbierta = true;
+
+    /// <summary>Tras alta o baja en Autos, al volver a esta pantalla se prioriza esta placa.</summary>
+    public static void NotificarVehiculosActualizados(string? placaPreferida = null)
+    {
+        if (!string.IsNullOrWhiteSpace(placaPreferida))
+            vVehiculos.PlacaPendiente = placaPreferida.Trim().ToUpperInvariant();
+    }
+
+    public static void IrATabMapa()
+    {
+        if (Application.Current?.MainPage is not Shell shell || shell.Items.Count == 0) return;
+        shell.CurrentItem = shell.Items[0];
+    }
 
     public vPlazas() : this(null, null) { }
 
@@ -60,6 +77,7 @@ public partial class vPlazas : ContentPage
                 caja.Padding = estrecho ? new Thickness(8, 6, 8, 6) : new Thickness(10, 8, 10, 8);
             if (_espacios.Count > 0 && Math.Abs(Width - _anchoPintado) > 12)
                 PintarPlazas();
+            PintarPlaca();
         };
     }
 
@@ -78,6 +96,12 @@ public partial class vPlazas : ContentPage
     {
         base.OnAppearing();
         _ubicarPlaza = true;
+        if (!string.IsNullOrWhiteSpace(vVehiculos.PlacaPendiente))
+        {
+            _placaReserva = vVehiculos.PlacaPendiente.Trim().ToUpperInvariant();
+            vVehiculos.PlacaPendiente = null;
+        }
+
         await CargarAsync();
     }
 
@@ -179,6 +203,8 @@ public partial class vPlazas : ContentPage
         lblSedeDireccion.Text = $"📍 {_sedeEfectiva.Direccion} · {_sedeEfectiva.Horario}";
         // "Cambiar" solo tiene sentido si se entró desde el mapa (aquí ya hay selector de sedes).
         lblCambiarSede.IsVisible = _sede is not null;
+        panelVehiculo.IsVisible = true;
+        btnAsignarIa.IsVisible = _sedeEfectiva is not null && !Sesion.EsOperador;
     }
 
     /// <summary>Selector de parqueadero: solo aparece si se entró sin una sede elegida.</summary>
@@ -280,60 +306,306 @@ public partial class vPlazas : ContentPage
 
     private void PintarVehiculos()
     {
-        if (_sedeEfectiva is null) return;
-
-        contenedorVehiculos.Children.Clear();
-        var activos = _vehiculos.Where(v => v.Activo).ToList();
-
-        if (activos.Count == 0)
+        if (_sedeEfectiva is null)
         {
-            contenedorVehiculos.Add(new Label
-            {
-                Text = "No tienes vehículos activos: agrégalos en la pestaña Autos.",
-                FontSize = 11,
-                TextColor = Rojo
-            });
+            panelVehiculo.IsVisible = false;
+            btnAsignarIa.IsVisible = false;
             return;
         }
 
+        panelVehiculo.IsVisible = true;
+        btnAsignarIa.IsVisible = !Sesion.EsOperador;
+        contenedorVehiculos.Children.Clear();
+
+        var activos = _vehiculos
+            .Where(v => v.Activo)
+            .OrderBy(v => v.Placa, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        lblVehiculosTitulo.Text = activos.Count switch
+        {
+            0 => "SIN VEHÍCULOS ACTIVOS",
+            1 => "1 VEHÍCULO ACTIVO",
+            _ => $"{activos.Count} VEHÍCULOS · TOCA PARA VER"
+        };
+
+        if (activos.Count == 0)
+        {
+            contenedorVehiculos.Children.Add(new Label
+            {
+                Text = "Regístralos en Autos",
+                FontSize = 10,
+                TextColor = Rojo
+            });
+            PintarPlaca();
+            return;
+        }
+
+        // Selector compacto: cada chip es una fila con icono, placa y flecha de despliegue.
         foreach (var vehiculo in activos)
         {
-            var elegido = vehiculo.Placa == _placaReserva;
+            var elegido = string.Equals(vehiculo.Placa, _placaReserva, StringComparison.OrdinalIgnoreCase);
+
+            var fila = new Grid
+            {
+                ColumnDefinitions = [new(GridLength.Auto), new(GridLength.Star), new(GridLength.Auto)],
+                ColumnSpacing = 3
+            };
+            fila.Add(new Label
+            {
+                Text = Ui.IconoTipo(vehiculo.Tipo),
+                FontSize = 9,
+                VerticalOptions = LayoutOptions.Center
+            }, 0);
+            fila.Add(new Label
+            {
+                Text = PlacaEcuador.Formatear(vehiculo.Placa),
+                FontFamily = "OpenSansSemibold",
+                FontSize = 8.5,
+                TextColor = elegido ? Tinta : Claro,
+                VerticalOptions = LayoutOptions.Center,
+                LineBreakMode = LineBreakMode.NoWrap
+            }, 1);
+            fila.Add(new Label
+            {
+                Text = elegido ? (_fichaAbierta ? "▾" : "▸") : "▸",
+                FontSize = 7.5,
+                TextColor = elegido ? Tinta : Gris,
+                VerticalOptions = LayoutOptions.Center
+            }, 2);
+
             var chip = new Border
             {
                 BackgroundColor = elegido ? Amarillo : SuperficieAlta,
                 Stroke = elegido ? Amarillo : Borde,
                 StrokeThickness = 1,
-                StrokeShape = new RoundRectangle { CornerRadius = 10 },
-                Padding = new Thickness(9, 4),
-                Margin = new Thickness(0, 0, 6, 4),
-                Content = new Label
-                {
-                    Text = $"{Ui.IconoTipo(vehiculo.Tipo)} {vehiculo.Placa}",
-                    FontFamily = "OpenSansSemibold",
-                    FontSize = 11,
-                    TextColor = elegido ? Tinta : Claro,
-                    LineBreakMode = LineBreakMode.NoWrap
-                }
+                StrokeShape = new RoundRectangle { CornerRadius = 7 },
+                Padding = new Thickness(5, 3),
+                MinimumWidthRequest = 74,
+                HorizontalOptions = LayoutOptions.Fill,
+                Content = fila
             };
-            FlexLayout.SetShrink(chip, 0);
-            FlexLayout.SetGrow(chip, 0);
 
             var placa = vehiculo.Placa;
             var toque = new TapGestureRecognizer();
             toque.Tapped += (_, _) =>
             {
-                _placaReserva = placa;
+                // Tocar otro vehículo despliega su ficha; tocar el elegido la pliega/despliega.
+                if (string.Equals(_placaReserva, placa, StringComparison.OrdinalIgnoreCase))
+                    _fichaAbierta = !_fichaAbierta;
+                else
+                {
+                    _placaReserva = placa;
+                    _fichaAbierta = true;
+                }
+
                 PintarVehiculos();
                 PintarSeleccion();
+                Pintar();
             };
             chip.GestureRecognizers.Add(toque);
             contenedorVehiculos.Children.Add(chip);
+        }
+
+        PintarPlaca();
+    }
+
+    /// <summary>Tres columnas: selector, placa al centro y datos del vehículo a la derecha.</summary>
+    private void PintarPlaca()
+    {
+        contenedorPlaca.Children.Clear();
+        contenedorDatosVehiculo.Children.Clear();
+
+        var vehiculo = VehiculoReserva();
+        if (vehiculo is null)
+        {
+            contenedorPlaca.Children.Add(new Label
+            {
+                Text = "Sin placa",
+                FontSize = 10,
+                TextColor = Gris
+            });
+            return;
+        }
+
+        // El ancho se reparte entre selector (~86 px) y datos (~118 px); la placa toma el resto.
+        var total = Width > 0 ? Width - 40 : 300;
+        var ancho = Math.Clamp(total - 210, 108, 158);
+        contenedorPlaca.Children.Add(PlacaEcuador.Crear(vehiculo.Placa, vehiculo.Tipo, ancho, resaltada: _fichaAbierta));
+
+        if (_fichaAbierta)
+        {
+            var estacionado = MisTicketsAbiertos().Any(t =>
+                string.Equals(t.Placa, vehiculo.Placa, StringComparison.OrdinalIgnoreCase));
+            contenedorDatosVehiculo.Children.Add(PlacaEcuador.CrearFichaCompleta(vehiculo, estacionado));
         }
     }
 
     private VehiculoDto? VehiculoReserva() =>
         _vehiculos.FirstOrDefault(v => string.Equals(v.Placa, _placaReserva, StringComparison.OrdinalIgnoreCase));
+
+    private static string PerfilParaIa(VehiculoDto vehiculo)
+    {
+        var partes = new List<string>();
+        if (!string.IsNullOrWhiteSpace(vehiculo.Propietario))
+            partes.Add(vehiculo.Propietario.Trim());
+        if (!string.IsNullOrWhiteSpace(vehiculo.Marca))
+            partes.Add("marca " + vehiculo.Marca.Trim());
+        if (!string.IsNullOrWhiteSpace(vehiculo.Color))
+            partes.Add("color " + vehiculo.Color.Trim());
+        partes.Add("tipo " + (string.IsNullOrWhiteSpace(vehiculo.Tipo) ? "AUTO" : vehiculo.Tipo.Trim()));
+        return string.Join(", ", partes);
+    }
+
+    private static bool EsEmbarazadaPerfil(string perfil) => perfil.ToLowerInvariant().Contains("embaraz");
+
+    private static bool EsDiscapacidadPerfil(string perfil)
+    {
+        var p = perfil.ToLowerInvariant();
+        return p.Contains("capacidades") || p.Contains("discapacit") || p.Contains("especial");
+    }
+
+    private static bool PlazaComun(string tipo) => tipo is not "DISCAPACIDAD" and not "EMBARAZADA";
+
+    private static int PrioridadPerfil(EspacioDto plaza, string perfil)
+    {
+        var p = perfil.ToLowerInvariant();
+        var tipo = (plaza.TipoVehiculo ?? "").ToUpperInvariant();
+        var zona = (plaza.Zona ?? "").ToUpperInvariant();
+        var nivel = plaza.Nivel ?? 9;
+
+        if (EsDiscapacidadPerfil(perfil))
+            return tipo == "DISCAPACIDAD" ? 0 : 10;
+        if (p.Contains("tercera") || p.Contains("anciano") || p.Contains("mayor"))
+            return PlazaComun(tipo) && zona.Contains("ZONA A") && nivel == 1 ? 0 : 8;
+        if (EsEmbarazadaPerfil(perfil))
+            return tipo == "EMBARAZADA" ? 0 : 8;
+        if (p.Contains("estudiante") || p.Contains("estudiate"))
+            return PlazaComun(tipo) && zona.Contains("ZONA C") ? 0 : 8;
+        if (p.Contains("mujer"))
+            return PlazaComun(tipo) && zona.Contains("ZONA D") ? 0 : 8;
+        if (p.Contains("hombre"))
+            return PlazaComun(tipo) && (zona.Contains("ZONA B") || zona.Contains("ZONA C")) ? 0 : 8;
+        return 0;
+    }
+
+    private EspacioDto? ElegirMejorPlazaLocal(VehiculoDto vehiculo)
+    {
+        var libres = _espacios.Where(p => !p.Ocupado && PorQueNoCumple(p, vehiculo) is null).ToList();
+        if (libres.Count == 0) return null;
+        var perfil = vehiculo.Propietario ?? "";
+        return libres
+            .OrderBy(p => PrioridadPerfil(p, perfil))
+            .ThenBy(p => p.TarifaHora)
+            .ThenBy(p => p.Nivel ?? 9)
+            .ThenBy(p => p.Codigo, StringComparer.Ordinal)
+            .First();
+    }
+
+    private EspacioDto? ResolverPlazaEnSede(RecomendacionDto r) =>
+        _espacios.FirstOrDefault(p => p.Id == r.EspacioId)
+        ?? _espacios.FirstOrDefault(p => string.Equals(p.Codigo, r.EspacioCodigo, StringComparison.OrdinalIgnoreCase));
+
+    private string? MensajeTicketAbiertoLocal(string placa)
+    {
+        var abierto = _tickets.FirstOrDefault(t =>
+            t.Abierto && string.Equals(t.Placa, placa, StringComparison.OrdinalIgnoreCase));
+        if (abierto is null) return null;
+        var plaza = _espacios.FirstOrDefault(p => p.Id == abierto.EspacioId);
+        if (plaza is not null && !plaza.Ocupado) return null;
+        var donde = string.IsNullOrWhiteSpace(abierto.EspacioCodigo) ? "" : $" en {abierto.EspacioCodigo}";
+        return $"La placa {placa} ya tiene un ticket abierto{donde}. Ciérralo en Tickets antes de elegir otro puesto.";
+    }
+
+    private void MarcarPlazaRecomendada(EspacioDto plaza)
+    {
+        _seleccionada = plaza;
+        _zona = plaza.Zona;
+        Pintar();
+    }
+
+    private async void OnAsignarIaClicked(object? sender, EventArgs e)
+    {
+        if (_iaBuscando || Sesion.EsOperador) return;
+
+        var vehiculo = VehiculoReserva();
+        if (vehiculo is null || !vehiculo.Activo)
+        {
+            await Ui.Aviso(this, "Elige un vehículo activo arriba o regístralo en la pestaña Autos.");
+            return;
+        }
+
+        if (TodosEstacionados())
+        {
+            await Ui.Informar(this, "Todos tus vehículos ya están estacionados. Cierra un ticket para liberar otro puesto.");
+            return;
+        }
+
+        var avisoTicket = MensajeTicketAbiertoLocal(vehiculo.Placa);
+        if (avisoTicket is not null)
+        {
+            await Ui.Aviso(this, avisoTicket, "Ticket abierto");
+            return;
+        }
+
+        var tipo = string.IsNullOrWhiteSpace(vehiculo.Tipo) ? "AUTO" : vehiculo.Tipo;
+        var preferencia = PerfilParaIa(vehiculo);
+
+        _iaBuscando = true;
+        btnAsignarIa.IsEnabled = false;
+        btnAsignarIa.Text = "🤖  Buscando…";
+        try
+        {
+            // La IA (Ollama/Cursor) puede tardar o no estar levantada: se le da un tope corto
+            // y, si no contesta, se elige en el acto con la misma heurística del servidor.
+            var r = await RecomendarConTopeAsync(tipo, preferencia, vehiculo.Placa, TimeSpan.FromSeconds(6));
+
+            EspacioDto? plaza = r is null ? null : ResolverPlazaEnSede(r);
+            var respondioIa = plaza is not null;
+            plaza ??= ElegirMejorPlazaLocal(vehiculo);
+
+            if (plaza is null)
+            {
+                await Ui.Aviso(this, "No hay puestos libres que coincidan con tu vehículo en este parqueadero.");
+                return;
+            }
+
+            MarcarPlazaRecomendada(plaza);
+            var texto = $"Puesto {plaza.Codigo} · {Ui.Tarifa(plaza.TarifaHora)}";
+            if (respondioIa && !string.IsNullOrWhiteSpace(r!.Motivo))
+                texto += $"\n{r.Motivo.Trim()}";
+            else
+                texto += "\nElegido al instante según tu perfil y el tipo de vehículo.";
+            texto += "\n\nToca el puesto resaltado para entrar o reservar.";
+            await Ui.Aviso(this, texto, "Mejor puesto");
+        }
+        catch (Exception ex)
+        {
+            await Ui.MostrarExcepcion(this, ex);
+        }
+        finally
+        {
+            _iaBuscando = false;
+            btnAsignarIa.IsEnabled = true;
+            btnAsignarIa.Text = "🤖  Asignar por IA";
+        }
+    }
+
+    /// <summary>Consulta la IA sin dejar el botón esperando: si tarda más que el tope, devuelve null.</summary>
+    private static async Task<RecomendacionDto?> RecomendarConTopeAsync(string tipo, string preferencia,
+        string placa, TimeSpan tope)
+    {
+        try
+        {
+            var tarea = ApiCliente.RecomendarAsync(tipo, preferencia, placa);
+            var ganadora = await Task.WhenAny(tarea, Task.Delay(tope));
+            return ganadora == tarea ? await tarea : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     /// <summary>
     /// Al tocar un puesto libre el cliente elige cómo quiere entrar:
@@ -868,12 +1140,14 @@ public partial class vPlazas : ContentPage
     {
         if (_sedeEfectiva is not null)
         {
-            // En una sede el toque reserva al instante: el botón solo explica cómo funciona.
             var vehiculo = VehiculoReserva();
             var placa = vehiculo?.Placa ?? _placaReserva ?? "sin vehículo";
-            lblSeleccion.Text = vehiculo is null
-                ? "Agrega un vehículo en Autos para reservar"
-                : $"{placa} · toca un puesto libre y tu QR sale al instante";
+            if (_seleccionada is not null)
+                lblSeleccion.Text = $"🤖 {placa} · {_seleccionada.Codigo} · {Ui.Tarifa(_seleccionada.TarifaHora)} · toca para reservar";
+            else
+                lblSeleccion.Text = vehiculo is null
+                    ? "Agrega un vehículo en Autos para reservar"
+                    : $"{placa} · toca un puesto libre o usa Asignar por IA";
             btnContinuar.Text = "Ver mis tickets";
             btnContinuar.IsEnabled = true;
             btnContinuar.BackgroundColor = Borde;
