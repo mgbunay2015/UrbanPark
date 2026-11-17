@@ -556,7 +556,7 @@ public partial class vPlazas : ContentPage
         btnAsignarIa.Text = "🤖  Buscando…";
         try
         {
-            // La IA (Ollama/Cursor) puede tardar o no estar levantada: se le da un tope corto
+            // El motor de IA puede tardar o no estar levantado: se le da un tope corto
             // y, si no contesta, se elige en el acto con la misma heurística del servidor.
             var r = await RecomendarConTopeAsync(tipo, preferencia, vehiculo.Placa, TimeSpan.FromSeconds(6));
 

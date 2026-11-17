@@ -469,10 +469,9 @@ return fallos == 0 ? 0 : 1;
 static T? Extraer<T>(IActionResult resultado) where T : class =>
     (resultado as ObjectResult)?.Value as T;
 
-// El proveedor de IA puede ser el respaldo local o un modelo real (Ollama/Cursor) si está encendido.
+// El proveedor de IA puede ser el respaldo local o un modelo real (Ollama/Grok) si está encendido.
 static bool ProveedorValido(string? proveedor) =>
     !string.IsNullOrWhiteSpace(proveedor) &&
     (proveedor!.Contains("heuristica", StringComparison.OrdinalIgnoreCase) ||
      proveedor.Contains("ollama", StringComparison.OrdinalIgnoreCase) ||
-     proveedor.Contains("cursor", StringComparison.OrdinalIgnoreCase) ||
      proveedor.Contains("grok", StringComparison.OrdinalIgnoreCase));
