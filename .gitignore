@@ -41,3 +41,6 @@ capturas-temp/
 *.local.json
 appsettings.Local.json
 
+# ===== Scripts locales de Windows (no se publican en el repositorio) =====
+*.bat
+
