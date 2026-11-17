@@ -8,7 +8,7 @@ public sealed record GoogleLoginRequest(string? IdToken);
 public sealed record RefreshRequest(string? RefreshToken);
 public sealed record RegisterResponse(string Id, string Username, string Role, string Message);
 public sealed record UsuarioDto(string Id, string Username, string Email, string FirstName, string LastName, bool Enabled, string[] Roles, bool TotpActivo = false);
-public sealed record SesionResponse(string AccessToken, string RefreshToken, long ExpiresAt, string Username, string[] Roles, UsuarioDto Usuario, string? DispositivoToken = null);
+public sealed record SesionResponse(string AccessToken, string RefreshToken, long ExpiresAt, string Username, string[] Roles, UsuarioDto Usuario, string? DispositivoToken = null, long UsuarioId = 0);
 
 // ============================ Perfil ============================
 public sealed record UpdatePerfilDto(string? Email, string? FirstName, string? LastName);

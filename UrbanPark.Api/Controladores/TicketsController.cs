@@ -39,20 +39,30 @@ public sealed class TicketsController : ControladorBase
         t.Modo, t.SalidaPrevista, t.SedeNombre);
 
     private bool Pertenece(Ticket t) =>
-        !string.IsNullOrWhiteSpace(t.Usuario) && t.Usuario.Equals(Username, StringComparison.OrdinalIgnoreCase);
+        t.UsuarioId is > 0 && UsuarioId > 0
+            ? t.UsuarioId == UsuarioId
+            : !string.IsNullOrWhiteSpace(t.Usuario) && t.Usuario.Equals(Username, StringComparison.OrdinalIgnoreCase);
 
     // ------------------------------------------------------------------ consultas
+    /// <summary>
+    /// Lista de tickets. El CLIENTE recibe siempre solo los suyos (por el id del token).
+    /// OPERADOR y ADMIN ven todo el parqueadero; con <c>soloMios=true</c> piden únicamente los propios.
+    /// </summary>
     [HttpGet]
-    public async Task<IActionResult> Listar()
+    public async Task<IActionResult> Listar([FromQuery] bool soloMios = false)
     {
-        var lista = EsClienteSolo ? await _tickets.ListarPorUsuarioAsync(Username) : await _tickets.ListarAsync();
+        var lista = SoloVeLoSuyo || soloMios
+            ? await _tickets.ListarPorUsuarioAsync(UsuarioId, Username)
+            : await _tickets.ListarAsync();
         return Ok(lista.Select(A));
     }
 
     [HttpGet("abiertos")]
-    public async Task<IActionResult> Abiertos()
+    public async Task<IActionResult> Abiertos([FromQuery] bool soloMios = false)
     {
-        var lista = EsClienteSolo ? await _tickets.AbiertosPorUsuarioAsync(Username) : await _tickets.AbiertosAsync();
+        var lista = SoloVeLoSuyo || soloMios
+            ? await _tickets.AbiertosPorUsuarioAsync(UsuarioId, Username)
+            : await _tickets.AbiertosAsync();
         return Ok(lista.Select(A));
     }
 
@@ -61,7 +71,7 @@ public sealed class TicketsController : ControladorBase
     {
         var ticket = await _tickets.PorIdAsync(id);
         if (ticket is null) return NoEncontrado("Ticket no encontrado");
-        if (EsClienteSolo && !Pertenece(ticket))
+        if (SoloVeLoSuyo && !Pertenece(ticket))
             return Prohibido("Solo puedes ver o cerrar tus propios tickets");
 
         return Ok(A(ticket));
@@ -167,7 +177,12 @@ public sealed class TicketsController : ControladorBase
     }
 
     // ------------------------------------------------------------------ sincronizacion de liberaciones pendientes
+    /// <summary>
+    /// Revisa los cobros cuya plaza no se pudo liberar. Recorre tickets de CUALQUIER cliente,
+    /// asi que es una tarea del personal del parqueadero y no del cliente.
+    /// </summary>
     [HttpPost("sincronizar-liberaciones")]
+    [Authorize(Roles = "OPERADOR,ADMIN")]
     public async Task<IActionResult> SincronizarLiberaciones()
     {
         var pendientes = await _tickets.PendientesLiberacionAsync();
@@ -240,7 +255,8 @@ public sealed class TicketsController : ControladorBase
     [HttpPost("abrir")]
     public async Task<IActionResult> Abrir([FromBody] AbrirTicketRequest peticion)
     {
-        var resultado = await _servicioTickets.AbrirAsync(peticion.Placa, peticion.EspacioId, Username);
+        var resultado = await _servicioTickets.AbrirAsync(peticion.Placa, peticion.EspacioId, Username,
+            inicioReserva: null, finReserva: null, usuarioId: UsuarioId);
         return resultado.Exito ? Ok(A(resultado.Ticket!)) : Error(resultado.Codigo, resultado.Mensaje!);
     }
 

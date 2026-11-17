@@ -33,6 +33,10 @@ public sealed class PaseLocal
     [Column("usuario"), Indexed]
     public string Usuario { get; set; } = "";
 
+    /// <summary>Id del duenno de la sesion que guardo la fila (0 en equipos con datos anteriores).</summary>
+    [Column("usuario_id"), Indexed]
+    public long UsuarioId { get; set; }
+
     [Column("estado")]
     public string Estado { get; set; } = "";
 
@@ -52,6 +56,10 @@ public sealed class VehiculoLocal
 
     [Column("usuario"), Indexed]
     public string Usuario { get; set; } = "";
+
+    /// <summary>Id del usuario duenno del vehiculo (0 en filas guardadas por versiones anteriores).</summary>
+    [Column("usuario_id"), Indexed]
+    public long UsuarioId { get; set; }
 
     [Column("json")]
     public string Json { get; set; } = "";
@@ -104,6 +112,10 @@ public sealed class TicketLocal
     [Column("usuario"), Indexed]
     public string Usuario { get; set; } = "";
 
+    /// <summary>Id del usuario duenno del ticket en la copia local (0 en versiones anteriores).</summary>
+    [Column("usuario_id"), Indexed]
+    public long UsuarioId { get; set; }
+
     [Column("abierto")]
     public bool Abierto { get; set; }
 
@@ -132,6 +144,10 @@ public sealed class PendienteLocal
 
     [Column("usuario"), Indexed]
     public string Usuario { get; set; } = "";
+
+    /// <summary>Id del usuario que hizo el cambio (0 si se encolo sin sesion con id).</summary>
+    [Column("usuario_id"), Indexed]
+    public long UsuarioId { get; set; }
 
     [Column("intentos")]
     public int Intentos { get; set; }

@@ -77,8 +77,10 @@ public static class InicializadorDb
             propietario          VARCHAR(120) NOT NULL,
             propietario_email    VARCHAR(120) NULL,
             propietario_username VARCHAR(50)  NULL,
+            propietario_usuario_id BIGINT     NULL,
             UNIQUE KEY uq_vehiculos_placa (placa),
-            KEY ix_vehiculos_propietario (propietario_username)
+            KEY ix_vehiculos_propietario (propietario_username),
+            KEY ix_vehiculos_propietario_id (propietario_usuario_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
         @"CREATE TABLE IF NOT EXISTS tickets (
@@ -94,20 +96,24 @@ public static class InicializadorDb
             tarifa_hora          DOUBLE       NULL,
             monto_total          DOUBLE       NULL,
             usuario              VARCHAR(50)  NULL,
+            usuario_id           BIGINT       NULL,
             liberacion_pendiente TINYINT(1)   NOT NULL DEFAULT 0,
             modo                 VARCHAR(10)  NOT NULL DEFAULT 'AHORA',
             salida_prevista      DATETIME(6)  NULL,
+            sede_id              BIGINT       NULL,
             UNIQUE KEY uq_tickets_codigo (codigo),
             KEY ix_tickets_estado (estado),
             KEY ix_tickets_placa (placa),
             KEY ix_tickets_espacio (espacio_id),
             KEY ix_tickets_usuario (usuario),
+            KEY ix_tickets_usuario_id (usuario_id),
             KEY ix_tickets_pendiente (liberacion_pendiente)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
         @"CREATE TABLE IF NOT EXISTS biometrias (
             id               BIGINT AUTO_INCREMENT PRIMARY KEY,
             usuario          VARCHAR(50)  NOT NULL,
+            usuario_id       BIGINT       NULL,
             vehiculo_id      BIGINT       NULL,
             placa            VARCHAR(20)  NOT NULL,
             tipo             VARCHAR(20)  NOT NULL,
@@ -116,7 +122,8 @@ public static class InicializadorDb
             foto_rostro      MEDIUMBLOB   NULL,
             creado_en        DATETIME(6)  NOT NULL,
             UNIQUE KEY uq_biometrias_vehiculo (vehiculo_id),
-            KEY ix_biometrias_usuario (usuario)
+            KEY ix_biometrias_usuario (usuario),
+            KEY ix_biometrias_usuario_id (usuario_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         @"CREATE TABLE IF NOT EXISTS dispositivos (
             id         BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -283,6 +290,7 @@ public static class InicializadorDb
         {
             await cn.OpenAsync();
             await MigrarSedeIdAsync(cn);
+            await MigrarUsuarioIdAsync(cn, logger);
             await SembrarSedesAsync(cn, logger);
             var plazas = await SembrarEspaciosAsync(cn, logger);
             await AcotarTarifasAlRangoAsync(cn, logger);
@@ -327,6 +335,11 @@ public static class InicializadorDb
             }
 
             await AjustarPerfilesAsync(cn);
+
+            // Los vehiculos demo se insertaron antes que los usuarios: aqui ya tienen id.
+            await RellenarUsuarioIdAsync(cn, "vehiculos", "propietario_usuario_id", "propietario_username", logger);
+            await RellenarUsuarioIdAsync(cn, "tickets", "usuario_id", "usuario", logger);
+            await RellenarUsuarioIdAsync(cn, "biometrias", "usuario_id", "usuario", logger);
         }
 
         logger.LogInformation("Datos semilla verificados: {Sedes} sedes, {Vehiculos} vehiculos, {Usuarios} usuarios demo.",
@@ -646,6 +659,65 @@ public static class InicializadorDb
             crear.CommandText = "ALTER TABLE espacios ADD INDEX ix_espacios_sede (sede_id)";
             await crear.ExecuteNonQueryAsync();
         }
+    }
+
+    /// <summary>
+    /// Agrega la columna de id del duenno a las tablas que guardan datos de un usuario y rellena
+    /// las filas existentes cruzando el username con la tabla usuarios.
+    ///
+    /// <para>
+    /// Es la migracion del filtro "solo lo mio": antes solo existia el username (texto) y compararlo
+    /// no es fiable (se puede reapuntar el nombre). Las filas viejas quedan con el id ya relleno,
+    /// y las que no encuentren usuario se siguen resolviendo por username en las consultas.
+    /// </para>
+    /// </summary>
+    private static async Task MigrarUsuarioIdAsync(MySqlConnection cn, ILogger logger)
+    {
+        var tablaColumna = new (string Tabla, string Columna, string Indice, string Username)[]
+        {
+            ("tickets", "usuario_id", "ix_tickets_usuario_id", "usuario"),
+            ("vehiculos", "propietario_usuario_id", "ix_vehiculos_propietario_id", "propietario_username"),
+            ("biometrias", "usuario_id", "ix_biometrias_usuario_id", "usuario")
+        };
+
+        foreach (var (tabla, columna, indice, username) in tablaColumna)
+        {
+            if (!await ExisteColumnaAsync(cn, tabla, columna))
+            {
+                await using var alterar = cn.CreateCommand();
+                alterar.CommandText = $"ALTER TABLE {tabla} ADD COLUMN {columna} BIGINT NULL";
+                await alterar.ExecuteNonQueryAsync();
+                logger.LogInformation("Migracion: columna {Tabla}.{Columna} agregada.", tabla, columna);
+            }
+
+            if (!await ExisteIndiceAsync(cn, tabla, indice))
+            {
+                await using var crear = cn.CreateCommand();
+                crear.CommandText = $"ALTER TABLE {tabla} ADD INDEX {indice} ({columna})";
+                await crear.ExecuteNonQueryAsync();
+            }
+
+            // Relleno de las filas historicas: el username es la unica pista que quedaba.
+            await RellenarUsuarioIdAsync(cn, tabla, columna, username, logger);
+        }
+    }
+
+    /// <summary>
+    /// Copia el id del usuario en las filas que solo tienen el username. Se ejecuta tambien
+    /// despues de las semillas, porque los vehiculos demo se insertan antes que los usuarios.
+    /// </summary>
+    private static async Task RellenarUsuarioIdAsync(MySqlConnection cn, string tabla, string columna,
+        string username, ILogger logger)
+    {
+        await using var rellenar = cn.CreateCommand();
+        rellenar.CommandText = $@"
+            UPDATE {tabla} x
+              JOIN usuarios u ON u.username = x.{username}
+               SET x.{columna} = u.id
+             WHERE x.{columna} IS NULL AND x.{username} IS NOT NULL AND x.{username} <> ''";
+        var filas = await rellenar.ExecuteNonQueryAsync();
+        if (filas > 0)
+            logger.LogInformation("Migracion: {Filas} fila(s) de {Tabla} quedaron con {Columna}.", filas, tabla, columna);
     }
 
     private static async Task<bool> ExisteColumnaAsync(MySqlConnection cn, string tabla, string columna)

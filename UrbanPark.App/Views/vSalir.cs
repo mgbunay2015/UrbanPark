@@ -50,9 +50,10 @@ public class vSalir : ContentPage
             return;
 
         var usuarioAnterior = Sesion.Username;
+        var idAnterior = Sesion.UsuarioId;
         Sesion.Cerrar();
         PaseSalida.Limpiar();
-        AlmacenLocal.LimpiarUsuario(usuarioAnterior);
+        AlmacenLocal.LimpiarUsuario(usuarioAnterior, idAnterior);
         // Se cambia la página fuera del evento del botón: si no, WinUI se cae al
         // reemplazar el Shell mientras procesa el clic.
         await Task.Delay(60);

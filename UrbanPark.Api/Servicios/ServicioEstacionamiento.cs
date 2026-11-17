@@ -34,7 +34,7 @@ public sealed class ServicioEstacionamiento
     // ================================================================ elegir puesto
     /// <summary>Abre el ticket del puesto elegido y devuelve el pase con el QR.</summary>
     public async Task<Resultado> EstacionarAsync(string? placa, long? espacioId, string username,
-        DateTime? inicioReserva = null, DateTime? finReserva = null)
+        DateTime? inicioReserva = null, DateTime? finReserva = null, long usuarioId = 0)
     {
         if (espacioId is null or <= 0)
             return new Resultado(false, 400, "Debes elegir un puesto del parqueadero.", null);
@@ -59,7 +59,7 @@ public sealed class ServicioEstacionamiento
         if (espacio is null)
             return new Resultado(false, 404, "Ese puesto no existe. Actualiza el mapa y elige otro.", null);
 
-        var resultado = await _tickets.AbrirAsync(placa, espacioId, username, inicioReserva, finReserva);
+        var resultado = await _tickets.AbrirAsync(placa, espacioId, username, inicioReserva, finReserva, usuarioId);
         if (!resultado.Exito || resultado.Ticket is null)
             return new Resultado(false, resultado.Codigo, resultado.Mensaje, null);
 

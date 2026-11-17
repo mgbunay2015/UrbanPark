@@ -58,6 +58,18 @@ public sealed class UsuarioRepositorio
         return await cn.ConsultarAsync($"SELECT {Columnas} FROM usuarios ORDER BY username", Mapear);
     }
 
+    /// <summary>
+    /// Id del usuario por nombre. Se usa cuando llega un username (por ejemplo al asignar
+    /// un vehiculo) y hay que guardar tambien su id para que el filtro "solo lo mio" lo encuentre.
+    /// </summary>
+    public async Task<long?> IdPorUsernameAsync(string? username)
+    {
+        if (string.IsNullOrWhiteSpace(username)) return null;
+        await using var cn = _fabrica.Crear();
+        var id = await cn.EscalarAsync("SELECT id FROM usuarios WHERE username = @u LIMIT 1", ("@u", username));
+        return id > 0 ? id : null;
+    }
+
     public async Task<long> CrearAsync(string username, string email, string firstName, string lastName,
         string passwordHash, string roles, bool enabled = true, string? googleSub = null)
     {

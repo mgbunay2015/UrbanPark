@@ -1,5 +1,7 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using UrbanPark.Api.Modelos;
+using UrbanPark.Api.Servicios;
 
 namespace UrbanPark.Api.Controladores;
 
@@ -17,6 +19,33 @@ public abstract class ControladorBase : ControllerBase
         ?? "";
 
     protected string[] Roles => User?.FindAll("role").Select(c => c.Value).ToArray() ?? [];
+
+    /// <summary>
+    /// Id numerico del usuario autenticado, leido del claim del token (0 si el token es viejo
+    /// y no lo trae). Los listados usan este id para devolver solo lo que le pertenece.
+    /// </summary>
+    protected long UsuarioId
+    {
+        get
+        {
+            var valor = User?.FindFirst(TokenService.ClaimUsuarioId)?.Value;
+            return long.TryParse(valor, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id) ? id : 0;
+        }
+    }
+
+    /// <summary>True cuando el rol efectivo es ADMIN: ve todo, sin filtro por usuario.</summary>
+    protected bool EsAdmin => RolPrincipal == "ADMIN";
+
+    /// <summary>
+    /// True cuando el listado debe devolver SOLO los datos del usuario autenticado.
+    /// <para>
+    /// El CLIENTE siempre queda restringido a lo suyo (se filtra por el id del token).
+    /// OPERADOR y ADMIN son personal del parqueadero: cobran y liberan puestos de cualquier
+    /// cliente, asi que siguen viendo todo; si una pantalla personal lo necesita pide
+    /// <c>soloMios=true</c>.
+    /// </para>
+    /// </summary>
+    protected bool SoloVeLoSuyo => EsClienteSolo;
 
     /// <summary>Rol efectivo unico y jerarquico: ADMIN &gt; OPERADOR &gt; CLIENTE.</summary>
     protected string RolPrincipal => Reglas.RolPrincipal(Roles);

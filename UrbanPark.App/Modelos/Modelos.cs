@@ -13,6 +13,9 @@ public sealed class SesionDto
     public string[] Roles { get; set; } = [];
     public UsuarioDto? Usuario { get; set; }
 
+    /// <summary>Id del usuario que devuelve el API (tambien viaja en el claim usuario_id del token).</summary>
+    public long? UsuarioId { get; set; }
+
     /// <summary>Token con el que este equipo queda vinculado (entrar solo con el código).</summary>
     public string? DispositivoToken { get; set; }
 }
@@ -276,6 +279,9 @@ public sealed class TicketDto
     public double MontoDescuento { get; set; }
     public string? Usuario { get; set; }
     public bool LiberacionPendiente { get; set; }
+
+    /// <summary>Id del usuario duenno del ticket (lo completa el API).</summary>
+    public long? UsuarioId { get; set; }
     public string Modo { get; set; } = "AHORA";
     public DateTime? SalidaPrevista { get; set; }
 

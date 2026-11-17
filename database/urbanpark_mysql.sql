@@ -92,8 +92,10 @@ CREATE TABLE IF NOT EXISTS vehiculos (
     propietario          VARCHAR(120) NOT NULL,
     propietario_email    VARCHAR(120) NULL,
     propietario_username VARCHAR(50)  NULL,
+    propietario_usuario_id BIGINT     NULL COMMENT 'Id del usuario duenno (filtro "solo lo mio")',
     UNIQUE KEY uq_vehiculos_placa (placa),
-    KEY ix_vehiculos_propietario (propietario_username)
+    KEY ix_vehiculos_propietario (propietario_username),
+    KEY ix_vehiculos_propietario_id (propietario_usuario_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------
@@ -114,6 +116,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     tarifa_hora          DOUBLE       NULL COMMENT 'Se copia de la plaza al abrir',
     monto_total          DOUBLE       NULL COMMENT 'NULL mientras el ticket está abierto',
     usuario              VARCHAR(50)  NULL,
+    usuario_id           BIGINT       NULL COMMENT 'Id del usuario duenno (filtro "solo lo mio")',
     liberacion_pendiente TINYINT(1)   NOT NULL DEFAULT 0 COMMENT '1 = cobrado pero la plaza no se pudo liberar',
     modo                 VARCHAR(10)  NOT NULL DEFAULT 'AHORA' COMMENT 'AHORA = entra ya | RESERVA = guardado para una franja',
     salida_prevista      DATETIME(6)  NULL COMMENT 'Hora de salida reservada',
@@ -122,6 +125,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     KEY ix_tickets_placa (placa),
     KEY ix_tickets_espacio (espacio_id),
     KEY ix_tickets_usuario (usuario),
+    KEY ix_tickets_usuario_id (usuario_id),
     KEY ix_tickets_pendiente (liberacion_pendiente)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

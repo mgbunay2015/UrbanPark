@@ -29,7 +29,8 @@ public static class AlmacenLocal
 
     // ================================================================ pase del puesto (QR)
     /// <summary>Guarda el pase tal como llegó del servidor: es lo que pinta el QR sin red.</summary>
-    public static void GuardarPase(PasePuestoDto pase, string usuario) => BaseLocal.GuardarPase(pase, usuario);
+    public static void GuardarPase(PasePuestoDto pase, string usuario) =>
+        BaseLocal.GuardarPase(pase, usuario, Sesion.UsuarioId);
 
     /// <summary>Pase del puesto guardado en el equipo (null si nunca se vio ese ticket).</summary>
     public static PasePuestoDto? LeerPase(long ticketId) => BaseLocal.LeerPase(ticketId);
@@ -55,10 +56,10 @@ public static class AlmacenLocal
 
     // ================================================================ cola de cambios
     public static void Encolar(string metodo, string ruta, string? cuerpo, string usuario) =>
-        BaseLocal.Encolar(metodo, ruta, cuerpo, usuario);
+        BaseLocal.Encolar(metodo, ruta, cuerpo, usuario, Sesion.UsuarioId);
 
     public static List<Operacion> PendientesDe(string usuario) =>
-        BaseLocal.PendientesDe(usuario)
+        BaseLocal.PendientesDe(usuario, Sesion.UsuarioId)
             .Select(p => new Operacion
             {
                 Id = p.Id,
@@ -82,6 +83,7 @@ public static class AlmacenLocal
         try
         {
             var usuario = Sesion.Username;
+            var usuarioId = Sesion.UsuarioId;
 
             // Pase del puesto (QR).
             if (ruta.StartsWith("/api/estacionar/", StringComparison.OrdinalIgnoreCase) &&
@@ -90,7 +92,7 @@ public static class AlmacenLocal
             {
                 var pase = JsonSerializer.Deserialize<PasePuestoDto>(json, Opciones);
                 if (pase is { TicketId: > 0 })
-                    BaseLocal.GuardarPase(pase, usuario);
+                    BaseLocal.GuardarPase(pase, usuario, usuarioId);
                 return;
             }
 
@@ -98,7 +100,7 @@ public static class AlmacenLocal
             if (ruta.StartsWith("/api/vehiculos", StringComparison.OrdinalIgnoreCase))
             {
                 var lista = JsonSerializer.Deserialize<List<VehiculoDto>>(json, Opciones);
-                if (lista is not null) BaseLocal.GuardarVehiculos(lista, usuario);
+                if (lista is not null) BaseLocal.GuardarVehiculos(lista, usuario, usuarioId);
                 return;
             }
 
@@ -124,14 +126,14 @@ public static class AlmacenLocal
                 !ruta.Contains("abiertos", StringComparison.OrdinalIgnoreCase))
             {
                 var lista = JsonSerializer.Deserialize<List<TicketDto>>(json, Opciones);
-                if (lista is not null) BaseLocal.GuardarTickets(lista.Where(t => t.Abierto), usuario);
+                if (lista is not null) BaseLocal.GuardarTickets(lista.Where(t => t.Abierto), usuario, usuarioId);
                 return;
             }
 
             if (ruta.StartsWith("/api/tickets/abiertos", StringComparison.OrdinalIgnoreCase))
             {
                 var lista = JsonSerializer.Deserialize<List<TicketDto>>(json, Opciones);
-                if (lista is not null) BaseLocal.GuardarTickets(lista, usuario);
+                if (lista is not null) BaseLocal.GuardarTickets(lista, usuario, usuarioId);
             }
         }
         catch (Exception)
@@ -150,6 +152,7 @@ public static class AlmacenLocal
         try
         {
             var usuario = Sesion.Username;
+            var usuarioId = Sesion.UsuarioId;
 
             if (ruta.StartsWith("/api/estacionar/", StringComparison.OrdinalIgnoreCase) &&
                 long.TryParse(ruta.TrimEnd('/').Split('/').Last(), out var ticketId) &&
@@ -166,7 +169,7 @@ public static class AlmacenLocal
             if (ruta.StartsWith("/api/vehiculos", StringComparison.OrdinalIgnoreCase) &&
                 typeof(T) == typeof(List<VehiculoDto>))
             {
-                var lista = BaseLocal.LeerVehiculos(usuario);
+                var lista = BaseLocal.LeerVehiculos(usuario, usuarioId);
                 if (lista.Count > 0)
                 {
                     valor = (T)(object)lista;
@@ -200,7 +203,7 @@ public static class AlmacenLocal
             if (ruta.StartsWith("/api/tickets", StringComparison.OrdinalIgnoreCase) &&
                 typeof(T) == typeof(List<TicketDto>))
             {
-                var lista = BaseLocal.LeerTickets(usuario);
+                var lista = BaseLocal.LeerTickets(usuario, usuarioId);
                 if (lista.Count > 0)
                 {
                     valor = (T)(object)lista;
@@ -229,7 +232,7 @@ public static class AlmacenLocal
             if (porId is not null) return porId;
         }
 
-        return BaseLocal.LeerPaseVigente(usuario);
+        return BaseLocal.LeerPaseVigente(usuario, Sesion.UsuarioId);
     }
 
     public static void MarcarFallo(string id, string? error) => BaseLocal.MarcarFallo(id, error);
@@ -237,7 +240,8 @@ public static class AlmacenLocal
     public static int ContarPendientes() => BaseLocal.ContarPendientes();
 
     /// <summary>Borra todo lo del usuario: se usa al cerrar sesión.</summary>
-    public static void LimpiarUsuario(string usuario) => BaseLocal.LimpiarUsuario(usuario);
+    public static void LimpiarUsuario(string usuario, long usuarioId = 0) =>
+        BaseLocal.LimpiarUsuario(usuario, usuarioId);
 
     /// <summary>Resumen de la base local para la pantalla de ajustes/diagnóstico.</summary>
     public static (int Vehiculos, int Sedes, int Espacios, int Pases, int Tickets, int Pendientes) Estado() =>

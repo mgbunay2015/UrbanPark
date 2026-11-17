@@ -13,22 +13,24 @@ public sealed class VehiculosController : ControladorBase
 {
     private readonly VehiculoRepositorio _repo;
     private readonly ConsultaVehiculoService _consulta;
+    private readonly UsuarioRepositorio _usuarios;
 
-    public VehiculosController(VehiculoRepositorio repo, ConsultaVehiculoService consulta)
+    public VehiculosController(VehiculoRepositorio repo, ConsultaVehiculoService consulta, UsuarioRepositorio usuarios)
     {
         _repo = repo;
         _consulta = consulta;
+        _usuarios = usuarios;
     }
 
     private static VehiculoDto A(Vehiculo v) =>
         new(v.Id, v.Placa, v.Tipo, v.Marca, v.Color, v.Propietario, v.PropietarioEmail, v.PropietarioUsername, v.Descuento, v.Activo);
 
-    /// <summary>CLIENTE solo ve los suyos; OPERADOR y ADMIN ven todos.</summary>
+    /// <summary>CLIENTE solo ve los suyos; OPERADOR y ADMIN ven todos (o solo los suyos con soloMios).</summary>
     [HttpGet]
-    public async Task<IActionResult> Listar()
+    public async Task<IActionResult> Listar([FromQuery] bool soloMios = false)
     {
-        var lista = EsClienteSolo
-            ? await _repo.ListarPorPropietarioAsync(Username)
+        var lista = SoloVeLoSuyo || soloMios
+            ? await _repo.ListarPorPropietarioAsync(UsuarioId, Username)
             : await _repo.ListarAsync();
 
         return Ok(lista.Select(A));
@@ -40,7 +42,7 @@ public sealed class VehiculosController : ControladorBase
         var vehiculo = await _repo.PorIdAsync(id);
         if (vehiculo is null) return NoEncontrado("Vehículo no encontrado");
 
-        if (EsClienteSolo && !Pertenece(vehiculo))
+        if (SoloVeLoSuyo && !Pertenece(vehiculo))
             return Prohibido("Solo puedes gestionar tus propios vehículos");
 
         return Ok(A(vehiculo));
@@ -52,7 +54,7 @@ public sealed class VehiculosController : ControladorBase
         var vehiculo = await _repo.PorPlacaAsync(placa);
         if (vehiculo is null) return NoEncontrado("Placa no registrada");
 
-        if (EsClienteSolo && !Pertenece(vehiculo))
+        if (SoloVeLoSuyo && !Pertenece(vehiculo))
             return Prohibido("Solo puedes gestionar tus propios vehículos");
 
         return Ok(A(vehiculo));
@@ -113,8 +115,12 @@ public sealed class VehiculosController : ControladorBase
 
         var tipo = string.IsNullOrWhiteSpace(peticion.Tipo) ? "AUTO" : peticion.Tipo!.Trim().ToUpperInvariant();
 
+        // El duenno se guarda por id (claim del token) ademas del username: es lo que usa
+        // el filtro "solo lo mio" y no depende de que el nombre no cambie.
+        var propietarioId = await _usuarios.IdPorUsernameAsync(propietarioUsername) ?? (long?)null;
+
         var id = await _repo.CrearAsync(normalizada, tipo, Vacio(peticion.Marca), Vacio(peticion.Color),
-            peticion.Propietario!.Trim(), Vacio(peticion.PropietarioEmail), propietarioUsername);
+            peticion.Propietario!.Trim(), Vacio(peticion.PropietarioEmail), propietarioUsername, propietarioId);
 
         return Ok(A((await _repo.PorIdAsync(id))!));
     }
@@ -135,6 +141,14 @@ public sealed class VehiculosController : ControladorBase
         await _repo.ActualizarAsync(id, tipo, Vacio(peticion.Marca), Vacio(peticion.Color),
             peticion.Propietario!.Trim(), Vacio(peticion.PropietarioEmail), vehiculo.PropietarioUsername);
 
+        // Si cambio el propietario, se mueve tambien el id para que el nuevo duenno lo vea.
+        if (!string.Equals(vehiculo.PropietarioUsername, peticion.PropietarioUsername, StringComparison.OrdinalIgnoreCase)
+            && !string.IsNullOrWhiteSpace(peticion.PropietarioUsername))
+        {
+            var nuevoUsuario = peticion.PropietarioUsername!.Trim();
+            await _repo.CambiarPropietarioAsync(id, nuevoUsuario, await _usuarios.IdPorUsernameAsync(nuevoUsuario));
+        }
+
         return Ok(A((await _repo.PorIdAsync(id))!));
     }
 
@@ -144,7 +158,7 @@ public sealed class VehiculosController : ControladorBase
     {
         var vehiculo = await _repo.PorIdAsync(id);
         if (vehiculo is null) return NoEncontrado("Vehículo no encontrado");
-        if (EsClienteSolo && !Pertenece(vehiculo))
+        if (SoloVeLoSuyo && !Pertenece(vehiculo))
             return Prohibido("Solo puedes gestionar tus propios vehículos");
 
         await _repo.CambiarActivoAsync(id, peticion.Activo);
@@ -165,8 +179,10 @@ public sealed class VehiculosController : ControladorBase
     }
 
     private bool Pertenece(Vehiculo v) =>
-        !string.IsNullOrWhiteSpace(v.PropietarioUsername) &&
-        v.PropietarioUsername.Equals(Username, StringComparison.OrdinalIgnoreCase);
+        v.PropietarioUsuarioId is > 0 && UsuarioId > 0
+            ? v.PropietarioUsuarioId == UsuarioId
+            : !string.IsNullOrWhiteSpace(v.PropietarioUsername) &&
+              v.PropietarioUsername.Equals(Username, StringComparison.OrdinalIgnoreCase);
 
     private static string? Vacio(string? valor) => string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
 }

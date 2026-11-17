@@ -66,6 +66,15 @@ public static class BaseLocal
                 conexion.CreateTable<TicketLocal>();
                 conexion.CreateTable<PendienteLocal>();
 
+                // Migracion del filtro por usuario: sqlite-net agrega la columna usuario_id a las
+                // tablas que ya existian, pero deja las filas viejas en NULL. Se normalizan a 0
+                // para que la lectura (long) no falle y para que el respaldo por username aplique.
+                foreach (var tabla in new[] { "pases", "vehiculos", "tickets", "pendientes" })
+                {
+                    try { conexion.Execute($"UPDATE {tabla} SET usuario_id = 0 WHERE usuario_id IS NULL"); }
+                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"No se pudo migrar {tabla}: {ex.Message}"); }
+                }
+
                 // No se ejecuta ningún PRAGMA: con sqlite-net 1.11 sobre SQLitePCLRaw 3.x,
                 // "PRAGMA journal_mode=WAL" lanza SQLiteException con el mensaje "not an error"
                 // (el PRAGMA devuelve una fila y sqlite-net lo trata como error). El diario por
@@ -124,7 +133,7 @@ public static class BaseLocal
 
     // ================================================================ pases (QR)
     /// <summary>Guarda el pase tal como llegó del servidor: es lo que pinta el QR sin red.</summary>
-    public static void GuardarPase(PasePuestoDto pase, string usuario)
+    public static void GuardarPase(PasePuestoDto pase, string usuario, long usuarioId = 0)
     {
         if (pase is null || pase.TicketId <= 0) return;
         lock (Candado)
@@ -133,6 +142,7 @@ public static class BaseLocal
             {
                 TicketId = pase.TicketId,
                 Usuario = usuario ?? "",
+                UsuarioId = usuarioId,
                 Estado = pase.Estado ?? "",
                 Json = JsonSerializer.Serialize(pase, JsonUrbanPark.Opciones),
                 GuardadoEn = DateTime.Now
@@ -149,29 +159,28 @@ public static class BaseLocal
         }
     }
 
-    /// <summary>Pase abierto (o reserva) más reciente del usuario, para abrir el QR sin red.</summary>
-    public static PasePuestoDto? LeerPaseVigente(string usuario)
+    /// <summary>
+    /// Pase abierto (o reserva) más reciente del usuario, para abrir el QR sin red.
+    /// Se busca por id del duenno y, en filas guardadas por versiones anteriores, por username.
+    /// </summary>
+    public static PasePuestoDto? LeerPaseVigente(string usuario, long usuarioId = 0)
     {
         lock (Candado)
         {
             var db = Db;
             if (db is null) return null;
 
-            var fila = db.Table<PaseLocal>()
-                .Where(p => p.Usuario == usuario)
+            var propias = usuarioId > 0
+                ? db.Table<PaseLocal>().Where(p => p.UsuarioId == usuarioId).ToList()
+                    .Concat(db.Table<PaseLocal>().Where(p => p.UsuarioId == 0 && p.Usuario == usuario).ToList())
+                : db.Table<PaseLocal>().Where(p => p.Usuario == usuario).ToList();
+
+            var fila = propias
                 .OrderByDescending(p => p.GuardadoEn)
                 .Take(10)
-                .ToList()
                 .FirstOrDefault(p => p.Estado is "ABIERTO" or "RESERVADO");
 
-            if (fila is null)
-            {
-                fila = db.Table<PaseLocal>()
-                    .Where(p => p.Usuario == usuario)
-                    .OrderByDescending(p => p.GuardadoEn)
-                    .Take(1)
-                    .FirstOrDefault();
-            }
+            fila ??= propias.OrderByDescending(p => p.GuardadoEn).FirstOrDefault();
 
             return fila is null ? null : Deserializar<PasePuestoDto>(fila.Json);
         }
@@ -186,7 +195,7 @@ public static class BaseLocal
     }
 
     // ================================================================ vehículos
-    public static void GuardarVehiculos(IEnumerable<VehiculoDto> vehiculos, string usuario)
+    public static void GuardarVehiculos(IEnumerable<VehiculoDto> vehiculos, string usuario, long usuarioId = 0)
     {
         var lista = vehiculos?.ToList() ?? [];
         lock (Candado)
@@ -201,6 +210,7 @@ public static class BaseLocal
                 {
                     Placa = v.Placa,
                     Usuario = usuario ?? "",
+                    UsuarioId = usuarioId,
                     Json = JsonSerializer.Serialize(v, JsonUrbanPark.Opciones),
                     Activo = v.Activo,
                     GuardadoEn = DateTime.Now
@@ -209,16 +219,21 @@ public static class BaseLocal
         }
     }
 
-    public static List<VehiculoDto> LeerVehiculos(string usuario)
+    public static List<VehiculoDto> LeerVehiculos(string usuario, long usuarioId = 0)
     {
         lock (Candado)
         {
             var db = Db;
             if (db is null) return [];
 
-            return db.Table<VehiculoLocal>()
-                .Where(v => v.Usuario == usuario)
-                .ToList()
+            // sqlite-net traduce comparaciones simples; el ternario se resuelve fuera de la consulta.
+            var filas = usuarioId > 0
+                ? db.Table<VehiculoLocal>().Where(v => v.UsuarioId == usuarioId).ToList()
+                    .Concat(db.Table<VehiculoLocal>().Where(v => v.UsuarioId == 0 && v.Usuario == usuario).ToList())
+                : db.Table<VehiculoLocal>().Where(v => v.Usuario == usuario).ToList();
+
+            return filas
+                .DistinctBy(v => v.Placa)
                 .Select(v => Deserializar<VehiculoDto>(v.Json))
                 .Where(v => v is not null)
                 .Select(v => v!)
@@ -315,7 +330,7 @@ public static class BaseLocal
     }
 
     // ================================================================ tickets abiertos
-    public static void GuardarTickets(IEnumerable<TicketDto> tickets, string usuario)
+    public static void GuardarTickets(IEnumerable<TicketDto> tickets, string usuario, long usuarioId = 0)
     {
         var lista = tickets?.ToList() ?? [];
         lock (Candado)
@@ -330,6 +345,7 @@ public static class BaseLocal
                 {
                     TicketId = t.Id,
                     Usuario = usuario ?? "",
+                    UsuarioId = usuarioId,
                     Abierto = t.Abierto,
                     Json = JsonSerializer.Serialize(t, JsonUrbanPark.Opciones),
                     GuardadoEn = DateTime.Now
@@ -338,17 +354,21 @@ public static class BaseLocal
         }
     }
 
-    public static List<TicketDto> LeerTickets(string usuario)
+    public static List<TicketDto> LeerTickets(string usuario, long usuarioId = 0)
     {
         lock (Candado)
         {
             var db = Db;
             if (db is null) return [];
 
-            return db.Table<TicketLocal>()
-                .Where(t => t.Usuario == usuario)
+            var filas = usuarioId > 0
+                ? db.Table<TicketLocal>().Where(t => t.UsuarioId == usuarioId).ToList()
+                    .Concat(db.Table<TicketLocal>().Where(t => t.UsuarioId == 0 && t.Usuario == usuario).ToList())
+                : db.Table<TicketLocal>().Where(t => t.Usuario == usuario).ToList();
+
+            return filas
+                .DistinctBy(t => t.TicketId)
                 .OrderByDescending(t => t.TicketId)
-                .ToList()
                 .Select(t => Deserializar<TicketDto>(t.Json))
                 .Where(t => t is not null)
                 .Select(t => t!)
@@ -365,7 +385,7 @@ public static class BaseLocal
         }
     }
 
-    public static void Encolar(string metodo, string ruta, string? cuerpo, string usuario)
+    public static void Encolar(string metodo, string ruta, string? cuerpo, string usuario, long usuarioId = 0)
     {
         lock (Candado)
         {
@@ -375,20 +395,30 @@ public static class BaseLocal
                 Ruta = ruta,
                 Cuerpo = cuerpo,
                 Usuario = usuario ?? "",
+                UsuarioId = usuarioId,
                 CreadoEn = DateTime.Now
             });
         }
     }
 
-    public static List<PendienteLocal> PendientesDe(string usuario)
+    /// <summary>
+    /// Cambios pendientes del usuario. Se identifica por id y, en colas creadas por versiones
+    /// anteriores, por username: si un operador y un cliente comparten equipo, no se mezclan.
+    /// </summary>
+    public static List<PendienteLocal> PendientesDe(string usuario, long usuarioId = 0)
     {
         lock (Candado)
         {
             var db = Db;
             if (db is null) return [];
 
-            return db.Table<PendienteLocal>()
-                .Where(p => p.Usuario == usuario)
+            var filas = usuarioId > 0
+                ? db.Table<PendienteLocal>().Where(p => p.UsuarioId == usuarioId).ToList()
+                    .Concat(db.Table<PendienteLocal>().Where(p => p.UsuarioId == 0 && p.Usuario == usuario).ToList())
+                : db.Table<PendienteLocal>().Where(p => p.Usuario == usuario).ToList();
+
+            return filas
+                .DistinctBy(p => p.Id)
                 .OrderBy(p => p.CreadoEn)
                 .ToList();
         }
@@ -418,17 +448,19 @@ public static class BaseLocal
     }
 
     /// <summary>Borra todo lo del usuario: se usa al cerrar sesión.</summary>
-    public static void LimpiarUsuario(string usuario)
+    public static void LimpiarUsuario(string usuario, long usuarioId = 0)
     {
         lock (Candado)
         {
             var db = Db;
             if (db is null) return;
 
-            db.Execute("DELETE FROM vehiculos WHERE usuario = ?", usuario ?? "");
-            db.Execute("DELETE FROM tickets WHERE usuario = ?", usuario ?? "");
-            db.Execute("DELETE FROM pases WHERE usuario = ?", usuario ?? "");
-            db.Execute("DELETE FROM pendientes WHERE usuario = ?", usuario ?? "");
+            foreach (var tabla in new[] { "vehiculos", "tickets", "pases", "pendientes" })
+            {
+                db.Execute($"DELETE FROM {tabla} WHERE usuario = ?", usuario ?? "");
+                if (usuarioId > 0)
+                    db.Execute($"DELETE FROM {tabla} WHERE usuario_id = ?", usuarioId);
+            }
         }
     }
 

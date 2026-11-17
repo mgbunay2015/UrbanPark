@@ -20,6 +20,23 @@ public static class Sesion
     public static string Username => Actual?.Username ?? "";
     public static string[] Roles => Actual?.Roles ?? [];
 
+    /// <summary>
+    /// Id del usuario de la sesion: el que devuelve el API o, en sesiones guardadas con una
+    /// version anterior, el claim <c>usuario_id</c> del propio token. 0 si no se puede leer.
+    /// Es lo que permite guardar en SQLite los datos de cada usuario por separado.
+    /// </summary>
+    public static long UsuarioId
+    {
+        get
+        {
+            if (Actual is null) return 0;
+            if (Actual.UsuarioId is > 0) return Actual.UsuarioId.Value;
+
+            var claim = PayloadDelToken()?.TryGetValue("usuario_id", out var valor) == true ? valor as string : null;
+            return long.TryParse(claim, out var id) ? id : 0;
+        }
+    }
+
     /// <summary>Rol efectivo unico y jerarquico: ADMIN &gt; OPERADOR &gt; CLIENTE.</summary>
     public static string RolPrincipal
     {
@@ -36,6 +53,17 @@ public static class Sesion
     public static bool EsCliente => RolPrincipal == "CLIENTE";
     public static bool EsAdmin => RolPrincipal == "ADMIN";
     public static bool EsOperador => RolPrincipal is "OPERADOR" or "ADMIN";
+
+    /// <summary>
+    /// True si el registro pertenece al usuario de la sesion. Se compara por id (el dato
+    /// confiable) y, si el registro es anterior a la columna, por username.
+    /// </summary>
+    public static bool EsMio(long? usuarioId, string? usuario)
+    {
+        if (usuarioId is > 0 && UsuarioId > 0) return usuarioId == UsuarioId;
+        return !string.IsNullOrWhiteSpace(usuario) &&
+               usuario.Equals(Username, StringComparison.OrdinalIgnoreCase);
+    }
 
     public static string DescripcionRoles => Roles.Length == 0 ? "—" : string.Join(", ", Roles);
     public static string Etiqueta => Activa ? $"{Username} · {RolPrincipal}" : "Sin sesión";

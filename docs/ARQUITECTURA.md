@@ -114,7 +114,7 @@ Todas las rutas son las mismas del sistema original. Roles: **P** = público, **
 ### Vehículos (`/api/vehiculos`)
 | Método | Ruta | Rol |
 |---|---|---|
-| GET | `/api/vehiculos` (el CLIENTE solo ve los suyos) | C, O, D |
+| GET | `/api/vehiculos` (el CLIENTE solo ve los suyos; `?soloMios=true` para O/D) | C, O, D |
 | GET | `/api/vehiculos/{id}` | C, O, D |
 | GET | `/api/vehiculos/placa/{placa}` | C, O, D |
 | POST | `/api/vehiculos` | C, O, D |
@@ -124,8 +124,8 @@ Todas las rutas son las mismas del sistema original. Roles: **P** = público, **
 ### Tickets (`/api/tickets`)
 | Método | Ruta | Rol |
 |---|---|---|
-| GET | `/api/tickets` (el CLIENTE solo los suyos) | C, O, D |
-| GET | `/api/tickets/abiertos` | C, O, D |
+| GET | `/api/tickets` (el CLIENTE solo los suyos; `?soloMios=true` para O/D) | C, O, D |
+| GET | `/api/tickets/abiertos` (mismo criterio que `/api/tickets`) | C, O, D |
 | GET | `/api/tickets/{id}` | C, O, D |
 | GET | `/api/tickets/ocupacion` ⭐ con Circuit Breaker + Retry, **siempre 200** | D |
 | GET | `/api/tickets/resilience/estado` | D |
@@ -133,7 +133,7 @@ Todas las rutas son las mismas del sistema original. Roles: **P** = público, **
 | POST | `/api/tickets/demo/espacios/stop` | D |
 | POST | `/api/tickets/demo/espacios/start` | D |
 | POST | `/api/tickets/reconciliar-plazas` | D |
-| POST | `/api/tickets/sincronizar-liberaciones` | C, O, D |
+| POST | `/api/tickets/sincronizar-liberaciones` (personal: recorre tickets de todos) | O, D |
 | POST | `/api/tickets/abrir` | C, O, D |
 | POST | `/api/tickets/{id}/cerrar` | C, O, D |
 
@@ -156,11 +156,26 @@ Todas las rutas son las mismas del sistema original. Roles: **P** = público, **
 | `usuarios` | `id`, `username` (único), `email`, `first_name`, `last_name`, `password_hash` (PBKDF2-SHA256), `roles` (`'ADMIN,OPERADOR'`), `enabled`, `google_sub` (único), `creado_en` |
 | `sedes` | `id`, `codigo` (único: CEN, PLA…), `nombre`, `direccion`, `sector`, `latitud`, `longitud`, `telefono`, `horario`, `techado`, `vigilancia`, `acepta_reserva`, `tarifa_base`, `servicios`, `activa` |
 | `espacios` | `id`, `codigo` (único: `CEN-A-07`), `zona`, `tipo_vehiculo`, `ocupado`, `tarifa_hora`, `nivel` (puede ser negativo), `descripcion`, `sede_id` |
-| `vehiculos` | `id`, `placa` (única), `tipo`, `marca`, `color`, `propietario`, `propietario_email`, `propietario_username`, `descuento`, `activo` |
-| `tickets` | `id`, `codigo` (único `TK-XXXXXXXX`), `placa`, `espacio_id`, `espacio_codigo`, `zona`, `entrada`, `salida`, `estado` (`ABIERTO` / `RESERVADO` / `CERRADO` / `ANULADO`), `tarifa_hora`, `monto_total`, `monto_descuento`, `usuario`, `liberacion_pendiente`, `modo` (`AHORA` / `RESERVA`), `salida_prevista` |
+| `vehiculos` | `id`, `placa` (única), `tipo`, `marca`, `color`, `propietario`, `propietario_email`, `propietario_username`, `propietario_usuario_id`, `descuento`, `activo` |
+| `tickets` | `id`, `codigo` (único `TK-XXXXXXXX`), `placa`, `espacio_id`, `espacio_codigo`, `zona`, `entrada`, `salida`, `estado` (`ABIERTO` / `RESERVADO` / `CERRADO` / `ANULADO`), `tarifa_hora`, `monto_total`, `monto_descuento`, `usuario`, `usuario_id`, `liberacion_pendiente`, `modo` (`AHORA` / `RESERVA`), `salida_prevista` |
 
-Índices añadidos sobre `estado`, `placa`, `espacio_id`, `usuario`, `liberacion_pendiente` y `sede_id`
+Índices añadidos sobre `estado`, `placa`, `espacio_id`, `usuario`, `usuario_id`, `liberacion_pendiente` y `sede_id`
 (el original no tenía ninguno).
+
+### Filtro "solo lo mío"
+
+Los datos que pertenecen a una persona llevan su **id** además del username:
+
+- `tickets.usuario_id` — quién abrió el ticket.
+- `vehiculos.propietario_usuario_id` — dueño del vehículo.
+- `biometrias.usuario_id` — dueño de la huella/rostro.
+
+El id sale siempre del claim `usuario_id` del token firmado, nunca de un dato enviado por el cliente.
+Las filas anteriores a la columna se resuelven por `username` como respaldo, y la migración de arranque
+(`InicializadorDb.MigrarUsuarioIdAsync`) las rellena cruzando con la tabla `usuarios`.
+
+En la app, la copia offline de SQLite guarda `usuario_id` en `pases`, `vehiculos`, `tickets` y `pendientes`,
+para que dos cuentas en el mismo equipo no compartan filas.
 
 **Datos semilla:** 12 parqueaderos (`sedes`) con dirección y coordenadas reales de Quito,
 **768 plazas** (4 zonas de 16 por sede: `CEN-A-01` … `EBA-D-16`, tarifas 1.5–5.0), 4 vehículos y
@@ -174,7 +189,8 @@ recibe las plazas `A-01…D-16` renombradas a `CEN-…` sin perder tickets.
 - **Contraseñas:** PBKDF2-SHA256, 100.000 iteraciones, salt aleatorio de 16 bytes.
   Formato `pbkdf2$100000$<salt>$<hash>` (compatible entre el script SQL y la API).
 - **JWT** (HS256) con los claims del sistema original: `preferred_username` (identidad),
-  `role` (autoridades), `realm_access.roles` (compatibilidad), `exp`, `iss`, `jti` y `token_use`.
+  `usuario_id` (id del dueño de los datos), `role` (autoridades), `realm_access.roles`
+  (compatibilidad), `exp`, `iss`, `jti` y `token_use`.
 - **Duración:** 300 s el token de acceso (igual que el Keycloak original) y 7 días el de refresco.
   La app refresca automáticamente cuando faltan menos de 15 segundos.
 - **Autorización:** `[Authorize(Roles = "…")]` en cada endpoint, replicando los `@PreAuthorize`.

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -9,6 +10,7 @@ namespace UrbanPark.Api.Servicios;
 /// <summary>
 /// Emite y valida los JWT de la aplicacion (reemplaza a Keycloak).
 /// Mantiene los mismos claims que usaba el sistema original:
+///   sub                 -> id numerico del usuario (duenno de sus datos)
 ///   preferred_username  -> identidad del usuario
 ///   role                -> autoridades ROLE_* (ASP.NET Core)
 ///   realm_access.roles  -> compatibilidad con el token de Keycloak
@@ -17,6 +19,12 @@ public sealed class TokenService
 {
     public const string TipoAcceso = "access";
     public const string TipoRefresh = "refresh";
+
+    /// <summary>
+    /// Claim con el id del usuario autenticado. Es la fuente de verdad para los filtros
+    /// "solo lo mio" del API: el id sale del token firmado, nunca del cuerpo ni del query string.
+    /// </summary>
+    public const string ClaimUsuarioId = "usuario_id";
 
     private readonly IConfiguration _cfg;
 
@@ -57,7 +65,7 @@ public sealed class TokenService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public (string token, long expiraUnix) CrearAcceso(string username, IEnumerable<string> roles)
+    public (string token, long expiraUnix) CrearAcceso(string username, IEnumerable<string> roles, long usuarioId = 0)
     {
         var lista = roles.ToArray();
         var expira = DateTime.UtcNow.AddMinutes(MinutosAcceso);
@@ -69,6 +77,11 @@ public sealed class TokenService
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
             new("token_use", TipoAcceso)
         };
+
+        // Claim con el id del usuario: es el unico dato de identidad que usan los listados
+        // para filtrar "solo lo mio". Nunca se toma un id enviado por el cliente.
+        if (usuarioId > 0) claims.Add(new Claim(ClaimUsuarioId, usuarioId.ToString(CultureInfo.InvariantCulture)));
+
         claims.AddRange(lista.Select(r => new Claim("role", r)));
         claims.Add(new Claim("realm_access", JsonSerializer.Serialize(new { roles = lista }), JsonClaimValueTypes.Json));
 
@@ -76,13 +89,20 @@ public sealed class TokenService
         return (Construir(claims, expira), expiraUnix);
     }
 
-    public string CrearRefresh(string username) => Construir(new[]
+    public string CrearRefresh(string username, long usuarioId = 0)
     {
-        new Claim(JwtRegisteredClaimNames.Sub, username),
-        new Claim("preferred_username", username),
-        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
-        new Claim("token_use", TipoRefresh)
-    }, DateTime.UtcNow.AddDays(DiasRefresh));
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, username),
+            new("preferred_username", username),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
+            new("token_use", TipoRefresh)
+        };
+
+        if (usuarioId > 0) claims.Add(new Claim(ClaimUsuarioId, usuarioId.ToString(CultureInfo.InvariantCulture)));
+
+        return Construir(claims, DateTime.UtcNow.AddDays(DiasRefresh));
+    }
 
     /// <summary>Valida un token (de acceso o de refresco) y devuelve su principal, o null si es invalido.</summary>
     public ClaimsPrincipal? Validar(string? token, string usoEsperado)
