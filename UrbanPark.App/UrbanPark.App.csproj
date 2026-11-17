@@ -71,6 +71,8 @@
 		<PackageReference Include="QRCoder" Version="1.6.0" />
 		<PackageReference Include="NPOI" Version="2.7.3" />
 		<PackageReference Include="QuestPDF" Version="2025.7.0" />
+		<!-- Base local del equipo: funciona sin internet (QR, vehículos, sedes y plazas). -->
+		<PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
 	</ItemGroup>
 
 </Project>

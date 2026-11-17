@@ -173,6 +173,36 @@
                 </VerticalStackLayout>
             </Border>
 
+            <Border Style="{StaticResource TarjetaClara}">
+                <VerticalStackLayout Spacing="8">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Datos en este equipo (sin conexión)" Style="{StaticResource TituloSeccion}" />
+                        <Label Text="Se guardan en una base SQLite para que el QR, tus vehículos y las plazas funcionen sin internet."
+                               Style="{StaticResource TextoSuave}"
+                               FontSize="11" />
+                    </VerticalStackLayout>
+
+                    <Label x:Name="lblBaseLocal"
+                           Style="{StaticResource TextoSuave}"
+                           FontSize="11"
+                           LineBreakMode="WordWrap" />
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Text="Ver estado"
+                                Clicked="OnEstadoBaseLocalClicked"
+                                Style="{StaticResource BotonPrimario}"
+                                HeightRequest="34"
+                                FontSize="11" />
+                        <Button Grid.Column="1"
+                                Text="Enviar pendientes"
+                                Clicked="OnSincronizarClicked"
+                                Style="{StaticResource BotonAcento}"
+                                HeightRequest="34"
+                                FontSize="11" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
             <Label x:Name="lblPie"
                    Style="{StaticResource TextoSuaveClaro}"
                    HorizontalTextAlignment="Center"

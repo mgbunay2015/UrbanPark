@@ -178,6 +178,11 @@ public sealed class PasePuestoDto
     public int HorasPrevistas { get; set; }
     public double MontoPrevisto { get; set; }
 
+    /// <summary>Perfil del conductor (Hombre, Mujer, Embarazada, Tercera Edad…).</summary>
+    public string? PerfilConductor { get; set; }
+    public string? Marca { get; set; }
+    public string? Color { get; set; }
+
     public bool EsReserva => string.Equals(Modo, "RESERVA", StringComparison.OrdinalIgnoreCase);
 }
 

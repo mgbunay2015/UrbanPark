@@ -127,7 +127,11 @@ public static class ApiCliente
             if (respuesta.IsSuccessStatusCode)
             {
                 if (metodo == HttpMethod.Get && !string.IsNullOrWhiteSpace(texto))
+                {
                     AlmacenLocal.GuardarCache(ClaveCache(ruta), texto);
+                    // Copia desglosada en SQLite: QR, vehículos, sedes, plazas y tickets.
+                    AlmacenLocal.Reflejar(ruta, texto);
+                }
                 SinConexion = false;
                 if (encolar && AlmacenLocal.Pendientes > 0)
                     _ = SincronizarAsync();
@@ -156,16 +160,42 @@ public static class ApiCliente
         }
     }
 
-    public static async Task SincronizarAsync()
+    /// <summary>Resultado de una pasada de sincronización, para informar al usuario.</summary>
+    public sealed record SincronizacionLocal(int Iniciales, int Enviados, bool Completa, string Mensaje);
+
+    /// <summary>
+    /// Envía al servidor los cambios guardados sin conexión. Se llama al arrancar, al volver
+    /// la red y al pulsar «Enviar pendientes» en Perfil.
+    ///
+    /// Si la sesión es la de relleno del modo sin conexión (token "sin-conexion"), primero se
+    /// recupera una sesión real con el token del equipo vinculado; si no hay equipo vinculado,
+    /// los cambios se quedan en la cola hasta que el usuario vuelva a iniciar sesión.
+    /// </summary>
+    public static async Task<SincronizacionLocal> SincronizarAsync()
     {
-        if (!HayRed() || !Sesion.Activa) return;
-        if (Interlocked.CompareExchange(ref _sincronizando, 1, 0) != 0) return;
+        if (!HayRed()) return new SincronizacionLocal(0, 0, false, "Sin internet todavía.");
+        if (!Sesion.Activa) return new SincronizacionLocal(0, 0, false, "Sin sesión iniciada.");
+
+        if (Interlocked.CompareExchange(ref _sincronizando, 1, 0) != 0)
+            return new SincronizacionLocal(0, 0, false, "Ya hay una sincronización en curso.");
 
         try
         {
+            // Sesión de relleno del modo sin conexión: se intenta recuperar una real.
+            if (EsSesionLocal())
+            {
+                var recuperada = await RecuperarSesionAsync();
+                if (!recuperada)
+                    return new SincronizacionLocal(AlmacenLocal.Pendientes, 0, false,
+                        "Los cambios están guardados, pero hay que volver a iniciar sesión para enviarlos.");
+            }
+
+            var iniciales = AlmacenLocal.Pendientes;
+            var enviados = 0;
+
             foreach (var op in AlmacenLocal.PendientesDe(Sesion.Username))
             {
-                if (!HayRed()) return;
+                if (!HayRed()) break;
 
                 object? cuerpo = string.IsNullOrWhiteSpace(op.Cuerpo)
                     ? null
@@ -174,20 +204,89 @@ public static class ApiCliente
                 {
                     await EnviarAsync<JsonElement>(new HttpMethod(op.Metodo), op.Ruta, cuerpo, encolar: false);
                     AlmacenLocal.Quitar(op.Id);
+                    enviados++;
                 }
-                catch (ApiExcepcion ex) when (ex.Status is 0 or 401 or >= 500)
+                catch (ApiExcepcion ex) when (ex.Status is 0)
                 {
-                    return;
+                    // Se cayó la red a mitad: lo que queda se envía en la próxima vuelta.
+                    break;
                 }
-                catch (ApiExcepcion)
+                catch (ApiExcepcion ex) when (ex.Status is 401)
                 {
+                    Sesion.Cerrar();
+                    return new SincronizacionLocal(iniciales, enviados, false,
+                        "La sesión venció. Vuelve a iniciar sesión para enviar los cambios pendientes.");
+                }
+                catch (ApiExcepcion ex) when (ex.Status >= 500)
+                {
+                    // El servidor falló: se conserva el cambio y se reintenta luego.
+                    AlmacenLocal.MarcarFallo(op.Id, ex.Message);
+                }
+                catch (ApiExcepcion ex)
+                {
+                    // 4xx: el servidor rechaza el cambio (plaza ocupada, placa duplicada…).
+                    // Reintentarlo no sirve y bloquearía la cola, así que se descarta.
                     AlmacenLocal.Quitar(op.Id);
+                    System.Diagnostics.Debug.WriteLine($"Pendiente descartado {op.Ruta}: {ex.Message}");
                 }
             }
+
+            var quedan = AlmacenLocal.Pendientes;
+            var mensaje = enviados == 0 && quedan == 0
+                ? "No había cambios pendientes."
+                : quedan == 0
+                    ? $"Se enviaron {enviados} cambio(s) al servidor."
+                    : $"Se enviaron {enviados} cambio(s); quedan {quedan} por enviar.";
+            return new SincronizacionLocal(iniciales, enviados, quedan == 0, mensaje);
         }
         finally
         {
             Interlocked.Exchange(ref _sincronizando, 0);
+        }
+    }
+
+    /// <summary>True si la sesión actual es la de relleno del modo sin conexión.</summary>
+    public static bool EsSesionLocal() =>
+        Sesion.Activa && string.Equals(Sesion.Actual!.AccessToken, "sin-conexion", StringComparison.Ordinal);
+
+    /// <summary>
+    /// Recupera una sesión real sin pedir contraseña usando el token del equipo vinculado,
+    /// o el refresh token guardado. Devuelve false si no hay forma silenciosa de entrar.
+    /// </summary>
+    public static async Task<bool> RecuperarSesionAsync()
+    {
+        if (!HayRed()) return false;
+
+        // 1) Refresh token (cuando la sesión simplemente venció).
+        if (!string.IsNullOrWhiteSpace(Sesion.Actual?.RefreshToken))
+        {
+            try
+            {
+                if (await RefrescarAsync(forzar: true) && !EsSesionLocal()) return true;
+            }
+            catch (Exception)
+            {
+                // se prueba el token del equipo
+            }
+        }
+
+        // 2) Equipo vinculado: el API devuelve una sesión nueva con solo el token del dispositivo.
+        var dispositivo = CredencialLocal.Dispositivo;
+        if (string.IsNullOrWhiteSpace(dispositivo)) return false;
+
+        try
+        {
+            var sesion = await LoginDispositivoAsync(dispositivo);
+            if (sesion is null || string.IsNullOrWhiteSpace(sesion.AccessToken)) return false;
+
+            await Sesion.GuardarAsync(sesion);
+            CredencialLocal.GuardarSesionOffline(sesion);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"No se pudo recuperar la sesión con el equipo: {ex.Message}");
+            return false;
         }
     }
 
@@ -216,6 +315,11 @@ public static class ApiCliente
             return Task.FromResult(valor ?? default!);
         }
 
+        // Sin copia de esa ruta: se intenta reconstruir con las tablas de SQLite
+        // (pase del puesto, vehículos, sedes, plazas y tickets abiertos).
+        if (metodo == HttpMethod.Get && AlmacenLocal.TryGetEstructurado<T>(ruta, out var local))
+            return Task.FromResult(local);
+
         if (encolar && SeEncola(metodo, ruta) && Sesion.Activa)
         {
             var json = cuerpo is null ? null : JsonSerializer.Serialize(cuerpo, JsonUrbanPark.Opciones);
@@ -232,14 +336,16 @@ public static class ApiCliente
     // ================================================================ refresco
     private static readonly SemaphoreSlim CandadoRefresco = new(1, 1);
 
-    public static async Task<bool> RefrescarAsync()
+    public static async Task<bool> RefrescarAsync(bool forzar = false)
     {
         if (Sesion.Actual is null || string.IsNullOrWhiteSpace(Sesion.Actual.RefreshToken)) return false;
 
         await CandadoRefresco.WaitAsync();
         try
         {
-            if (!Sesion.PorExpirar && Sesion.Activa) return true;
+            // Sin "forzar" solo se refresca cuando el token está por vencer: así las
+            // llamadas normales no piden un token nuevo en cada petición.
+            if (!forzar && !Sesion.PorExpirar && Sesion.Activa) return true;
 
             using var peticion = new HttpRequestMessage(HttpMethod.Post, BaseUrl.TrimEnd('/') + "/api/auth/refresh");
             peticion.Content = new StringContent(

@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/tests/">
     <Project Path="tests/UrbanPark.Pruebas/UrbanPark.Pruebas.csproj" />
+    <Project Path="tests/SyncLocal/SyncLocal.csproj" />
   </Folder>
   <Project Path="UrbanPark.Api/UrbanPark.Api.csproj" />
   <Project Path="UrbanPark.App/UrbanPark.App.csproj">

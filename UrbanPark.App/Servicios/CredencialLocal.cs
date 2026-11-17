@@ -110,7 +110,11 @@ public static class CredencialLocal
         catch (Exception) { }
     }
 
-    /// <summary>Reconstruye la sesión guardada (con un token de relleno) para el modo sin conexión.</summary>
+    /// <summary>
+    /// Reconstruye la sesión guardada para el modo sin conexión. El token de acceso se
+    /// sustituye por uno de relleno, pero el <b>refresh token se conserva</b>: al volver la
+    /// red con él se obtiene una sesión real sin pedir la contraseña otra vez.
+    /// </summary>
     public static UrbanPark.App.Modelos.SesionDto? SesionOffline()
     {
         var json = Preferences.Default.Get(ClaveSesion, "");
@@ -122,9 +126,9 @@ public static class CredencialLocal
                 json, UrbanPark.App.Modelos.JsonUrbanPark.Opciones);
             if (sesion is null || string.IsNullOrWhiteSpace(sesion.Username)) return null;
 
+            // Se conserva RefreshToken y ExpiresAt originales.
             sesion.AccessToken = "sin-conexion";
-            sesion.RefreshToken = "";
-            sesion.ExpiresAt = 0;
+            if (string.IsNullOrWhiteSpace(sesion.RefreshToken)) sesion.RefreshToken = "";
             return sesion;
         }
         catch (Exception)

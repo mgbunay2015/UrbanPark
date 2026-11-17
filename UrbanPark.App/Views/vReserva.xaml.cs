@@ -128,6 +128,7 @@ public partial class vReserva : ContentPage
         try
         {
             var pase = await ApiCliente.EstacionarAsync(_placa, _puesto.Id, Inicio, Fin);
+            AlmacenLocal.GuardarPase(pase, Sesion.Username);
             await Navigation.PushAsync(new vQrPuesto(pase));
             // la reserva ya quedó: se quita esta pantalla del historial para no repetirla
             var pila = Navigation.NavigationStack;

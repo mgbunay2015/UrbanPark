@@ -659,6 +659,7 @@ public partial class vPlazas : ContentPage
         try
         {
             var pase = await ApiCliente.EstacionarAsync(_placaReserva!, plaza.Id);
+            AlmacenLocal.GuardarPase(pase, Sesion.Username);
             _seleccionada = null;
             await CargarAsync();
             await Navigation.PushAsync(new vQrPuesto(pase));

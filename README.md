@@ -169,6 +169,30 @@ lo devuelve a su parqueadero. Al volver a la pestaña se abre siempre en *su par
   se reservan con el perfil que corresponde (discapacidad / embarazada), como en el sistema original.
 - **El valor del QR** se calcula con la misma fórmula en el API y en la app, así el QR se sigue viendo
   aunque el equipo se quede sin conexión.
+- **Base local SQLite (modo sin conexión)**: la app guarda en el equipo (`urbanpark.db3`) una copia de
+  lo esencial —el pase del puesto con su QR, los vehículos, las sedes, las plazas de la sede vista y los
+  tickets abiertos— más una cola de cambios pendientes. Si se cae el internet, el QR se sigue pintando
+  con el último pase guardado y el valor se recalcula con la misma fórmula; los cambios se envían solos
+  al volver la conexión. Puedes ver el estado en **Perfil → Datos en este equipo**.
+
+### Cómo funciona el modo sin conexión
+
+1. **Con red**: cada respuesta correcta del API se copia a SQLite (`AlmacenLocal.Reflejar`).
+2. **Sin red**: el QR se abre con el último pase guardado; el valor corre en el equipo con la misma
+   fórmula del servidor; los cambios (`POST`, `PATCH`, `PUT`, `DELETE`) quedan **encolados** con su
+   cuerpo JSON y el usuario.
+3. **Al volver la red**: se recupera una sesión real **sin pedir la contraseña** —primero con el
+   `refreshToken` guardado y, si no sirve, con el token del equipo vinculado— y después se envía la cola.
+   Los errores 5xx se reintentan; los 4xx se descartan para no bloquear la cola.
+
+Verificación automática del ciclo completo:
+
+```powershell
+dotnet run --project tests/SyncLocal/SyncLocal.csproj
+```
+
+Comprueba las 7 tablas, la integridad de la base, que el pase con su QR se reconstruye, que un cambio
+hecho sin red queda encolado y que al reconectar se recupera sesión y el servidor aplica el cambio.
 - **Dos modos de entrada**: `AHORA` (el ticket nace ABIERTO y el valor corre desde ese instante) y
   `RESERVA` (el ticket nace RESERVADO con fecha, hora de ingreso y hora de salida; el puesto queda
   guardado y el QR muestra el importe estimado de la franja). Al llegar, «Ya llegué: activar» lo

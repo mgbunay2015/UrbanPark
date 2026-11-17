@@ -83,6 +83,11 @@ public partial class vQrPuesto : ContentPage
     private async Task<bool> CargarPuestoAsync()
     {
         var pase = await PuestoActual.CargarAsync();
+
+        // Sin internet (o si el API no responde) se usa el pase guardado en el equipo:
+        // así el QR sigue visible aunque no haya conexión.
+        pase ??= AlmacenLocal.PaseSinRed();
+
         if (pase is null) return false;
 
         _pase = pase;
@@ -106,6 +111,8 @@ public partial class vQrPuesto : ContentPage
         lblTicketHora.Text = "--:--";
         lblTicketSede.Text = "URBAN PARK";
         imgQr.Source = null;
+        panelPerfil.IsVisible = false;
+        lblVehiculoDetalle.Text = "";
         lblDireccion.Text = "Cuando entres a un puesto o reserves uno, aquí verás tu QR.";
         lblEtiquetaMonto.Text = "EL QR APARECE CON TU PUESTO";
         lblMonto.Text = "$0.00";
@@ -117,7 +124,6 @@ public partial class vQrPuesto : ContentPage
         btnAnular.IsVisible = false;
         lblNota.Text = "Elige un parqueadero en la pestaña Mapa y tu QR aparecerá aquí.";
     }
-
     protected override void OnDisappearing()
     {
         _reloj?.Stop();
@@ -146,6 +152,21 @@ public partial class vQrPuesto : ContentPage
             ? "Consultando la dirección del parqueadero…"
             : "📍 " + _pase.SedeDireccion;
 
+        PintarDibujoVehiculo();
+
+        // Aviso de modo local: el QR y el valor salen del equipo.
+        if (ApiCliente.SinConexion || !HayRedLocal())
+        {
+            lblSubtitulo.Text = "Sin conexión · el QR y el valor se calculan en el equipo";
+            btnAnular.IsEnabled = false;
+            btnPagar.IsEnabled = false;
+        }
+        else
+        {
+            btnAnular.IsEnabled = true;
+            btnPagar.IsEnabled = true;
+        }
+
         if (EsReserva)
         {
             lblSubtitulo.Text = "Reserva confirmada · muestra este QR al llegar";
@@ -170,6 +191,55 @@ public partial class vQrPuesto : ContentPage
         _pase is not null &&
         (string.Equals(_pase.Estado, "RESERVADO", StringComparison.OrdinalIgnoreCase) ||
          string.Equals(_pase.Modo, "RESERVA", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Red disponible: con esto se decide si se muestran los botones de acción.</summary>
+    private static bool HayRedLocal() =>
+        Connectivity.Current.NetworkAccess == NetworkAccess.Internet;
+
+    /// <summary>
+    /// Pinta el perfil de quien conduce en la cabecera del ticket (icono, nombre y descuento)
+    /// y la marca/color debajo. Es el distintivo de la persona: embarazada, tercera edad,
+    /// capacidades especiales, estudiante…
+    /// </summary>
+    private void PintarDibujoVehiculo()
+    {
+        if (_pase is null) return;
+
+        var perfil = _pase.PerfilConductor ?? "";
+
+        var (icono, nombre) = IconoPerfil(perfil);
+        panelPerfil.IsVisible = !string.IsNullOrWhiteSpace(nombre);
+        lblPerfilIcono.Text = icono;
+        lblPerfilNombre.Text = nombre;
+        lblPerfilDescuento.IsVisible = _pase.Descuento > 0;
+        lblPerfilDescuento.Text = _pase.Descuento > 0 ? $"{_pase.Descuento}% descuento" : "";
+
+        // Marca y color bajo el perfil, si el API los trae.
+        var detalle = string.Join(" · ",
+            new[] { _pase.Marca?.Trim(), _pase.Color?.Trim() }.Where(s => !string.IsNullOrWhiteSpace(s)));
+        lblVehiculoDetalle.Text = detalle;
+        lblVehiculoDetalle.IsVisible = detalle.Length > 0;
+    }
+
+    /// <summary>Icono y nombre legible del perfil de quien conduce.</summary>
+    private static (string Icono, string Nombre) IconoPerfil(string perfil)
+    {
+        var p = (perfil ?? "").ToLowerInvariant();
+        if (p.Length == 0) return ("👤", "");
+        if (p.Contains("capacidades") || p.Contains("discapacit") || p.Contains("especial"))
+            return ("♿", "Capacidades especiales");
+        if (p.Contains("tercera") || p.Contains("anciano") || p.Contains("mayor"))
+            return ("👴", "Tercera edad");
+        if (p.Contains("embaraz"))
+            return ("🤰", "Embarazada");
+        if (p.Contains("estudiante") || p.Contains("estudiate"))
+            return ("🎓", "Estudiante");
+        if (p.Contains("mujer"))
+            return ("👩", "Mujer");
+        if (p.Contains("hombre"))
+            return ("👨", "Hombre");
+        return ("👤", perfil!);
+    }
 
     /// <summary>Número del ticket como en el papel: 0433656.</summary>
     private string CodigoTicket()
@@ -372,6 +442,9 @@ public partial class vQrPuesto : ContentPage
         _pase.SalidaPrevista = pase.SalidaPrevista;
         _pase.HorasPrevistas = pase.HorasPrevistas;
         _pase.MontoPrevisto = pase.MontoPrevisto;
+        _pase.PerfilConductor = pase.PerfilConductor;
+        _pase.Marca = pase.Marca;
+        _pase.Color = pase.Color;
         if (!string.IsNullOrWhiteSpace(pase.QrPayload)) _pase.QrPayload = pase.QrPayload;
     }
 
@@ -389,6 +462,9 @@ public partial class vQrPuesto : ContentPage
             // La página pudo cerrarse mientras llegaba la respuesta.
             if (pase is null || _pase is null || _finalizado) return;
 
+            // Cada lectura correcta deja el pase en SQLite para el modo sin conexión.
+            AlmacenLocal.GuardarPase(pase, Sesion.Username);
+
             CopiarPase(pase);
             _montoPintado = -1;
             _ultimoRefresco = DateTime.Now;
@@ -403,7 +479,7 @@ public partial class vQrPuesto : ContentPage
         catch (Exception ex) when (ex is ApiExcepcion)
         {
             // Sin conexión se mantiene el cálculo local: el QR sigue sirviendo.
-            lblNota.Text = "Sin conexión: el valor se calcula en el equipo con la misma fórmula del sistema.";
+            lblNota.Text = "Sin conexión: el QR y el valor se calculan en el equipo con la misma fórmula del sistema.";
         }
         catch (Exception)
         {

@@ -96,6 +96,7 @@ public sealed class ServicioEstacionamiento
 
         var espacio = await _espacios.PorIdAsync(ticket.EspacioId);
         var sede = espacio?.SedeId is null ? null : await _sedes.PorIdAsync(espacio.SedeId.Value);
+        var vehiculo = await _vehiculos.PorPlacaAsync(ticket.Placa);
 
         var descuento = await DescuentoAsync(ticket.Placa);
         var entrada = ticket.Entrada;
@@ -121,7 +122,10 @@ public sealed class ServicioEstacionamiento
             esReserva ? "RESERVA" : "AHORA",
             esReserva ? fin : null,
             esReserva ? horas : 0,
-            esReserva ? monto : 0);
+            esReserva ? monto : 0,
+            vehiculo?.Propietario,
+            vehiculo?.Marca,
+            vehiculo?.Color);
 
         return pase with { QrPayload = Payload(pase) };
     }

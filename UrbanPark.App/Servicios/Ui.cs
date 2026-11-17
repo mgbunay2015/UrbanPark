@@ -25,7 +25,23 @@ public static class Ui
 
     /// <summary>Muestra el error de una excepción con el formato del API.</summary>
     public static Task MostrarExcepcion(Page pagina, Exception ex) =>
-        ex is ApiExcepcion ? Error(pagina, ex.Message) : Error(pagina, "Ocurrió un error: " + ex.Message);
+        ex is ApiExcepcion ? Error(pagina, ex.Message) : Error(pagina, Describir(ex));
+
+    /// <summary>
+    /// Mensaje legible para una excepción que no viene del API. Incluye el tipo para poder
+    /// distinguir fallos del equipo (SQLite, preferencias…) de los del servidor.
+    /// </summary>
+    public static string Describir(Exception ex)
+    {
+        var mensaje = (ex.Message ?? "").Trim();
+
+        // SQLite a veces responde "not an error": sin el tipo no dice nada.
+        if (mensaje.Length == 0 || mensaje.Equals("not an error", StringComparison.OrdinalIgnoreCase))
+            return $"Falló una operación local ({ex.GetType().Name}). " +
+                   "Cierra la app y vuelve a abrirla; si sigue igual, revisa «Perfil → Datos en este equipo».";
+
+        return "Ocurrió un error: " + mensaje;
+    }
 
     // ------------------------------------------------------------------ formato
     public static string Moneda(double valor) => "$" + valor.ToString("0.00", Ecuador);

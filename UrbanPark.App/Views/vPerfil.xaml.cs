@@ -24,6 +24,7 @@ public partial class vPerfil : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        PintarBaseLocal();
         await CargarPerfilAsync();
         await ActualizarTotpAsync();
     }
@@ -43,8 +44,7 @@ public partial class vPerfil : ContentPage
         catch (Exception)
         {
             lblTotp.Text = "No se pudo consultar el estado del autenticador.";
-        }
-    }
+        }    }
 
     private async void OnTotpClicked(object? sender, EventArgs e)
     {
@@ -275,6 +275,59 @@ public partial class vPerfil : ContentPage
         lblPie.Text = $"API: {ApiCliente.BaseUrl}";
         await Ui.Exito(this, "Dirección del API actualizada: " + ApiCliente.BaseUrl);
     }
+
+    // ================================================================ base local (sin conexión)
+    private void PintarBaseLocal()
+    {
+        try
+        {
+            if (!Servicios.BaseLocal.Disponible)
+            {
+                lblBaseLocal.Text = "La base local no está disponible en este equipo.\n" +
+                                    (Servicios.BaseLocal.ErrorInicio ?? "Sin detalle.");
+                return;
+            }
+
+            var (vehiculos, sedes, espacios, pases, tickets, pendientes) = AlmacenLocal.Estado();
+            lblBaseLocal.Text =
+                $"Vehículos: {vehiculos} · Sedes: {sedes} · Plazas: {espacios}\n" +
+                $"Pases (QR): {pases} · Tickets abiertos: {tickets}\n" +
+                $"Cambios por enviar: {pendientes}\n" +
+                $"Archivo: {Servicios.BaseLocal.NombreArchivo}";
+        }
+        catch (Exception ex)
+        {
+            lblBaseLocal.Text = "No se pudo leer la base local: " + ex.Message;
+        }
+    }
+
+    private async void OnEstadoBaseLocalClicked(object? sender, EventArgs e)
+    {
+        PintarBaseLocal();
+        var (vehiculos, sedes, espacios, pases, tickets, pendientes) = AlmacenLocal.Estado();
+        await Ui.Aviso(this,
+            $"Base local en este equipo\n\n" +
+            $"Vehículos: {vehiculos}\nSedes: {sedes}\nPlazas: {espacios}\n" +
+            $"Pases con QR: {pases}\nTickets abiertos: {tickets}\n" +
+            $"Cambios pendientes de enviar: {pendientes}\n\n" +
+            $"Conexión: {(ApiCliente.SinConexion ? "sin internet (usando datos locales)" : "en línea")}",
+            "Datos sin conexión");
+    }
+
+    private async void OnSincronizarClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            var resultado = await ApiCliente.SincronizarAsync();
+            PintarBaseLocal();
+            await Ui.Aviso(this, resultado.Mensaje, "Sincronización");
+        }
+        catch (Exception ex)
+        {
+            await Ui.MostrarExcepcion(this, ex);
+        }
+    }
+
     private async void OnCambiarPasswordClicked(object? sender, EventArgs e)
     {
         var actual = txtPasswordActual.Text ?? "";

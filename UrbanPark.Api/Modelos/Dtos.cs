@@ -59,7 +59,8 @@ public sealed record PasePuestoDto(long TicketId, string TicketCodigo, string Pl
     long EspacioId, string EspacioCodigo, string Zona, int? Nivel, string TipoVehiculo, double TarifaHora,
     DateTime Entrada, int MinutosTranscurridos, int HorasCobradas, int Descuento, double MontoBruto,
     double MontoAhora, double MontoPorHora, string Estado, string Usuario, string QrPayload,
-    string Modo = "AHORA", DateTime? SalidaPrevista = null, int HorasPrevistas = 0, double MontoPrevisto = 0);
+    string Modo = "AHORA", DateTime? SalidaPrevista = null, int HorasPrevistas = 0, double MontoPrevisto = 0,
+    string? PerfilConductor = null, string? Marca = null, string? Color = null);
 
 // ============================ Espacios ============================
 public sealed record EspacioDto(long Id, string Codigo, string Zona, string TipoVehiculo, bool Ocupado, double TarifaHora, int? Nivel, string? Descripcion,

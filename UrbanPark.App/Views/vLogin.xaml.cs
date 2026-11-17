@@ -615,8 +615,8 @@ public partial class vLogin : ContentPage
                 try
                 {
                     var sesion = await ApiCliente.LoginBiometriaAsync(hash);
-                    await Sesion.GuardarAsync(sesion);
-                    IrAlMenu();
+            await Sesion.GuardarAsync(sesion);
+            IrAlMenu();
                     return;
                 }
                 catch (Exception ex)
@@ -720,7 +720,7 @@ public partial class vLogin : ContentPage
             if (!enrolada)
             {
                 Sesion.Cerrar();
-                txtUsuario.Text = usuario;
+            txtUsuario.Text = usuario;
                 txtPassword.Text = password;
                 panelRegistro.IsVisible = false;
                 panelLogin.IsVisible = true;
