@@ -77,6 +77,10 @@ public sealed class Vehiculo
     public int Descuento { get; set; }
     public string? PropietarioEmail { get; set; }
     public string? PropietarioUsername { get; set; }
+
+    /// <summary>Id del usuario duenno (se copia de los claims al crear). NULL en filas antiguas.</summary>
+    public long? PropietarioUsuarioId { get; set; }
+
     public bool Activo { get; set; } = true;
 }
 
@@ -92,6 +96,9 @@ public sealed class Biometria
     public string TokenHash { get; set; } = "";
     public byte[]? FotoRostro { get; set; }
     public DateTime CreadoEn { get; set; }
+
+    /// <summary>Id del usuario duenno (se copia de los claims al guardar). NULL en filas antiguas.</summary>
+    public long? UsuarioId { get; set; }
 }
 
 /// <summary>Ticket de entrada/salida.</summary>
@@ -123,6 +130,9 @@ public sealed class Ticket
 
     /// <summary>Hora de salida prevista cuando el ticket es una reserva.</summary>
     public DateTime? SalidaPrevista { get; set; }
+
+    /// <summary>Id del usuario que abrio el ticket. NULL en tickets anteriores a la columna.</summary>
+    public long? UsuarioId { get; set; }
 
     public bool EsReserva => string.Equals(Modo, "RESERVA", StringComparison.OrdinalIgnoreCase);
 }

@@ -20,7 +20,8 @@
 
             <Border BackgroundColor="#6C4DFF" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="10,8">
                 <VerticalStackLayout Spacing="6">
-                    <Label Text="Movimiento de hoy"
+                    <Label x:Name="lblMovimiento"
+                           Text="Movimiento de hoy"
                            FontFamily="OpenSansSemibold"
                            FontSize="14"
                            TextColor="White" />

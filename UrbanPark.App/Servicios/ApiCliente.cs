@@ -658,15 +658,22 @@ public static class ApiCliente
         PostAsync<JsonElement>("/api/biometrias/verificar", new { tokenHash });
 
     // ================================================================ tickets
-    public static Task<List<TicketDto>> ListarTicketsAsync() => GetAsync<List<TicketDto>>("/api/tickets");
+    /// <summary>
+    /// Tickets visibles para la sesion. El API ya devuelve solo los del cliente; con
+    /// <paramref name="soloMios"/> el operador o el admin piden unicamente los suyos.
+    /// </summary>
+    public static Task<List<TicketDto>> ListarTicketsAsync(bool soloMios = false) =>
+        GetAsync<List<TicketDto>>("/api/tickets" + (soloMios ? "?soloMios=true" : ""));
 
-    public static Task<List<TicketDto>> TicketsAbiertosAsync() => GetAsync<List<TicketDto>>("/api/tickets/abiertos");
+    public static Task<List<TicketDto>> TicketsAbiertosAsync(bool soloMios = false) =>
+        GetAsync<List<TicketDto>>("/api/tickets/abiertos" + (soloMios ? "?soloMios=true" : ""));
 
     public static Task<TicketDto> AbrirTicketAsync(string placa, long espacioId) =>
         PostAsync<TicketDto>("/api/tickets/abrir", new { placa, espacioId });
 
     public static Task<TicketDto> CerrarTicketAsync(long id) => PostAsync<TicketDto>($"/api/tickets/{id}/cerrar");
 
+    /// <summary>Libera las plazas cuyo cobro quedó pendiente de sincronizar (tarea de OPERADOR/ADMIN).</summary>
     public static Task<SincronizacionDto> SincronizarLiberacionesAsync() =>
         PostAsync<SincronizacionDto>("/api/tickets/sincronizar-liberaciones");
 

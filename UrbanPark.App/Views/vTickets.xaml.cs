@@ -45,6 +45,9 @@ public partial class vTickets : ContentPage
             _espacios = await tareaEspacios ?? [];
 
             lblTitulo.Text = Sesion.EsCliente ? "Mis tickets" : "Tickets entrada / salida";
+            lblSubtitulo.Text = Sesion.EsCliente
+                ? "Aquí ves solo tus tickets: los abiertos y los que ya pagaste."
+                : "Cierra y cobra los tickets del parqueadero.";
             Title = "Tickets";
             PintarSyncHint();
             PintarResumen();
@@ -64,6 +67,10 @@ public partial class vTickets : ContentPage
     // ================================================================ aviso de sincronizacion
     private void PintarSyncHint()
     {
+        // «Sincronizar plazas» recorre TODAS las liberaciones pendientes del parqueadero:
+        // es una tarea del personal, así que el cliente no ve el botón.
+        btnSincronizar.IsVisible = Sesion.EsOperador;
+
         var pendientes = _tickets.Count(t => t.LiberacionPendiente);
 
         if (pendientes == 0)
@@ -74,8 +81,9 @@ public partial class vTickets : ContentPage
             return;
         }
 
-        lblSyncHint.Text =
-            $"{pendientes} pago(s) cobrado(s) con plaza aún por liberar. Pulsa «Sincronizar plazas» cuando el servicio esté UP.";
+        lblSyncHint.Text = Sesion.EsCliente
+            ? $"{pendientes} pago(s) con la plaza aún por liberar. Se pondrá al día sola cuando el servicio de espacios vuelva."
+            : $"{pendientes} pago(s) cobrado(s) con plaza aún por liberar. Pulsa «Sincronizar plazas» cuando el servicio esté UP.";
         lblSyncHint.IsVisible = true;
         panelSyncHint.IsVisible = true;
     }

@@ -22,10 +22,17 @@ public sealed class BiometriasController : ControladorBase
     private static BiometriaDto A(Biometria b) =>
         new(b.Id, b.Usuario, b.VehiculoId, b.Placa, b.Tipo, b.Dispositivo, b.FotoRostro is { Length: > 0 }, b.CreadoEn);
 
+    private bool Pertenece(Vehiculo v) =>
+        v.PropietarioUsuarioId is > 0 && UsuarioId > 0
+            ? v.PropietarioUsuarioId == UsuarioId
+            : !string.IsNullOrWhiteSpace(v.PropietarioUsername) &&
+              v.PropietarioUsername.Equals(Username, StringComparison.OrdinalIgnoreCase);
+
     [HttpGet]
     public async Task<IActionResult> Listar()
     {
-        var lista = await _repo.ListarPorUsuarioAsync(Username);
+        // Las biometrias son siempre personales: no hay rol que vea las huellas de otro.
+        var lista = await _repo.ListarPorUsuarioAsync(UsuarioId, Username);
         return Ok(lista.Select(A));
     }
 
@@ -47,8 +54,7 @@ public sealed class BiometriasController : ControladorBase
         {
             var vehiculo = await _vehiculos.PorIdAsync(peticion.VehiculoId.Value);
             if (vehiculo is null) return NoEncontrado("Vehículo no encontrado");
-            if (EsClienteSolo &&
-                !string.Equals(vehiculo.PropietarioUsername, Username, StringComparison.OrdinalIgnoreCase))
+            if (SoloVeLoSuyo && !Pertenece(vehiculo))
                 return Prohibido("Solo puedes enrolar tus propios vehículos");
             placa = vehiculo.Placa;
         }
@@ -73,9 +79,9 @@ public sealed class BiometriasController : ControladorBase
             return PeticionInvalida("Para el rostro hay que capturar una foto");
 
         var id = await _repo.GuardarAsync(Username, peticion.VehiculoId, placa, tipo,
-            peticion.TokenHash.Trim(), peticion.Dispositivo, foto);
+            peticion.TokenHash.Trim(), peticion.Dispositivo, foto, UsuarioId);
 
-        var guardada = (await _repo.ListarPorUsuarioAsync(Username)).First(b => b.Id == id);
+        var guardada = (await _repo.ListarPorUsuarioAsync(UsuarioId, Username)).First(b => b.Id == id);
         return Ok(A(guardada));
     }
 

@@ -31,7 +31,8 @@ public sealed class EstacionarController : ControladorBase
 
         var resultado = await _servicio.EstacionarAsync(peticion.Placa, peticion.EspacioId, Username,
             esReserva ? peticion.InicioReserva : null,
-            esReserva ? peticion.FinReserva : null);
+            esReserva ? peticion.FinReserva : null,
+            UsuarioId);
 
         if (!resultado.Exito)
         {

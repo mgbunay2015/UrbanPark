@@ -24,12 +24,19 @@ public partial class vHoy : ContentPage
     {
         try
         {
+            // El API ya filtra por el usuario del token cuando la sesion es de cliente;
+            // el operador y el admin siguen viendo el movimiento de todo el parqueadero.
             _tickets = await ApiCliente.ListarTicketsAsync() ?? [];
         }
         catch
         {
             _tickets = [];
         }
+
+        // El titulo dice a quien pertenece la lista: sin esto, un admin y un cliente verian
+        // el mismo encabezado con contenidos distintos.
+        lblMovimiento.Text = Sesion.EsCliente ? "Mi movimiento de hoy" : "Movimiento de hoy";
+        Title = Sesion.EsCliente ? "Mi día" : "Hoy";
 
         PintarDias();
         PintarDia();
@@ -101,7 +108,7 @@ public partial class vHoy : ContentPage
         {
             lista.Add(new Label
             {
-                Text = "No hay tickets este día.",
+                Text = Sesion.EsCliente ? "No tienes tickets este día." : "No hay tickets este día.",
                 TextColor = Color.FromArgb("#E4DCFF"),
                 FontSize = 14
             });

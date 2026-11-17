@@ -780,10 +780,9 @@ public partial class vPlazas : ContentPage
 
         return abiertos
             .Where(t =>
-                (!string.IsNullOrWhiteSpace(t.Usuario) && t.Usuario == Sesion.Username) ||
+                Sesion.EsMio(t.UsuarioId, t.Usuario) ||
                 (placas.Count > 0 && placas.Contains(t.Placa)) ||
-                (placas.Count == 0 && Sesion.EsCliente &&
-                 (string.IsNullOrWhiteSpace(t.Usuario) || t.Usuario == Sesion.Username)))
+                (placas.Count == 0 && Sesion.EsCliente && string.IsNullOrWhiteSpace(t.Usuario)))
             .DistinctBy(t => t.Id)
             .ToList();
     }

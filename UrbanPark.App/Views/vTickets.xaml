@@ -33,7 +33,7 @@
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                 <VerticalStackLayout Grid.Column="0" Spacing="3" VerticalOptions="Center">
                     <Label x:Name="lblTitulo" Text="Tickets entrada / salida" Style="{StaticResource TituloPagina}" />
-                    <Label Text="Cierra y cobra los tickets del parqueadero."
+                    <Label x:Name="lblSubtitulo" Text="Cierra y cobra los tickets del parqueadero."
                            Style="{StaticResource SubtituloPagina}" />
                 </VerticalStackLayout>
                 <Button x:Name="btnSincronizar"

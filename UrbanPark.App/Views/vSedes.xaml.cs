@@ -162,9 +162,7 @@ public partial class vSedes : ContentPage
         try
         {
             var abiertos = await ApiCliente.TicketsAbiertosAsync() ?? [];
-            var mias = abiertos
-                .Where(t => string.Equals(t.Usuario, Sesion.Username, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+            var mias = abiertos.Where(t => Sesion.EsMio(t.UsuarioId, t.Usuario)).ToList();
 
             // Un puesto ya ocupado manda sobre una reserva para más tarde.
             var ticket = mias.FirstOrDefault(t => !t.EsReserva)

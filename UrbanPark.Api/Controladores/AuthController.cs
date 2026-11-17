@@ -287,9 +287,9 @@ public sealed class AuthController : ControladorBase
     private SesionResponse ConstruirSesion(Usuario usuario, string? dispositivoToken = null)
     {
         var roles = Reglas.RolesDeApp(usuario.ListaRoles);
-        var (token, expira) = _tokens.CrearAcceso(usuario.Username, roles);
-        var refresh = _tokens.CrearRefresh(usuario.Username);
-        return new SesionResponse(token, refresh, expira, usuario.Username, roles, ADto(usuario), dispositivoToken);
+        var (token, expira) = _tokens.CrearAcceso(usuario.Username, roles, usuario.Id);
+        var refresh = _tokens.CrearRefresh(usuario.Username, usuario.Id);
+        return new SesionResponse(token, refresh, expira, usuario.Username, roles, ADto(usuario), dispositivoToken, usuario.Id);
     }
 
     /// <summary>

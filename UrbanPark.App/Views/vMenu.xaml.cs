@@ -71,9 +71,11 @@ public partial class vMenu : ContentPage
             await Task.WhenAll(tareaTickets, tareaEspacios, tareaVehiculos);
 
             var abiertos = (await tareaTickets ?? []).Where(t => t.Abierto).ToList();
+            // El panel del menú muestra el puesto del usuario de la sesión. Sin id (sesiones
+            // guardadas con una versión anterior) se compara por username.
             _estacionado = Sesion.EsCliente
-                ? abiertos.FirstOrDefault(t => string.IsNullOrWhiteSpace(t.Usuario) || t.Usuario == Sesion.Username)
-                : abiertos.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.Usuario) && t.Usuario == Sesion.Username);
+                ? abiertos.FirstOrDefault(t => Sesion.EsMio(t.UsuarioId, t.Usuario) || string.IsNullOrWhiteSpace(t.Usuario))
+                : abiertos.FirstOrDefault(t => Sesion.EsMio(t.UsuarioId, t.Usuario));
 
             if (_estacionado is null)
             {

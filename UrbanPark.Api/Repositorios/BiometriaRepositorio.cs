@@ -6,7 +6,7 @@ namespace UrbanPark.Api.Repositorios;
 
 public sealed class BiometriaRepositorio
 {
-    private const string Columnas = "id, usuario, vehiculo_id, placa, tipo, dispositivo, token_hash, creado_en, (foto_rostro IS NOT NULL) AS tiene_foto";
+    private const string Columnas = "id, usuario, usuario_id, vehiculo_id, placa, tipo, dispositivo, token_hash, creado_en, (foto_rostro IS NOT NULL) AS tiene_foto";
     private readonly IFabricaConexion _fabrica;
 
     public BiometriaRepositorio(IFabricaConexion fabrica) => _fabrica = fabrica;
@@ -15,6 +15,7 @@ public sealed class BiometriaRepositorio
     {
         Id = rd.Long("id"),
         Usuario = rd.TextoObligatorio("usuario"),
+        UsuarioId = rd.LongNulo("usuario_id"),
         VehiculoId = rd.LongNulo("vehiculo_id"),
         Placa = rd.TextoObligatorio("placa"),
         Tipo = rd.TextoObligatorio("tipo"),
@@ -24,12 +25,24 @@ public sealed class BiometriaRepositorio
         FotoRostro = rd.Long("tiene_foto") > 0 ? [1] : null
     };
 
-    public async Task<List<Biometria>> ListarPorUsuarioAsync(string usuario)
+    /// <summary>
+    /// Biometrias del duenno: por id de usuario y, para filas anteriores a la columna
+    /// usuario_id, por username. Sin id en el token se compara solo el username.
+    /// </summary>
+    public async Task<List<Biometria>> ListarPorUsuarioAsync(long usuarioId, string usuario)
     {
         await using var cn = _fabrica.Crear();
+
+        if (usuarioId <= 0)
+            return await cn.ConsultarAsync(
+                $"SELECT {Columnas} FROM biometrias WHERE usuario = @u ORDER BY creado_en DESC",
+                Mapear, ("@u", usuario));
+
         return await cn.ConsultarAsync(
-            $"SELECT {Columnas} FROM biometrias WHERE usuario = @u ORDER BY creado_en DESC",
-            Mapear, ("@u", usuario));
+            $@"SELECT {Columnas} FROM biometrias
+                WHERE usuario_id = @uid OR (usuario_id IS NULL AND usuario = @u)
+                ORDER BY creado_en DESC",
+            Mapear, ("@uid", usuarioId), ("@u", usuario));
     }
 
     public async Task<Biometria?> PorVehiculoAsync(long vehiculoId)
@@ -41,7 +54,7 @@ public sealed class BiometriaRepositorio
     }
 
     public async Task<long> GuardarAsync(string usuario, long? vehiculoId, string placa, string tipo,
-        string tokenHash, string? dispositivo, byte[]? foto)
+        string tokenHash, string? dispositivo, byte[]? foto, long usuarioId = 0)
     {
         await using var cn = _fabrica.Crear();
         if (vehiculoId is > 0)
@@ -52,10 +65,10 @@ public sealed class BiometriaRepositorio
                 ("@u", usuario), ("@d", dispositivo));
 
         await cn.EjecutarAsync(
-            @"INSERT INTO biometrias (usuario, vehiculo_id, placa, tipo, dispositivo, token_hash, foto_rostro, creado_en)
-              VALUES (@u, @v, @p, @t, @d, @h, @f, @c)",
-            ("@u", usuario), ("@v", vehiculoId), ("@p", placa), ("@t", tipo),
-            ("@d", dispositivo), ("@h", tokenHash), ("@f", foto), ("@c", DateTime.Now));
+            @"INSERT INTO biometrias (usuario, usuario_id, vehiculo_id, placa, tipo, dispositivo, token_hash, foto_rostro, creado_en)
+              VALUES (@u, @uid, @v, @p, @t, @d, @h, @f, @c)",
+            ("@u", usuario), ("@uid", usuarioId > 0 ? usuarioId : null), ("@v", vehiculoId), ("@p", placa),
+            ("@t", tipo), ("@d", dispositivo), ("@h", tokenHash), ("@f", foto), ("@c", DateTime.Now));
 
         return await cn.EscalarAsync("SELECT LAST_INSERT_ID()");
     }

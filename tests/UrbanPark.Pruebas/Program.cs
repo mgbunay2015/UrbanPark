@@ -208,6 +208,57 @@ Comprobar("la URI de alta la entiende Google Authenticator",
 Comprobar("decodifica el base32 con espacios y minúsculas",
     ServicioTotp.Base32ADecodificar("gezd gnbv gy3t qojq").SequenceEqual(
         System.Text.Encoding.ASCII.GetBytes("1234567890")));
+Console.WriteLine("\n[?] Filtro \"solo lo mio\": claim de identidad en el token");
+var cfgToken = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+{
+    ["Jwt:Key"] = "clave_de_pruebas_para_urban_park_con_mas_de_32_caracteres",
+    ["Jwt:Issuer"] = "urbanpark-pruebas",
+    ["Jwt:Audience"] = "urbanpark-app"
+}).Build();
+var tokens = new TokenService(cfgToken);
+
+var (tokenCliente, _) = tokens.CrearAcceso("cliente1", ["CLIENTE"], 42);
+var principalCliente = tokens.Validar(tokenCliente, TokenService.TipoAcceso);
+Comprobar("el token de acceso lleva el id del usuario en el claim usuario_id",
+    principalCliente?.FindFirst(TokenService.ClaimUsuarioId)?.Value == "42",
+    principalCliente?.FindFirst(TokenService.ClaimUsuarioId)?.Value);
+Comprobar("el token conserva el username en preferred_username",
+    principalCliente?.FindFirst("preferred_username")?.Value == "cliente1");
+Comprobar("el token conserva el rol",
+    principalCliente?.FindAll("role").Any(c => c.Value == "CLIENTE") == true);
+Comprobar("el id NO se puede confundir con el username (son datos distintos)",
+    principalCliente?.FindFirst(TokenService.ClaimUsuarioId)?.Value != "cliente1");
+
+var tokenAdmin = tokens.CrearAcceso("admin1", ["ADMIN", "OPERADOR"], 7).token;
+var principalAdmin = tokens.Validar(tokenAdmin, TokenService.TipoAcceso);
+Comprobar("el token del admin lleva su propio id",
+    principalAdmin?.FindFirst(TokenService.ClaimUsuarioId)?.Value == "7");
+Comprobar("el admin conserva sus dos roles",
+    principalAdmin?.FindAll("role").Count() == 2);
+
+var (tokenSinId, _) = tokens.CrearAcceso("viejo", ["CLIENTE"]);
+var principalSinId = tokens.Validar(tokenSinId, TokenService.TipoAcceso);
+Comprobar("sin id no se emite el claim (el listado cae al respaldo por username)",
+    principalSinId?.FindFirst(TokenService.ClaimUsuarioId) is null);
+
+var refreshConId = tokens.Validar(tokens.CrearRefresh("cliente1", 42), TokenService.TipoRefresh);
+Comprobar("el refresh token también lleva el id del usuario",
+    refreshConId?.FindFirst(TokenService.ClaimUsuarioId)?.Value == "42");
+
+// El duenno se decide por id; el username solo sirve de respaldo en filas antiguas.
+static bool EsMio(long? idFila, long idSesion, string? usuarioFila, string usuarioSesion) =>
+    idFila is > 0 && idSesion > 0
+        ? idFila == idSesion
+        : !string.IsNullOrWhiteSpace(usuarioFila) &&
+          usuarioFila.Equals(usuarioSesion, StringComparison.OrdinalIgnoreCase);
+
+Comprobar("un ticket con el mismo id es mio", EsMio(42, 42, "cliente1", "cliente1"));
+Comprobar("un ticket de otro id NO es mio aunque el username coincida",
+    !EsMio(43, 42, "cliente1", "cliente1"));
+Comprobar("una fila sin id se resuelve por username", EsMio(null, 42, "cliente1", "cliente1"));
+Comprobar("una fila sin id de otro usuario no es mia", !EsMio(null, 42, "cliente2", "cliente1"));
+Comprobar("sin id en la fila ni username, no es mia", !EsMio(null, 42, null, "cliente1"));
+
 Console.WriteLine("\n=============================================================");
 Console.WriteLine($" RESULTADO: {pruebas - fallos}/{pruebas} pruebas correctas" + (fallos == 0 ? "  ✓ TODO OK" : $"  ({fallos} FALLOS)"));
 Console.WriteLine("=============================================================");

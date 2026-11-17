@@ -34,7 +34,7 @@ public sealed class ServicioTickets
     /// se guarda desde ya, para que nadie más lo tome).
     /// </summary>
     public async Task<Resultado> AbrirAsync(string? placaCruda, long? espacioIdCrudo, string username,
-        DateTime? inicioReserva = null, DateTime? finReserva = null)
+        DateTime? inicioReserva = null, DateTime? finReserva = null, long usuarioId = 0)
     {
         var (valida, placa, error) = Reglas.ValidarPlaca(placaCruda, Reglas.MensajePlacaInvalidaTickets);
         if (!valida) return new Resultado(false, 400, error, null);
@@ -93,7 +93,7 @@ public sealed class ServicioTickets
 
         var id = await _tickets.CrearAsync(placa, espacioId, espacio!.Codigo, espacio.Zona, entrada,
             espacio.TarifaHora, username, esReserva ? "RESERVA" : "AHORA", esReserva ? finReserva : null,
-            espacio.SedeId);
+            espacio.SedeId, usuarioId > 0 ? usuarioId : null);
 
         return new Resultado(true, 200, null, await _tickets.PorIdAsync(id));
     }

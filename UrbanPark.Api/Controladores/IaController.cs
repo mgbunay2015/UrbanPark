@@ -124,7 +124,7 @@ public sealed class IaController : ControladorBase
         var ultimoCodigo = 409;
         foreach (var candidata in orden)
         {
-            var intento = await _tickets.AbrirAsync(placa, candidata.Id, Username);
+            var intento = await _tickets.AbrirAsync(placa, candidata.Id, Username, usuarioId: UsuarioId);
             if (intento.Exito)
             {
                 resultado = intento;
