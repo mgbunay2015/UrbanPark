@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    URBAN PARK - Paleta de color (design tokens)
+    ============================================================
+    Un solo lugar para todo el color de la aplicacion. Las pantallas
+    NO deben escribir colores en linea: usan los estilos de Styles.xaml.
+
+    Convencion de nombres:
+      Superficie*  -> fondos (el "chrome" oscuro y el contenido claro)
+      Acento       -> amarillo de marca (señalizacion vial)
+      Primario     -> verde-teal de accion
+      Texto*       -> jerarquia tipografica
+      *Claro       -> variante suave para fondos de estado (badges)
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- ===================== MARCA ===================== -->
+    <Color x:Key="Acento">#F2C51A</Color>
+    <Color x:Key="AcentoOscuro">#C9A012</Color>
+    <Color x:Key="AcentoSuave">#3D3413</Color>
+
+    <!-- ===================== SUPERFICIES OSCURAS (chrome) ===================== -->
+    <Color x:Key="Fondo">#0A0E13</Color>
+    <Color x:Key="Superficie">#141B24</Color>
+    <Color x:Key="SuperficieAlta">#1C2530</Color>
+    <Color x:Key="SuperficieBorde">#28323F</Color>
+
+    <!-- ===================== SUPERFICIES CLARAS (contenido) ===================== -->
+    <Color x:Key="Blanco">#FFFFFF</Color>
+    <Color x:Key="BlancoHumo">#F4F6FA</Color>
+    <Color x:Key="BordeClaro">#E5E9F0</Color>
+
+    <!-- ===================== ACCION Y ESTADOS ===================== -->
+    <Color x:Key="Primario">#12B5A5</Color>
+    <Color x:Key="PrimarioOscuro">#0C8C80</Color>
+    <Color x:Key="PrimarioClaro">#E4F7F4</Color>
+
+    <Color x:Key="Exito">#22C55E</Color>
+    <Color x:Key="ExitoClaro">#E7F8EE</Color>
+    <Color x:Key="ExitoTexto">#15803D</Color>
+
+    <Color x:Key="Peligro">#EF4444</Color>
+    <Color x:Key="PeligroClaro">#FDECEC</Color>
+    <Color x:Key="PeligroTexto">#B91C1C</Color>
+
+    <Color x:Key="Advertencia">#F59E0B</Color>
+    <Color x:Key="AdvertenciaClaro">#FEF4E3</Color>
+    <Color x:Key="AdvertenciaTexto">#B45309</Color>
+
+    <Color x:Key="Info">#3B82F6</Color>
+    <Color x:Key="InfoClaro">#E8F0FE</Color>
+    <Color x:Key="InfoTexto">#1D4ED8</Color>
+
+    <!-- ===================== TEXTO ===================== -->
+    <Color x:Key="TextoFuerte">#0F172A</Color>
+    <Color x:Key="TextoMedio">#475569</Color>
+    <Color x:Key="TextoSuave">#94A3B8</Color>
+    <Color x:Key="TextoClaro">#F8FAFC</Color>
+    <Color x:Key="TextoClaroMedio">#B6C2D1</Color>
+    <Color x:Key="TextoClaroSuave">#7C8A9C</Color>
+
+</ResourceDictionary>

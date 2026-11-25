@@ -1,0 +1,4 @@
+﻿Backup Urban Park - 20261123_192035
+MySQL (urbanpark): OK
+SQLite local: copia de AppData\...\Data\urbanpark.db3*
+Restaurar MySQL: mysql -u root -p urbanpark < urbanpark_mysql.sql

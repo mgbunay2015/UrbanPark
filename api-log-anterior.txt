@@ -1,0 +1,140 @@
+Usando la configuración de inicio de C:\moviles\Parqueadero\UrbanPark.Api\Properties\launchSettings.json...
+Compilando...
+info: UrbanPark.Api[0]
+      Registro de la API en: C:\moviles\Parqueadero\UrbanPark.Api\bin\Debug\net10.0\logs
+info: Program[0]
+      Base de datos 'urbanpark' verificada.
+info: Program[0]
+      Esquema verificado (sedes, usuarios, espacios, vehiculos, tickets).
+info: Program[0]
+      Sedes verificadas: 12 parqueaderos con dirección y coordenadas.
+info: Program[0]
+      Tarifas acotadas al rango $0.50–$0.90/h.
+info: Program[0]
+      Tarifas de 768 plazas y 12 sedes alineadas con ReglasTarifa ($0.50–$0.90/h).
+info: Program[0]
+      Tickets históricos alineados al rango $0.50–$0.90/h; 683 cierres recalculados.
+info: Program[0]
+      Plazas semilla verificadas: 768 en 12 sedes.
+info: Program[0]
+      Datos semilla verificados: 12 sedes, 4 vehiculos, 5 usuarios demo.
+info: Program[0]
+      Base de datos lista. Revisa /swagger para probar la API.
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://0.0.0.0:8090
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://[::1]:8090
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: C:\moviles\Parqueadero\UrbanPark.Api\bin\Debug\net10.0\
+info: System.Net.Http.HttpClient.DeepSeekService.LogicalHandler[100]
+      Start processing HTTP request POST http://127.0.0.1:11434/v1/chat/completions
+info: System.Net.Http.HttpClient.DeepSeekService.ClientHandler[100]
+      Sending HTTP request POST http://127.0.0.1:11434/v1/chat/completions
+warn: UrbanPark.Api.Controladores.IaController[0]
+      Ollama no pudo elegir plaza; se usa la heurística local
+      System.Threading.Tasks.TaskCanceledException: The operation was canceled.
+       ---> System.Threading.Tasks.TaskCanceledException: The operation was canceled.
+       ---> System.IO.IOException: Unable to read data from the transport connection: La operación de E/S se anuló por una salida de subproceso o por una solicitud de aplicación..
+       ---> System.Net.Sockets.SocketException (995): La operación de E/S se anuló por una salida de subproceso o por una solicitud de aplicación.
+         --- End of inner exception stack trace ---
+         at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+         at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource<System.Int32>.GetResult(Int16 token)
+         at System.Net.Http.HttpConnection.InitialFillAsync(Boolean async)
+         at System.Net.Http.HttpConnection.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+         --- End of inner exception stack trace ---
+         at System.Net.Http.HttpConnection.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+         at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+         at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+         at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+         at System.Net.Http.SocketsHttpHandler.<SendAsync>g__CreateHandlerAndSendAsync|115_0(HttpRequestMessage request, CancellationToken cancellationToken)
+         at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+         at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+         at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+         --- End of inner exception stack trace ---
+         at System.Net.Http.HttpClient.HandleFailure(Exception e, Boolean telemetryStarted, HttpResponseMessage response, CancellationTokenSource cts, CancellationToken cancellationToken, CancellationTokenSource pendingRequestsCts)
+         at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+         at UrbanPark.Api.Servicios.DeepSeekService.GenerarConChatAsync(IEnumerable`1 mensajes, Boolean json, Int32 maxTokens, CancellationToken ct) in C:\moviles\Parqueadero\UrbanPark.Api\Servicios\DeepSeekService.cs:line 89
+         at UrbanPark.Api.Servicios.DeepSeekService.ConversarAsync(IEnumerable`1 mensajes, Boolean json, Int32 maxTokens, CancellationToken ct) in C:\moviles\Parqueadero\UrbanPark.Api\Servicios\DeepSeekService.cs:line 64
+         at UrbanPark.Api.Controladores.IaController.ElegirPlazaAsync(List`1 libres, OcupacionDto ocupacion, String tipo, String preferencia) in C:\moviles\Parqueadero\UrbanPark.Api\Controladores\IaController.cs:line 506
+info: System.Net.Http.HttpClient.DeepSeekService.LogicalHandler[100]
+      Start processing HTTP request POST http://127.0.0.1:11434/v1/chat/completions
+info: System.Net.Http.HttpClient.DeepSeekService.ClientHandler[100]
+      Sending HTTP request POST http://127.0.0.1:11434/v1/chat/completions
+warn: UrbanPark.Api.Controladores.IaController[0]
+      Ollama no pudo elegir plaza; se usa la heurística local
+      System.Threading.Tasks.TaskCanceledException: The operation was canceled.
+       ---> System.Threading.Tasks.TaskCanceledException: The operation was canceled.
+       ---> System.IO.IOException: Unable to read data from the transport connection: La operación de E/S se anuló por una salida de subproceso o por una solicitud de aplicación..
+       ---> System.Net.Sockets.SocketException (995): La operación de E/S se anuló por una salida de subproceso o por una solicitud de aplicación.
+         --- End of inner exception stack trace ---
+         at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+         at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource<System.Int32>.GetResult(Int16 token)
+         at System.Net.Http.HttpConnection.InitialFillAsync(Boolean async)
+         at System.Net.Http.HttpConnection.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+         --- End of inner exception stack trace ---
+         at System.Net.Http.HttpConnection.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+         at System.Net.Http.HttpConnectionPool.SendWithVersionDetectionAndRetryAsync(HttpRequestMessage request, Boolean async, Boolean doRequestAuth, CancellationToken cancellationToken)
+         at System.Net.Http.DiagnosticsHandler.SendAsyncCore(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+         at System.Net.Http.RedirectHandler.SendAsync(HttpRequestMessage request, Boolean async, CancellationToken cancellationToken)
+         at System.Net.Http.SocketsHttpHandler.<SendAsync>g__CreateHandlerAndSendAsync|115_0(HttpRequestMessage request, CancellationToken cancellationToken)
+         at Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+         at Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler.<SendCoreAsync>g__Core|4_0(HttpRequestMessage request, Boolean useAsync, CancellationToken cancellationToken)
+         at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+         --- End of inner exception stack trace ---
+         at System.Net.Http.HttpClient.HandleFailure(Exception e, Boolean telemetryStarted, HttpResponseMessage response, CancellationTokenSource cts, CancellationToken cancellationToken, CancellationTokenSource pendingRequestsCts)
+         at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationTokenSource cts, Boolean disposeCts, CancellationTokenSource pendingRequestsCts, CancellationToken originalCancellationToken)
+         at UrbanPark.Api.Servicios.DeepSeekService.GenerarConChatAsync(IEnumerable`1 mensajes, Boolean json, Int32 maxTokens, CancellationToken ct) in C:\moviles\Parqueadero\UrbanPark.Api\Servicios\DeepSeekService.cs:line 89
+         at UrbanPark.Api.Servicios.DeepSeekService.ConversarAsync(IEnumerable`1 mensajes, Boolean json, Int32 maxTokens, CancellationToken ct) in C:\moviles\Parqueadero\UrbanPark.Api\Servicios\DeepSeekService.cs:line 64
+         at UrbanPark.Api.Controladores.IaController.ElegirPlazaAsync(List`1 libres, OcupacionDto ocupacion, String tipo, String preferencia) in C:\moviles\Parqueadero\UrbanPark.Api\Controladores\IaController.cs:line 506
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.LogicalHandler[100]
+      Start processing HTTP request GET https://api.ecuadorapi.com/api/v1/placas/PDQ06250
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.ClientHandler[100]
+      Sending HTTP request GET https://api.ecuadorapi.com/api/v1/placas/PDQ06250
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.ClientHandler[101]
+      Received HTTP response headers after 458.0086ms - 402
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.LogicalHandler[101]
+      End processing HTTP request after 464.5518ms - 402
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.LogicalHandler[100]
+      Start processing HTTP request GET https://api.ecuadorapi.com/api/v1/placas/PDQ06250/matricula
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.ClientHandler[100]
+      Sending HTTP request GET https://api.ecuadorapi.com/api/v1/placas/PDQ06250/matricula
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.ClientHandler[101]
+      Received HTTP response headers after 142.9132ms - 402
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.LogicalHandler[101]
+      End processing HTTP request after 146.5593ms - 402
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.LogicalHandler[100]
+      Start processing HTTP request GET https://api.ecuadorapi.com/api/v1/placas/PDQ06250
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.ClientHandler[100]
+      Sending HTTP request GET https://api.ecuadorapi.com/api/v1/placas/PDQ06250
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.ClientHandler[101]
+      Received HTTP response headers after 510.9755ms - 402
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.LogicalHandler[101]
+      End processing HTTP request after 515.3537ms - 402
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.LogicalHandler[100]
+      Start processing HTTP request GET https://api.ecuadorapi.com/api/v1/placas/PCS6348
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.ClientHandler[100]
+      Sending HTTP request GET https://api.ecuadorapi.com/api/v1/placas/PCS6348
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.ClientHandler[101]
+      Received HTTP response headers after 518.2975ms - 402
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.LogicalHandler[101]
+      End processing HTTP request after 521.1191ms - 402
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.LogicalHandler[100]
+      Start processing HTTP request GET https://api.ecuadorapi.com/api/v1/placas/PCS6348
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.ClientHandler[100]
+      Sending HTTP request GET https://api.ecuadorapi.com/api/v1/placas/PCS6348
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.ClientHandler[101]
+      Received HTTP response headers after 179.4022ms - 402
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.LogicalHandler[101]
+      End processing HTTP request after 182.4328ms - 402
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.LogicalHandler[100]
+      Start processing HTTP request GET https://api.ecuadorapi.com/api/v1/placas/PPP02365
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.ClientHandler[100]
+      Sending HTTP request GET https://api.ecuadorapi.com/api/v1/placas/PPP02365
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.ClientHandler[101]
+      Received HTTP response headers after 529.3668ms - 402
+info: System.Net.Http.HttpClient.ConsultaVehiculoService.LogicalHandler[101]
+      End processing HTTP request after 532.402ms - 402

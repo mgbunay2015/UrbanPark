@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/UrbanPark.Pruebas/UrbanPark.Pruebas.csproj" Build="false" />
+    <Project Path="tests/SyncLocal/SyncLocal.csproj" Build="false" />
+    <Project Path="tests/PagoLocal/PagoLocal.csproj" Build="false" />
+    <Project Path="tests/TicketSalida/TicketSalida.csproj" Build="false" />
+  </Folder>
+  <!-- No forma parte de «Recompilar solución» al depurar la app: evita MSB3027 si la API sigue corriendo. -->
+  <Project Path="UrbanPark.Api/UrbanPark.Api.csproj" Build="false" />
+  <Project Path="UrbanPark.App/UrbanPark.App.csproj">
+    <Deploy />
+  </Project>
+</Solution>

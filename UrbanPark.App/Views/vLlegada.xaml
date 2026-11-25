@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vLlegada"
+             Title="Cómo llegar">
+
+    <ContentPage.Resources>
+        <Style x:Key="FiltroChip" TargetType="Button">
+            <Setter Property="FontFamily" Value="{StaticResource FuenteSemi}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="TextColor" Value="{StaticResource TextoClaroMedio}" />
+            <Setter Property="BackgroundColor" Value="{StaticResource Superficie}" />
+            <Setter Property="BorderColor" Value="{StaticResource SuperficieBorde}" />
+            <Setter Property="BorderWidth" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="HeightRequest" Value="28" />
+            <Setter Property="Padding" Value="10,0" />
+        </Style>
+        <Style x:Key="FiltroChipActivo" TargetType="Button" BasedOn="{StaticResource FiltroChip}">
+            <Setter Property="TextColor" Value="{StaticResource TextoFuerte}" />
+            <Setter Property="BackgroundColor" Value="{StaticResource Acento}" />
+            <Setter Property="BorderColor" Value="{StaticResource AcentoOscuro}" />
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="10" RowSpacing="6">
+        <VerticalStackLayout Grid.Row="0" Spacing="2">
+            <Label Text="Cómo llegar" Style="{StaticResource TituloPagina}" />
+            <Label x:Name="lblEstado"
+                   Text="Buscando tu ubicación…"
+                   Style="{StaticResource SubtituloPagina}" />
+        </VerticalStackLayout>
+
+        <VerticalStackLayout Grid.Row="1" Spacing="6">
+            <Entry x:Name="txtBuscar"
+                   Placeholder="Buscar por nombre, sector o dirección…"
+                   TextChanged="OnBuscarTextChanged"
+                   ClearButtonVisibility="WhileEditing"
+                   FontSize="13"
+                   HeightRequest="40" />
+            <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                <HorizontalStackLayout x:Name="contenedorFiltros" Spacing="6" />
+            </ScrollView>
+        </VerticalStackLayout>
+
+        <Border Grid.Row="2" StrokeShape="RoundRectangle 22" StrokeThickness="0" BackgroundColor="#E7EEF6">
+            <Grid>
+                <WebView x:Name="mapa"
+                         Navigated="OnMapaNavegado"
+                         Navigating="OnMapaNavigating" />
+                <ActivityIndicator x:Name="spinner"
+                                   IsRunning="True"
+                                   IsVisible="True"
+                                   Color="{StaticResource AcentoOscuro}"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
+        <VerticalStackLayout Grid.Row="3" Spacing="6">
+            <Label x:Name="lblListaInfo"
+                   FontSize="11"
+                   TextColor="{StaticResource TextoMedio}"
+                   LineBreakMode="WordWrap"
+                   Margin="2,0,0,0" />
+
+            <ScrollView MaximumHeightRequest="132" VerticalScrollBarVisibility="Always">
+                <VerticalStackLayout x:Name="contenedorSedes" Spacing="4" />
+            </ScrollView>
+
+            <Border Style="{StaticResource Tarjeta}" Padding="8">
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="2">
+                    <Label x:Name="lblSedeNombre"
+                           Text="URBAN PARK"
+                           Style="{StaticResource EncabezadoTabla}"
+                           TextColor="{StaticResource Acento}" />
+                    <Label x:Name="lblDistancia"
+                           Grid.Row="1"
+                           Text="—"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="16"
+                           TextColor="{StaticResource TextoClaro}" />
+                    <Label x:Name="lblTiempo"
+                           Grid.Row="2"
+                           Text=""
+                           FontSize="11"
+                           TextColor="{StaticResource TextoClaroMedio}"
+                           LineBreakMode="WordWrap" />
+                    <Button Grid.Row="0" Grid.RowSpan="3" Grid.Column="1"
+                            Text="Navegar"
+                            Clicked="OnNavegarClicked"
+                            Style="{StaticResource BotonAcento}"
+                            VerticalOptions="Center"
+                            Padding="14,0"
+                            HeightRequest="36"
+                            FontFamily="{StaticResource FuenteSemi}" />
+                </Grid>
+            </Border>
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

@@ -1,0 +1,6 @@
+@UrbanPark.Api_HostAddress = http://localhost:5109
+
+GET {{UrbanPark.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

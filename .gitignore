@@ -1,0 +1,64 @@
+# ===== .NET / MAUI =====
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+.vs/
+packages/
+*.binlog
+project.lock.json
+
+# ===== Compilados de la app =====
+*.apk
+*.aab
+*.ipa
+*.appx
+*.msix
+AppPackages/
+
+# ===== Editores =====
+.idea/
+*.sln.docstates
+*.DotSettings.user
+
+# ===== Sistema =====
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# ===== Temporales / registros =====
+*.log
+*.tmp
+*.bak
+~$*
+# Registro de la app y de la API (se generan al ejecutar, no se versionan)
+logs/
+registro/
+
+# ===== Capturas temporales de pruebas =====
+capturas-temp/
+.verif/
+
+# ===== Datos locales / secretos =====
+*.local.json
+appsettings.Local.json
+
+# ===== Scripts locales de Windows (no se publican en el repositorio) =====
+*.bat
+/*.ps1
+
+# ===== Capturas y recortes de pruebas en la raíz =====
+/*.png
+
+# ===== Respaldos de base de datos (contienen datos sensibles) =====
+backups/
+
+# ===== Salida temporal del generador de manual PDF =====
+tools/ExportarManual/salida/
+tools/ExportarManual/bin/
+tools/ExportarManual/obj/
+
+# ===== Registro de la API en la raíz =====
+api-log.txt
+

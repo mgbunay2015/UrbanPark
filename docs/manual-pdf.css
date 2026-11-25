@@ -1,0 +1,139 @@
+/* Estilos para impresión / PDF del manual */
+:root {
+  --fondo: #0a0e13;
+  --acento: #f2c51a;
+  --texto: #1e293b;
+  --suave: #475569;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.45;
+  color: var(--texto);
+  max-width: 210mm;
+  margin: 0 auto;
+  padding: 0 8mm;
+}
+
+.portada {
+  text-align: center;
+  padding: 24mm 0 16mm;
+  border-bottom: 3px solid var(--acento);
+  margin-bottom: 8mm;
+  page-break-after: always;
+}
+
+.portada .marca {
+  font-size: 14pt;
+  font-weight: 700;
+  color: var(--acento);
+  background: var(--fondo);
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 8px;
+  margin: 0 0 12px;
+}
+
+.portada h1 {
+  font-size: 22pt;
+  margin: 8px 0;
+  color: var(--fondo);
+}
+
+.portada .sub {
+  color: var(--suave);
+  margin: 4px 0;
+}
+
+.contenido h1 {
+  font-size: 16pt;
+  color: var(--fondo);
+  border-bottom: 2px solid var(--acento);
+  padding-bottom: 4px;
+  margin-top: 14mm;
+  page-break-after: avoid;
+}
+
+.contenido h2 {
+  font-size: 12.5pt;
+  color: #0f172a;
+  margin-top: 8mm;
+  page-break-after: avoid;
+}
+
+.contenido h3 {
+  font-size: 11pt;
+  margin-top: 5mm;
+  page-break-after: avoid;
+}
+
+.contenido p { margin: 0.4em 0; }
+
+.contenido ul, .contenido ol {
+  margin: 0.4em 0 0.8em 1.2em;
+  padding: 0;
+}
+
+.contenido li { margin: 0.2em 0; }
+
+.contenido table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+  margin: 6px 0 12px;
+  page-break-inside: avoid;
+}
+
+.contenido th,
+.contenido td {
+  border: 1px solid #cbd5e1;
+  padding: 4px 6px;
+  vertical-align: top;
+}
+
+.contenido th {
+  background: #f1f5f9;
+  font-weight: 600;
+}
+
+.contenido code {
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 9pt;
+  background: #f1f5f9;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.contenido pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 8.5pt;
+  overflow-x: auto;
+  page-break-inside: avoid;
+}
+
+.contenido pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.contenido blockquote {
+  border-left: 4px solid var(--acento);
+  margin: 8px 0;
+  padding: 4px 12px;
+  background: #fffbeb;
+  color: #78350f;
+}
+
+.contenido a { color: #1d4ed8; }
+
+@media print {
+  body { padding: 0; }
+  h1, h2, h3 { page-break-after: avoid; }
+}

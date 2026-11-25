@@ -1,0 +1,869 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
+using UrbanPark.App.Modelos;
+
+namespace UrbanPark.App.Servicios;
+
+/// <summary>
+/// Cliente HTTP unico de la app. Se encarga de:
+///   - la URL base (configurable por plataforma),
+///   - enviar el token Bearer en cada llamada,
+///   - refrescar el token automaticamente cuando esta por expirar,
+///   - traducir los errores del API a mensajes claros en español.
+/// </summary>
+public static class ApiCliente
+{
+    /// <summary>
+    /// URL base del API.
+    ///   - Emulador Android: 10.0.2.2 apunta al localhost del PC.
+    ///   - Dispositivo fisico: pon la IP de tu PC en la red WiFi (ej. http://192.168.1.50:8090).
+    ///   - Windows/Mac: http://localhost:8090
+    /// El puerto se puede cambiar en appsettings.json del API (clave "Urls").
+    /// </summary>
+    public static string BaseUrl { get; set; } = UrlPorDefecto();
+
+    private static string UrlPorDefecto()
+    {
+#if ANDROID
+        // En el emulador, 10.0.2.2 es el localhost del PC donde corre UrbanPark.Api.
+        // En dispositivo físico sustituye por la IP LAN del PC (Perfil → URL del API).
+        return EsEmulador() ? "http://10.0.2.2:8090" : "http://10.2.9.187:8090";
+#else
+        return "http://localhost:8090";
+#endif
+    }
+
+    private static bool EsEmulador()
+    {
+        if (DeviceInfo.Current.DeviceType == DeviceType.Virtual)
+            return true;
+
+#if ANDROID
+        var huella = Android.OS.Build.Fingerprint ?? "";
+        var modelo = Android.OS.Build.Model ?? "";
+        var hardware = Android.OS.Build.Hardware ?? "";
+        return huella.Contains("generic", StringComparison.OrdinalIgnoreCase)
+            || huella.Contains("emulator", StringComparison.OrdinalIgnoreCase)
+            || modelo.Contains("sdk", StringComparison.OrdinalIgnoreCase)
+            || hardware.Contains("goldfish", StringComparison.OrdinalIgnoreCase)
+            || hardware.Contains("ranchu", StringComparison.OrdinalIgnoreCase);
+#else
+        return false;
+#endif
+    }
+
+    private static readonly HttpClient Http = new()
+    {
+        Timeout = TimeSpan.FromSeconds(180)   // el reporte con IA puede tardar
+    };
+
+    /// <summary>La última lectura se sirvió desde la copia del equipo, no del servidor.</summary>
+    public static bool SinConexion { get; private set; }
+
+    private static int _sincronizando;
+
+    // ================================================================ nucleo
+    public static async Task<T> GetAsync<T>(string ruta) => await EnviarAsync<T>(HttpMethod.Get, ruta, null);
+
+    public static async Task<T> PostAsync<T>(string ruta, object? cuerpo = null) =>
+        await EnviarAsync<T>(HttpMethod.Post, ruta, cuerpo);
+
+    public static async Task<T> PutAsync<T>(string ruta, object? cuerpo = null) =>
+        await EnviarAsync<T>(HttpMethod.Put, ruta, cuerpo);
+
+    public static async Task<T> PatchAsync<T>(string ruta, object? cuerpo = null) =>
+        await EnviarAsync<T>(HttpMethod.Patch, ruta, cuerpo);
+
+    public static async Task<T> DeleteAsync<T>(string ruta) => await EnviarAsync<T>(HttpMethod.Delete, ruta, null);
+
+    /// <summary>Variantes para la IA (DeepSeek/Ollama): pueden tardar más que una llamada normal.</summary>
+    private static Task<T> GetLentoAsync<T>(string ruta) => EnviarAsync<T>(HttpMethod.Get, ruta, null, timeoutSegundos: 120);
+
+    private static Task<T> PostLentoAsync<T>(string ruta, object? cuerpo = null) =>
+        EnviarAsync<T>(HttpMethod.Post, ruta, cuerpo, timeoutSegundos: 120);
+
+    private static async Task<T> EnviarAsync<T>(HttpMethod metodo, string ruta, object? cuerpo, bool reintento = false, bool encolar = true, int timeoutSegundos = 20)
+    {
+        var cronometro = System.Diagnostics.Stopwatch.StartNew();
+        // refresco preventivo (el original refrescaba si faltaban menos de 15 s)
+        if (Sesion.PorExpirar && !ruta.Contains("/api/auth/") && !reintento)
+        {
+            var refrescado = await RefrescarAsync();
+            // La sesión solo se cierra si de verdad hay red: si no, se sigue trabajando con
+            // los datos guardados (aquí no vale HayRed(), que en escritorio intenta igualmente).
+            if (!refrescado && HayRedDelSistema) Sesion.Cerrar();
+        }
+
+        if (!HayRed())
+            return await SinRedAsync<T>(metodo, ruta, cuerpo, encolar);
+
+        using var peticion = new HttpRequestMessage(metodo, BaseUrl.TrimEnd('/') + ruta);
+
+        if (cuerpo is not null)
+            peticion.Content = new StringContent(JsonSerializer.Serialize(cuerpo, JsonUrbanPark.Opciones),
+                Encoding.UTF8, "application/json");
+
+        if (Sesion.Activa)
+            peticion.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Sesion.Actual!.AccessToken);
+
+        HttpResponseMessage respuesta;
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSegundos));
+            respuesta = await Http.SendAsync(peticion, cts.Token);
+        }
+        catch (TaskCanceledException)
+        {
+            Registro.Error("Api", $"Tiempo de espera agotado en {metodo} {ruta} tras {timeoutSegundos} s.");
+            throw new ApiExcepcion(0, "El servidor tardó demasiado en responder. La IA puede estar procesando: intenta de nuevo en unos segundos.");
+        }
+        catch (HttpRequestException ex)
+        {
+            Registro.Aviso("Api", $"No se pudo conectar con {BaseUrl} ({metodo} {ruta}): {ex.Message}");
+            return await SinRedAsync<T>(metodo, ruta, cuerpo, encolar);
+        }
+
+        using (respuesta)
+        {
+            var texto = await respuesta.Content.ReadAsStringAsync();
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                if (!string.IsNullOrWhiteSpace(texto))
+                {
+                    if (metodo == HttpMethod.Get)
+                    {
+                        AlmacenLocal.GuardarCache(ClaveCache(ruta), texto);
+                        // Copia desglosada en SQLite: QR, vehículos, sedes, plazas y tickets.
+                        AlmacenLocal.Reflejar(ruta, texto);
+                    }
+                    else
+                    {
+                        // Lo que se cambió en línea también se guarda en SQLite: así, si se
+                        // cae la red justo después, la app ya tiene el dato actualizado.
+                        AlmacenLocal.ReflejarEscritura(ruta, texto);
+                    }
+                }
+                SinConexion = false;
+                MonitorConexion.MarcarEnLinea();
+                if (encolar && AlmacenLocal.Pendientes > 0)
+                    _ = SincronizarAsync();
+
+                // Solo se registra lo lento o lo que ya venía fallando: el tráfico normal
+                // llenaría el archivo sin aportar nada al diagnóstico.
+                if (cronometro.ElapsedMilliseconds > 4000)
+                    Registro.Aviso("Api", $"{metodo} {ruta} tardó {cronometro.ElapsedMilliseconds} ms.");
+
+                if (typeof(T) == typeof(string)) return (T)(object)texto;
+                if (string.IsNullOrWhiteSpace(texto)) return default!;
+
+                return LeerJson<T>(texto, ruta) ?? default!;
+            }
+
+            // 401: un solo reintento tras refrescar el token
+            if (respuesta.StatusCode == HttpStatusCode.Unauthorized && !reintento)
+            {
+                if (await RefrescarAsync())
+                    return await EnviarAsync<T>(metodo, ruta, cuerpo, reintento: true, encolar: encolar, timeoutSegundos: timeoutSegundos);
+                Sesion.Cerrar();
+            }
+
+            var mensaje = MensajeAmigable((int)respuesta.StatusCode, texto, ruta);
+            Registro.Error("Api", $"{metodo} {ruta} → HTTP {(int)respuesta.StatusCode}: {mensaje}");
+
+            throw new ApiExcepcion((int)respuesta.StatusCode, mensaje)
+            {
+                // 401 con esta marca = el usuario tiene el autenticador de Google activo
+                RequiereTotp = (int)respuesta.StatusCode == 401 &&
+                               texto.Contains("TOTP_REQUIRED", StringComparison.Ordinal)
+            };
+        }
+    }
+
+    /// <summary>Resultado de una pasada de sincronización, para informar al usuario.</summary>
+    public sealed record SincronizacionLocal(int Iniciales, int Enviados, bool Completa, string Mensaje);
+
+    /// <summary>
+    /// Envía al servidor los cambios guardados sin conexión. Se llama al arrancar, al volver
+    /// la red y al pulsar «Enviar pendientes» en Perfil.
+    ///
+    /// Si la sesión es la de relleno del modo sin conexión (token "sin-conexion"), primero se
+    /// recupera una sesión real con el token del equipo vinculado; si no hay equipo vinculado,
+    /// los cambios se quedan en la cola hasta que el usuario vuelva a iniciar sesión.
+    /// </summary>
+    public static async Task<SincronizacionLocal> SincronizarAsync()
+    {
+        if (!HayRed()) return new SincronizacionLocal(0, 0, false, "Sin internet todavía.");
+        if (!Sesion.Activa) return new SincronizacionLocal(0, 0, false, "Sin sesión iniciada.");
+
+        if (Interlocked.CompareExchange(ref _sincronizando, 1, 0) != 0)
+            return new SincronizacionLocal(0, 0, false, "Ya hay una sincronización en curso.");
+
+        try
+        {
+            // Sesión de relleno del modo sin conexión: se intenta recuperar una real.
+            if (EsSesionLocal())
+            {
+                var recuperada = await RecuperarSesionAsync();
+                if (!recuperada)
+                    return new SincronizacionLocal(AlmacenLocal.Pendientes, 0, false,
+                        "Los cambios están guardados, pero hay que volver a iniciar sesión para enviarlos.");
+            }
+
+            var iniciales = AlmacenLocal.Pendientes;
+            var enviados = 0;
+
+            foreach (var op in AlmacenLocal.PendientesDe(Sesion.Username))
+            {
+                if (!HayRed()) break;
+
+                object? cuerpo;
+                try
+                {
+                    cuerpo = string.IsNullOrWhiteSpace(op.Cuerpo)
+                        ? null
+                        : JsonSerializer.Deserialize<JsonElement>(op.Cuerpo, JsonUrbanPark.Opciones);
+                }
+                catch (JsonException ex)
+                {
+                    // El cuerpo guardado quedó inservible: no se puede enviar nunca.
+                    Registro.Error("Api", $"Cambio pendiente descartado por JSON ilegible: {op.Metodo} {op.Ruta}", ex);
+                    AlmacenLocal.Quitar(op.Id);
+                    continue;
+                }
+
+                try
+                {
+                    await EnviarAsync<JsonElement>(new HttpMethod(op.Metodo), op.Ruta, cuerpo, encolar: false);
+                    AlmacenLocal.Quitar(op.Id);
+                    enviados++;
+                }
+                catch (ApiExcepcion ex) when (ex.Status is 0)
+                {
+                    // Se cayó la red a mitad: lo que queda se envía en la próxima vuelta.
+                    break;
+                }
+                catch (ApiExcepcion ex) when (ex.Status is 401)
+                {
+                    Sesion.Cerrar();
+                    return new SincronizacionLocal(iniciales, enviados, false,
+                        "La sesión venció. Vuelve a iniciar sesión para enviar los cambios pendientes.");
+                }
+                catch (ApiExcepcion ex) when (ex.Status >= 500)
+                {
+                    // El servidor falló: se conserva el cambio y se reintenta luego.
+                    Registro.Error("Api", $"El servidor rechazó {op.Metodo} {op.Ruta} (HTTP {ex.Status}); se reintentará.", ex);
+                    AlmacenLocal.MarcarFallo(op.Id, ex.Message);
+                }
+                catch (ApiExcepcion ex)
+                {
+                    // 4xx: el servidor rechaza el cambio (plaza ocupada, placa duplicada…).
+                    // Reintentarlo no sirve y bloquearía la cola, así que se descarta.
+                    AlmacenLocal.Quitar(op.Id);
+                    Registro.Error("Api", $"Cambio pendiente descartado: {op.Metodo} {op.Ruta} (HTTP {ex.Status}). {ex.Message}");
+                }
+            }
+
+            var quedan = AlmacenLocal.Pendientes;
+            var mensaje = enviados == 0 && quedan == 0
+                ? "No había cambios pendientes."
+                : quedan == 0
+                    ? $"Se enviaron {enviados} cambio(s) al servidor."
+                    : $"Se enviaron {enviados} cambio(s); quedan {quedan} por enviar.";
+            return new SincronizacionLocal(iniciales, enviados, quedan == 0, mensaje);
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _sincronizando, 0);
+        }
+    }
+
+    /// <summary>True si la sesión actual es la de relleno del modo sin conexión.</summary>
+    public static bool EsSesionLocal() =>
+        Sesion.Activa && string.Equals(Sesion.Actual!.AccessToken, "sin-conexion", StringComparison.Ordinal);
+
+    /// <summary>
+    /// Recupera una sesión real sin pedir contraseña usando el token del equipo vinculado,
+    /// o el refresh token guardado. Devuelve false si no hay forma silenciosa de entrar.
+    /// </summary>
+    public static async Task<bool> RecuperarSesionAsync()
+    {
+        if (!HayRed()) return false;
+
+        // 1) Refresh token (cuando la sesión simplemente venció).
+        if (!string.IsNullOrWhiteSpace(Sesion.Actual?.RefreshToken))
+        {
+            try
+            {
+                if (await RefrescarAsync(forzar: true) && !EsSesionLocal()) return true;
+            }
+            catch (Exception)
+            {
+                // se prueba el token del equipo
+            }
+        }
+
+        // 2) Equipo vinculado: el API devuelve una sesión nueva con solo el token del dispositivo.
+        var dispositivo = CredencialLocal.Dispositivo;
+        if (string.IsNullOrWhiteSpace(dispositivo)) return false;
+
+        try
+        {
+            var sesion = await LoginDispositivoAsync(dispositivo);
+            if (sesion is null || string.IsNullOrWhiteSpace(sesion.AccessToken)) return false;
+
+            await Sesion.GuardarAsync(sesion);
+            CredencialLocal.GuardarSesionOffline(sesion);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Registro.Aviso("Api", $"No se pudo recuperar la sesión con el equipo vinculado: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// True si conviene intentar la petición por la red.
+    ///
+    /// <see cref="Connectivity"/> no es fiable en Windows sin empaquetar: a veces informa
+    /// «None» con el equipo conectado, y entonces la app respondía «Sin internet» con la API
+    /// levantada. Por eso, además de preguntarle, se comprueba la pila de red del sistema, y
+    /// en Windows/escritorio se prefiere intentar la petición: si de verdad no hay red, la
+    /// propia petición falla y se cae al modo sin conexión.
+    /// </summary>
+    private static bool HayRed()
+    {
+        try
+        {
+            var acceso = Connectivity.Current.NetworkAccess;
+            if (acceso == NetworkAccess.Internet) return true;
+
+            // Connectivity dice que no; se contrasta con el sistema antes de rendirse.
+            if (acceso == NetworkAccess.Unknown || acceso == NetworkAccess.ConstrainedInternet)
+                return true;
+
+#if WINDOWS || MACCATALYST
+            // En escritorio se intenta igualmente: un fallo real lo detecta HttpRequestException
+            // y se atiende desde la copia local. Así un falso "sin internet" no bloquea el login.
+            return true;
+#else
+            return System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable();
+#endif
+        }
+        catch (Exception ex)
+        {
+            Registro.Aviso("Api", $"No se pudo consultar el estado de la red ({ex.Message}); se intentará conectar igualmente.");
+            return true;
+        }
+    }
+
+    private static string ClaveCache(string ruta) => $"{Sesion.Username}|{ruta}";
+
+    /// <summary>
+    /// Deserializa una respuesta. Si el servidor (o una copia local guardada por otra
+    /// versión) devuelve un JSON que no encaja con el modelo, se informa como error de la
+    /// petición en vez de lanzar un <c>JsonException</c> desde un manejador <c>async void</c>,
+    /// que terminaba el proceso con 0xFFFFFFFF.
+    /// </summary>
+    private static T? LeerJson<T>(string texto, string ruta)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<T>(texto, JsonUrbanPark.Opciones);
+        }
+        catch (JsonException ex)
+        {
+            Registro.Error("Api", $"Respuesta ilegible en {ruta}: {ex.Message}");
+            throw new ApiExcepcion(0, "El servidor devolvió datos en un formato que la app no reconoce. " +
+                                      "Actualiza la app o reintenta en unos segundos.");
+        }
+    }
+
+    private static bool SeEncola(HttpMethod metodo, string ruta) =>
+        metodo != HttpMethod.Get
+        && !ruta.Contains("/api/auth/", StringComparison.OrdinalIgnoreCase)
+        && !ruta.Contains("/api/ia/", StringComparison.OrdinalIgnoreCase)
+        // El cobro NO se encola nunca: cerrar un ticket libera una plaza y mueve dinero.
+        // Si se guardara para después, el cliente saldría con un ticket «cobrado» que en
+        // realidad nunca se cobró y la plaza quedaría ocupada. Debe hacerse en línea.
+        && !EsCobro(ruta);
+
+    /// <summary>
+    /// Rutas que mueven dinero o plazas y por tanto exigen conexión: cerrar un ticket,
+    /// cobrar varios, anular una reserva y liberar plazas.
+    /// </summary>
+    public static bool EsCobro(string ruta) =>
+        ruta.Contains("/cerrar", StringComparison.OrdinalIgnoreCase)
+        || ruta.Contains("/cobrar", StringComparison.OrdinalIgnoreCase)
+        || ruta.Contains("/cancelar", StringComparison.OrdinalIgnoreCase)
+        || ruta.Contains("sincronizar-liberaciones", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Comprueba que se pueda cobrar ahora mismo. Devuelve el motivo cuando no se puede,
+    /// para que la pantalla lo explique antes de intentarlo.
+    /// </summary>
+    public static async Task<(bool Puede, string Motivo)> PuedeCobrarAsync()
+    {
+        if (!MonitorConexion.HayInternet)
+            return (false, "Sin internet: no se puede cobrar. El cobro libera la plaza y se registra en el " +
+                           "servidor, así que necesita conexión. Tus datos siguen guardados en el equipo.");
+
+        var enLinea = await MonitorConexion.RevisarAhoraAsync();
+        if (!enLinea)
+            return (false, $"No se pudo conectar con el servidor ({BaseUrl}). Verifica que el servicio esté " +
+                           "encendido y vuelve a intentarlo: el cobro no se puede guardar para después.");
+
+        return (true, "");
+    }
+
+    private static Task<T> SinRedAsync<T>(HttpMethod metodo, string ruta, object? cuerpo, bool encolar)
+    {
+        SinConexion = true;
+        MonitorConexion.MarcarSinConexion();
+
+        // Un cobro sin red se rechaza con un mensaje claro: nunca se guarda en la cola.
+        if (EsCobro(ruta))
+            throw new ApiExcepcion(0,
+                "Sin conexión con el servidor: el cobro no se puede completar ahora. " +
+                "El ticket sigue abierto y tus datos están a salvo en el equipo. " +
+                "Vuelve a intentarlo cuando se restablezca la conexión.");
+
+        if (metodo == HttpMethod.Get
+            && AlmacenLocal.TryGet(ClaveCache(ruta), out var copia)
+            && !string.IsNullOrWhiteSpace(copia))
+        {
+            if (typeof(T) == typeof(string))
+                return Task.FromResult((T)(object)copia);
+
+            var valor = LeerJson<T>(copia, ruta);
+            return Task.FromResult(valor ?? default!);
+        }
+
+        // Sin copia de esa ruta: se intenta reconstruir con las tablas de SQLite
+        // (pase del puesto, vehículos, sedes, plazas y tickets abiertos).
+        if (metodo == HttpMethod.Get && AlmacenLocal.TryGetEstructurado<T>(ruta, out var local))
+            return Task.FromResult(local);
+
+        if (encolar && SeEncola(metodo, ruta) && Sesion.Activa)
+        {
+            var json = cuerpo is null ? null : JsonSerializer.Serialize(cuerpo, JsonUrbanPark.Opciones);
+            AlmacenLocal.Encolar(metodo.Method, ruta, json, Sesion.Username);
+            throw new ApiExcepcion(0,
+                "Sin internet. El cambio quedó guardado en este equipo y se sincronizará al volver la conexión.");
+        }
+
+        throw new ApiExcepcion(0, metodo == HttpMethod.Get
+            ? "Sin internet y este equipo aún no tiene una copia de estos datos."
+            : $"No se pudo conectar con el API en {BaseUrl}. Verifica que el servidor esté encendido y que la URL sea correcta.");
+    }
+
+    // ================================================================ refresco
+    private static readonly SemaphoreSlim CandadoRefresco = new(1, 1);
+
+    public static async Task<bool> RefrescarAsync(bool forzar = false)
+    {
+        if (Sesion.Actual is null || string.IsNullOrWhiteSpace(Sesion.Actual.RefreshToken)) return false;
+
+        await CandadoRefresco.WaitAsync();
+        try
+        {
+            // Sin "forzar" solo se refresca cuando el token está por vencer: así las
+            // llamadas normales no piden un token nuevo en cada petición.
+            if (!forzar && !Sesion.PorExpirar && Sesion.Activa) return true;
+
+            using var peticion = new HttpRequestMessage(HttpMethod.Post, BaseUrl.TrimEnd('/') + "/api/auth/refresh");
+            peticion.Content = new StringContent(
+                JsonSerializer.Serialize(new { refreshToken = Sesion.Actual.RefreshToken }, JsonUrbanPark.Opciones),
+                Encoding.UTF8, "application/json");
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            using var respuesta = await Http.SendAsync(peticion, cts.Token);
+            if (!respuesta.IsSuccessStatusCode) return false;
+
+            var texto = await respuesta.Content.ReadAsStringAsync();
+            var nueva = JsonSerializer.Deserialize<SesionDto>(texto, JsonUrbanPark.Opciones);
+            if (nueva is null) return false;
+
+            await Sesion.GuardarAsync(nueva);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+        finally
+        {
+            CandadoRefresco.Release();
+        }
+    }
+
+    // ================================================================ traduccion de errores
+    /// <summary>
+    /// Convierte la respuesta de error del API en un texto claro, replicando la tabla
+    /// de traduccion del frontend original.
+    /// </summary>
+    public static string MensajeAmigable(int status, string? cuerpo, string ruta)
+    {
+        var mensaje = ExtraerMensaje(cuerpo);
+
+        return status switch
+        {
+            0 => mensaje ?? "No se pudo conectar con el servidor. Revisa tu conexión y que el API esté encendido.",
+
+            400 => !string.IsNullOrWhiteSpace(mensaje)
+                ? mensaje!
+                : "Revisa los datos enviados: falta algún campo obligatorio o el formato no es válido.",
+
+            401 => !string.IsNullOrWhiteSpace(mensaje)
+                ? mensaje!
+                : "Tu sesión expiró o las credenciales no son válidas. Inicia sesión de nuevo.",
+
+            403 => !string.IsNullOrWhiteSpace(mensaje)
+                ? mensaje!
+                : "No tienes permisos para esta acción con tu perfil.",
+
+            404 => !string.IsNullOrWhiteSpace(mensaje)
+                ? mensaje!
+                : "No se encontró lo solicitado (plaza, ticket o vehículo). Revisa los datos e intenta de nuevo.",
+
+            409 => !string.IsNullOrWhiteSpace(mensaje)
+                ? mensaje!
+                : "No se pudo asignar: esa placa ya tiene un ticket abierto, o la plaza está ocupada. Ve a Tickets → Cerrar / cobrar e intenta de nuevo.",
+
+            502 or 503 or 504 => !string.IsNullOrWhiteSpace(mensaje)
+                ? mensaje!
+                : "No se pudo completar la operación con IA. Puede que la placa ya tenga un ticket abierto o que un servicio no responda. Cierra tickets abiertos en la pestaña Tickets e intenta otra vez.",
+
+            _ => !string.IsNullOrWhiteSpace(mensaje)
+                ? mensaje!
+                : $"Ocurrió un error inesperado (HTTP {status}). Intenta de nuevo."
+        };
+    }
+
+    private static string? ExtraerMensaje(string? cuerpo)
+    {
+        if (string.IsNullOrWhiteSpace(cuerpo)) return null;
+        if (cuerpo.Length > 400) return null;   // el original ignoraba cuerpos enormes
+
+        try
+        {
+            using var documento = JsonDocument.Parse(cuerpo);
+            foreach (var campo in new[] { "message", "detail", "error" })
+            {
+                if (documento.RootElement.TryGetProperty(campo, out var valor) &&
+                    valor.ValueKind == JsonValueKind.String)
+                {
+                    var texto = valor.GetString();
+                    if (!string.IsNullOrWhiteSpace(texto)) return texto;
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            return cuerpo.Trim();
+        }
+
+        return null;
+    }
+
+    // ================================================================ autenticacion
+    public static Task<SesionDto> LoginAsync(string usuario, string password, string? codigoTotp = null) =>
+        PostAsync<SesionDto>("/api/auth/login", string.IsNullOrWhiteSpace(codigoTotp)
+            ? new { username = usuario, password }
+            : new { username = usuario, password, codigoTotp });
+
+    /// <summary>¿Hay internet ahora mismo? (para el ingreso sin conexión).</summary>
+    public static bool HayInternet => HayRed();
+
+    /// <summary>
+    /// Red del sistema, sin las concesiones de <see cref="HayRed"/>. Sirve solo para elegir el
+    /// mensaje correcto: «sin internet» o «el API no responde». No decide si se intenta conectar.
+    /// </summary>
+    public static bool HayRedDelSistema
+    {
+        get
+        {
+            try
+            {
+                if (Connectivity.Current.NetworkAccess == NetworkAccess.Internet) return true;
+                return System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable();
+            }
+            catch (Exception)
+            {
+                return true;   // ante la duda, no se culpa a la conexión del usuario
+            }
+        }
+    }
+
+    /// <summary>Entrada desde un equipo ya vinculado: solo el código del autenticador.</summary>
+    public static Task<SesionDto> LoginCodigoAsync(string dispositivo, string codigo) =>
+        PostAsync<SesionDto>("/api/auth/login-codigo", new { dispositivo, codigo });
+
+    /// <summary>Entrada de un toque desde este equipo (sin código), tras confirmar la huella.</summary>
+    public static Task<SesionDto> LoginDispositivoAsync(string dispositivo) =>
+        PostAsync<SesionDto>("/api/auth/login-dispositivo", new { dispositivo });
+
+    /// <summary>¿Esa cuenta tiene el autenticador activo? (para mostrar el login corto).</summary>
+    public static Task<JsonElement> TotpRequeridoAsync(string usuario) =>
+        GetAsync<JsonElement>($"/api/auth/totp/requerido?username={Uri.EscapeDataString(usuario)}");
+
+    /// <summary>Entrada desde un equipo ya vinculado: solo el código del autenticador.</summary>
+    public static Task<TotpEstadoDto> TotpEstadoAsync() => GetAsync<TotpEstadoDto>("/api/auth/totp/estado");
+
+    public static Task<TotpPrepararDto> TotpPrepararAsync() =>
+        PostAsync<TotpPrepararDto>("/api/auth/totp/preparar");
+
+    public static Task<TotpEstadoDto> TotpConfirmarAsync(string codigo) =>
+        PostAsync<TotpEstadoDto>("/api/auth/totp/confirmar", new { codigo });
+
+    public static Task<TotpEstadoDto> TotpDesactivarAsync(string codigo) =>
+        PostAsync<TotpEstadoDto>("/api/auth/totp/desactivar", new { codigo });
+
+    public static Task<UsuarioDto> RegistroAsync(string usuario, string email, string nombre, string apellido,
+        string password, string rol) =>
+        PostAsync<UsuarioDto>("/api/auth/register",
+            new { username = usuario, email, firstName = nombre, lastName = apellido, password, role = rol });
+
+    public static Task<SesionDto> LoginGoogleAsync(string idToken) =>
+        PostAsync<SesionDto>("/api/auth/google", new { idToken });
+
+    public static Task<SesionDto> LoginBiometriaAsync(string tokenHash) =>
+        PostAsync<SesionDto>("/api/auth/biometria", new { tokenHash });
+
+    public static Task<JsonElement> GoogleConfigAsync() => GetAsync<JsonElement>("/api/auth/google/config");
+
+    // ================================================================ perfil
+    public static Task<UsuarioDto> MiPerfilAsync() => GetAsync<UsuarioDto>("/api/perfil/me");
+
+    public static Task<UsuarioDto> ActualizarPerfilAsync(string email, string nombre, string apellido) =>
+        PutAsync<UsuarioDto>("/api/perfil/me", new { email, firstName = nombre, lastName = apellido });
+
+    public static Task<JsonElement> CambiarPasswordAsync(string actual, string nueva) =>
+        PutAsync<JsonElement>("/api/perfil/me/password", new { currentPassword = actual, newPassword = nueva });
+
+    // ================================================================ admin de usuarios
+    public static Task<List<UsuarioDto>> ListarUsuariosAsync() => GetAsync<List<UsuarioDto>>("/api/admin/users");
+
+    public static Task<UsuarioDto> CrearUsuarioAsync(string usuario, string email, string nombre, string apellido,
+        string password, string rol) =>
+        PostAsync<UsuarioDto>("/api/admin/users",
+            new { username = usuario, email, firstName = nombre, lastName = apellido, password, role = rol });
+
+    public static Task<UsuarioDto> ActualizarUsuarioAsync(string id, string email, string nombre, string apellido, bool activo) =>
+        PutAsync<UsuarioDto>($"/api/admin/users/{id}", new { email, firstName = nombre, lastName = apellido, enabled = activo });
+
+    public static Task<UsuarioDto> ActualizarRolesAsync(string id, string rol) =>
+        PutAsync<UsuarioDto>($"/api/admin/users/{id}/roles", new { role = rol });
+
+    public static Task<JsonElement> ResetPasswordAsync(string id, string password) =>
+        PutAsync<JsonElement>($"/api/admin/users/{id}/password", new { password });
+
+    // ================================================================ admin tarifas
+    public static Task<List<TarifaSedeResumenDto>> TarifasResumenAsync() =>
+        GetAsync<List<TarifaSedeResumenDto>>("/api/admin/tarifas/resumen");
+
+    public static Task<TarifasMasivasResultDto> TarifasAplicarAsync(string modo, double valor,
+        IReadOnlyCollection<long>? sedes, string? zona, string? tipoVehiculo) =>
+        PostAsync<TarifasMasivasResultDto>("/api/admin/tarifas/aplicar", new
+        {
+            modo,
+            valor,
+            sedes = sedes is { Count: > 0 } ? sedes.ToArray() : null,
+            zona = string.IsNullOrWhiteSpace(zona) ? null : zona,
+            tipoVehiculo = string.IsNullOrWhiteSpace(tipoVehiculo) ? null : tipoVehiculo
+        });
+
+    // ================================================================ sedes (parqueaderos)
+    public static Task<List<SedeDto>> SedesAsync(double? lat = null, double? lng = null, string? tipo = null,
+        string? preferencia = null)
+    {
+        var consulta = new List<string>();
+        if (lat is not null && lng is not null)
+        {
+            consulta.Add($"lat={lat.Value.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)}");
+            consulta.Add($"lng={lng.Value.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)}");
+        }
+        if (!string.IsNullOrWhiteSpace(tipo)) consulta.Add($"tipo={Uri.EscapeDataString(tipo)}");
+        if (!string.IsNullOrWhiteSpace(preferencia)) consulta.Add($"preferencia={Uri.EscapeDataString(preferencia)}");
+        var qs = consulta.Count > 0 ? "?" + string.Join("&", consulta) : "";
+        return GetAsync<List<SedeDto>>($"/api/sedes{qs}");
+    }
+
+    public static Task<SedeDetalleDto> SedeAsync(long id, double? lat = null, double? lng = null)
+    {
+        var qs = lat is not null && lng is not null
+            ? $"?lat={lat.Value.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)}" +
+              $"&lng={lng.Value.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)}"
+            : "";
+        return GetAsync<SedeDetalleDto>($"/api/sedes/{id}{qs}");
+    }
+
+    /// <summary>La IA elige el parqueadero que más conviene según ubicación, plazas y precio.</summary>
+    public static Task<RecomendacionSedeDto> RecomendarSedeAsync(string tipoVehiculo, double? lat, double? lng,
+        string? preferencia, string? placa) =>
+        PostLentoAsync<RecomendacionSedeDto>("/api/sedes/recomendar",
+            new { tipoVehiculo, latitud = lat, longitud = lng, preferencia, placa });
+
+    public static Task<List<EspacioDto>> EspaciosDeSedeAsync(long sedeId) =>
+        GetAsync<List<EspacioDto>>($"/api/espacios?sedeId={sedeId}");
+
+    // ================================================================ pase del puesto (QR)
+    /// <summary>
+    /// Al elegir el puesto se abre el ticket y vuelve el pase con el QR y el valor.
+    /// Sin fechas el cliente entra en el acto (modo AHORA); con fechas el puesto queda
+    /// reservado para esa franja (modo RESERVA). En los dos casos se genera el QR.
+    /// </summary>
+    public static Task<PasePuestoDto> EstacionarAsync(string placa, long espacioId,
+        DateTime? inicioReserva = null, DateTime? finReserva = null) =>
+        PostAsync<PasePuestoDto>("/api/estacionar", inicioReserva is null || finReserva is null
+            ? new { placa, espacioId, modo = "AHORA" }
+            : new { placa, espacioId, modo = "RESERVA", inicioReserva, finReserva });
+
+    public static Task<PasePuestoDto> PaseAsync(long ticketId) =>
+        GetAsync<PasePuestoDto>($"/api/estacionar/{ticketId}");
+
+    /// <summary>Ya llegó el cliente: la reserva se convierte en estancia activa.</summary>
+    public static Task<PasePuestoDto> ActivarPaseAsync(long ticketId) =>
+        PostAsync<PasePuestoDto>($"/api/estacionar/{ticketId}/activar");
+
+    public static Task<JsonElement> CancelarPaseAsync(long ticketId) =>
+        PostAsync<JsonElement>($"/api/estacionar/{ticketId}/cancelar");
+
+    // ================================================================ espacios
+    public static Task<List<EspacioDto>> ListarEspaciosAsync() => GetAsync<List<EspacioDto>>("/api/espacios");
+
+    public static Task<List<EspacioDto>> DisponiblesAsync(string? tipo = null, string? zona = null)
+    {
+        var consulta = new List<string>();
+        if (!string.IsNullOrWhiteSpace(tipo)) consulta.Add($"tipo={Uri.EscapeDataString(tipo)}");
+        if (!string.IsNullOrWhiteSpace(zona)) consulta.Add($"zona={Uri.EscapeDataString(zona)}");
+        var qs = consulta.Count > 0 ? "?" + string.Join("&", consulta) : "";
+        return GetAsync<List<EspacioDto>>($"/api/espacios/disponibles{qs}");
+    }
+
+    public static Task<OcupacionDto> OcupacionAsync() => GetAsync<OcupacionDto>("/api/espacios/ocupacion");
+
+    public static Task<EspacioDto> OcuparAsync(long id) => PostAsync<EspacioDto>($"/api/espacios/{id}/ocupar");
+
+    public static Task<EspacioDto> LiberarAsync(long id) => PostAsync<EspacioDto>($"/api/espacios/{id}/liberar");
+
+    public static Task<EspacioDto> CrearEspacioAsync(string codigo, string zona, string tipo, double tarifa,
+        int? nivel, string? descripcion) =>
+        PostAsync<EspacioDto>("/api/espacios",
+            new { codigo, zona, tipoVehiculo = tipo, tarifaHora = tarifa, nivel, descripcion });
+
+    public static Task<EspacioDto> ActualizarEspacioAsync(long id, string codigo, string zona, string tipo,
+        double tarifa, int? nivel, string? descripcion) =>
+        PutAsync<EspacioDto>($"/api/espacios/{id}",
+            new { codigo, zona, tipoVehiculo = tipo, tarifaHora = tarifa, nivel, descripcion });
+
+    // ================================================================ vehiculos
+    public static Task<List<VehiculoDto>> ListarVehiculosAsync() => GetAsync<List<VehiculoDto>>("/api/vehiculos");
+
+    public static Task<VehiculoDto> CrearVehiculoAsync(string placa, string tipo, string? marca, string? color,
+        string propietario, string? email) =>
+        PostAsync<VehiculoDto>("/api/vehiculos",
+            new { placa, tipo, marca, color, propietario, propietarioEmail = email });
+
+    public static Task<VehiculoDto> CambiarActivoVehiculoAsync(long id, bool activo) =>
+        PatchAsync<VehiculoDto>($"/api/vehiculos/{id}/activo", new { activo });
+
+    /// <summary>Ficha del vehículo por placa (EcuadorAPI). No falla: si no hay datos, encontrado = false.</summary>
+    public static Task<ConsultaVehiculoDto> ConsultarPlacaAsync(string placa) =>
+        GetAsync<ConsultaVehiculoDto>($"/api/vehiculos/consultar/{Uri.EscapeDataString(placa)}");
+
+    /// <summary>Matrícula registrada del vehículo (EcuadorAPI). Consulta aparte, con su propio costo.</summary>
+    public static Task<MatriculaVehiculoDto> ConsultarMatriculaAsync(string placa) =>
+        GetAsync<MatriculaVehiculoDto>($"/api/vehiculos/consultar/{Uri.EscapeDataString(placa)}/matricula");
+
+    public static Task<VehiculoDto> ActualizarVehiculoAsync(long id, string tipo, string? marca, string? color,
+        string propietario, string? email) =>
+        PutAsync<VehiculoDto>($"/api/vehiculos/{id}",
+            new { tipo, marca, color, propietario, propietarioEmail = email });
+
+    public static Task<JsonElement> EliminarVehiculoAsync(long id) => DeleteAsync<JsonElement>($"/api/vehiculos/{id}");
+
+    public static Task<List<BiometriaDto>> ListarBiometriasAsync() =>
+        GetAsync<List<BiometriaDto>>("/api/biometrias");
+
+    public static Task<BiometriaDto> GuardarBiometriaAsync(long? vehiculoId, string placa, string tipo,
+        string tokenHash, string? fotoBase64, string dispositivo) =>
+        PostAsync<BiometriaDto>("/api/biometrias", new
+        {
+            vehiculoId,
+            placa,
+            tipo,
+            tokenHash,
+            fotoBase64,
+            dispositivo
+        });
+
+    public static Task<JsonElement> VerificarBiometriaAsync(string tokenHash) =>
+        PostAsync<JsonElement>("/api/biometrias/verificar", new { tokenHash });
+
+    // ================================================================ tickets
+    /// <summary>
+    /// Tickets visibles para la sesion. El API ya devuelve solo los del cliente; con
+    /// <paramref name="soloMios"/> el operador o el admin piden unicamente los suyos.
+    /// </summary>
+    public static Task<List<TicketDto>> ListarTicketsAsync(bool soloMios = false) =>
+        GetAsync<List<TicketDto>>("/api/tickets" + (soloMios ? "?soloMios=true" : ""));
+
+    public static Task<List<TicketDto>> TicketsAbiertosAsync(bool soloMios = false) =>
+        GetAsync<List<TicketDto>>("/api/tickets/abiertos" + (soloMios ? "?soloMios=true" : ""));
+
+    public static Task<TicketDto> AbrirTicketAsync(string placa, long espacioId) =>
+        PostAsync<TicketDto>("/api/tickets/abrir", new { placa, espacioId });
+
+    public static Task<TicketDto> CerrarTicketAsync(long id) => PostAsync<TicketDto>($"/api/tickets/{id}/cerrar");
+
+    /// <summary>Libera las plazas cuyo cobro quedó pendiente de sincronizar (tarea de OPERADOR/ADMIN).</summary>
+    public static Task<SincronizacionDto> SincronizarLiberacionesAsync() =>
+        PostAsync<SincronizacionDto>("/api/tickets/sincronizar-liberaciones");
+
+    public static Task<ReconciliacionDto> ReconciliarAsync() =>
+        PostAsync<ReconciliacionDto>("/api/tickets/reconciliar-plazas");
+
+    public static Task<OcupacionRemotaDto> OcupacionRemotaAsync() =>
+        GetAsync<OcupacionRemotaDto>("/api/tickets/ocupacion");
+
+    public static Task<JsonElement> EstadoResilienciaAsync() => GetAsync<JsonElement>("/api/tickets/resilience/estado");
+
+    // ================================================================ demo de caida (antes Docker)
+    public static Task<DemoEstadoDto> DemoEstadoAsync() => GetAsync<DemoEstadoDto>("/api/tickets/demo/espacios/status");
+
+    public static Task<DemoAccionDto> DemoDetenerAsync() => PostAsync<DemoAccionDto>("/api/tickets/demo/espacios/stop");
+
+    public static Task<DemoAccionDto> DemoIniciarAsync() => PostAsync<DemoAccionDto>("/api/tickets/demo/espacios/start");
+
+    // ================================================================ IA
+    public static Task<RecomendacionDto> RecomendarAsync(string tipoVehiculo, string? preferencia, string? placa) =>
+        PostLentoAsync<RecomendacionDto>("/api/ia/recomendar", new { tipoVehiculo, preferencia, placa });
+
+    public static Task<AsignacionDto> AsignarAsync(string placa, string tipoVehiculo, string? preferencia) =>
+        PostLentoAsync<AsignacionDto>("/api/ia/asignar", new { placa, tipoVehiculo, preferencia });
+
+    /// <summary>Reporte del administrador; <paramref name="sedes"/> vacío o null = todas.</summary>
+    /// <summary>
+    /// Reporte del administrador. Con <paramref name="conIa"/> = false responde al instante
+    /// con el resumen de respaldo; con true espera a Ollama (puede tardar unos segundos).
+    /// </summary>
+    public static Task<ReporteDto> ReporteAsync(string desde, string hasta,
+        IReadOnlyCollection<long>? sedes = null, bool conIa = false) =>
+        PostLentoAsync<ReporteDto>("/api/ia/reporte-tickets", new
+        {
+            fechaDesde = desde,
+            fechaHasta = hasta,
+            sedes = sedes is { Count: > 0 } ? sedes.ToArray() : null,
+            sinIa = !conIa
+        });
+
+    public static Task<IaEstadoDto> EstadoIaAsync() => GetAsync<IaEstadoDto>("/api/ia/estado");
+
+    public static Task<ChatRespuestaDto> ChatAsync(string mensaje, List<object> historial) =>
+        PostLentoAsync<ChatRespuestaDto>("/api/ia/chat", new { mensaje, historial });
+}

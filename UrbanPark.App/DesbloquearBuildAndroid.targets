@@ -1,0 +1,11 @@
+<Project>
+  <!-- Si res.zip.* queda bloqueado tras un build fallido, intenta borrar restos antes de empaquetar. -->
+  <Target Name="UrbanPark_DesbloquearObjAndroid"
+          BeforeTargets="_ResolveLibraryProjectImports"
+          Condition="'$(TargetFramework)' == 'net10.0-android'">
+    <ItemGroup>
+      <_ResZipBasura Include="$(IntermediateOutputPath)lp\**\res.zip.*" />
+    </ItemGroup>
+    <Delete Files="@(_ResZipBasura)" ContinueOnError="true" />
+  </Target>
+</Project>

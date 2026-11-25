@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Colores del tema nativo de Android: barra de estado, barra de navegacion y acentos del sistema.
+     Deben coincidir con la paleta de la app (Resources/Styles/Colors.xaml) para que no aparezca
+     el morado por defecto de .NET MAUI. -->
+<resources>
+    <color name="colorPrimary">#141B24</color>
+    <color name="colorPrimaryDark">#0A0E13</color>
+    <color name="colorAccent">#12B5A5</color>
+</resources>

@@ -1,0 +1,23 @@
+# Normaliza los finales de linea para que no salgan avisos en cada commit
+* text=auto
+
+*.cs       text eol=lf
+*.xaml     text eol=lf
+*.csproj   text eol=lf
+*.sln      text eol=crlf
+*.json     text eol=lf
+*.md       text eol=lf
+*.sql      text eol=lf
+*.svg      text eol=lf
+*.html     text eol=lf
+*.py       text eol=lf
+*.ps1      text eol=crlf
+*.bat      text eol=crlf
+
+# Imagenes y binarios: no tocar
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.ttf binary
+*.otf binary

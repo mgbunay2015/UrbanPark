@@ -1,0 +1,398 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="UrbanPark.App.Views.vPlazas"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource Fondo}"
+             Title="Plazas">
+
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView x:Name="scrollPlazas">
+            <VerticalStackLayout x:Name="cajaPlazas" Padding="10,8,10,8" Spacing="8">
+
+                <VerticalStackLayout x:Name="panelControles" Spacing="8">
+
+                <!-- ================= marca ================= -->
+                <Grid x:Name="barraMarca" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                    <Border BackgroundColor="Transparent"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 7"
+                            WidthRequest="26"
+                            HeightRequest="26">
+                        <Image Source="logo_urbanpark.png"
+                               Aspect="AspectFill" />
+                    </Border>
+                    <Label Grid.Column="1"
+                           Text="Urban Park"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="13"
+                           TextColor="{StaticResource TextoClaro}"
+                           VerticalOptions="Center" />
+                    <Button x:Name="btnActualizar"
+                            Grid.Column="2"
+                            Text="↻"
+                            Clicked="OnActualizarClicked"
+                            BackgroundColor="{StaticResource SuperficieAlta}"
+                            TextColor="{StaticResource Acento}"
+                            FontFamily="OpenSansSemibold"
+                            FontSize="12"
+                            CornerRadius="8"
+                            HeightRequest="26"
+                            WidthRequest="32"
+                            Padding="0" />
+                </Grid>
+
+                <Label x:Name="lblTituloPagina" Text="Elige tu plaza" Style="{StaticResource TituloPagina}" />
+
+                <!-- ================= parqueadero elegido en el mapa ================= -->
+                <Border x:Name="panelSede"
+                        IsVisible="False"
+                        BackgroundColor="{StaticResource Superficie}"
+                        Stroke="{StaticResource Acento}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 12"
+                        Padding="10,8">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <VerticalStackLayout Spacing="1">
+                            <Label x:Name="lblSedeNombre"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="13"
+                                   TextColor="{StaticResource TextoClaro}"
+                                   LineBreakMode="TailTruncation" />
+                            <Label x:Name="lblSedeDireccion"
+                                   FontSize="10"
+                                   TextColor="{StaticResource TextoClaroSuave}"
+                                   LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                        <Label x:Name="lblCambiarSede"
+                               Grid.Column="1"
+                               Text="Cambiar ›"
+                               FontSize="11"
+                               TextColor="{StaticResource Acento}"
+                               VerticalOptions="Center">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnCambiarSedeTapped" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </Grid>
+                </Border>
+
+                <!-- ================= vehículo con el que se reserva ================= -->
+                <VerticalStackLayout x:Name="panelVehiculo" IsVisible="False" Spacing="5">
+                    <Border BackgroundColor="{StaticResource Superficie}"
+                            Stroke="{StaticResource SuperficieBorde}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 14"
+                            Padding="9,8">
+
+                        <Grid RowDefinitions="Auto,Auto" RowSpacing="6">
+
+                            <!-- 1) selector de vehículo: una sola fila horizontal que se desliza -->
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="4">
+                                <VerticalStackLayout Grid.Column="0" Spacing="3">
+                                    <Label x:Name="lblVehiculosTitulo"
+                                           Text="Vas a reservar con"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="7.5"
+                                           CharacterSpacing="0.4"
+                                           TextColor="{StaticResource TextoClaroSuave}"
+                                           LineBreakMode="TailTruncation" />
+                                    <ScrollView Orientation="Horizontal"
+                                                HorizontalScrollBarVisibility="Never">
+                                        <HorizontalStackLayout x:Name="contenedorVehiculos"
+                                                               Spacing="4"
+                                                               VerticalOptions="Center" />
+                                    </ScrollView>
+                                </VerticalStackLayout>
+                                <Button x:Name="btnAsignarIa"
+                                        Grid.Column="1"
+                                        IsVisible="False"
+                                        Text="🤖 Asignar IA"
+                                        Clicked="OnAsignarIaClicked"
+                                        BackgroundColor="{StaticResource SuperficieAlta}"
+                                        TextColor="{StaticResource Acento}"
+                                        FontFamily="OpenSansSemibold"
+                                        FontSize="8.5"
+                                        CornerRadius="7"
+                                        HeightRequest="24"
+                                        VerticalOptions="End"
+                                        Padding="6,0" />
+                            </Grid>
+
+                            <!-- 2) placa oficial y datos del vehículo -->
+                            <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <VerticalStackLayout x:Name="contenedorPlaca"
+                                                     Grid.Column="0"
+                                                     Spacing="0"
+                                                     VerticalOptions="Center"
+                                                     HorizontalOptions="Center" />
+                                <VerticalStackLayout x:Name="contenedorDatosVehiculo"
+                                                     Grid.Column="1"
+                                                     Spacing="0"
+                                                     VerticalOptions="Center" />
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- ================= sesión y ocupación ================= -->
+                <Border x:Name="panelSesion"
+                        BackgroundColor="{StaticResource Superficie}"
+                        Stroke="{StaticResource SuperficieBorde}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 10"
+                        Padding="8,6">
+                    <VerticalStackLayout Spacing="4">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label x:Name="lblSesion"
+                                   FontSize="11"
+                                   TextColor="{StaticResource TextoClaroSuave}"
+                                   VerticalOptions="Center" />
+                            <Border Grid.Column="1"
+                                    BackgroundColor="{StaticResource SuperficieAlta}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 8"
+                                    Padding="6,1">
+                                <Label x:Name="lblRol"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="10"
+                                       TextColor="{StaticResource TextoClaroSuave}" />
+                            </Border>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,70" ColumnSpacing="8">
+                            <Label x:Name="lblResumen"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="12"
+                                   TextColor="{StaticResource TextoClaro}"
+                                   VerticalOptions="Center" />
+                            <ProgressBar x:Name="barraOcupacion"
+                                         Grid.Column="1"
+                                         Progress="0"
+                                         ProgressColor="{StaticResource Acento}"
+                                         BackgroundColor="{StaticResource SuperficieBorde}"
+                                         VerticalOptions="Center" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- ================= selector de parqueadero (si no se eligió en el mapa) ================= -->
+                <FlexLayout x:Name="contenedorSedes"
+                            IsVisible="False"
+                            Wrap="Wrap"
+                            Direction="Row"
+                            JustifyContent="Start"
+                            AlignItems="Start" />
+
+                <!-- ================= zonas ================= -->
+                <FlexLayout x:Name="contenedorZonas"
+                            Wrap="Wrap"
+                            Direction="Row"
+                            JustifyContent="Start"
+                            AlignItems="Start" />
+
+                <!-- ================= tipo de vehículo ================= -->
+                <FlexLayout x:Name="contenedorTipos"
+                            Wrap="Wrap"
+                            Direction="Row"
+                            JustifyContent="Start"
+                            AlignItems="Start" />
+
+                <!-- ================= leyenda ================= -->
+                <FlexLayout Wrap="Wrap" Direction="Row" JustifyContent="SpaceBetween" AlignItems="Center">
+                    <HorizontalStackLayout Spacing="8" Margin="0,0,8,2">
+                        <HorizontalStackLayout Spacing="4">
+                            <BoxView Color="{StaticResource TextoClaro}" WidthRequest="7" HeightRequest="7" CornerRadius="1" VerticalOptions="Center" />
+                            <Label Text="Libre" FontSize="9" TextColor="{StaticResource TextoClaroSuave}" />
+                        </HorizontalStackLayout>
+                        <HorizontalStackLayout Spacing="4">
+                            <BoxView Color="#3B82F6" WidthRequest="7" HeightRequest="7" CornerRadius="1" VerticalOptions="Center" />
+                            <Label Text="Ocupada" FontSize="9" TextColor="{StaticResource TextoClaroSuave}" />
+                        </HorizontalStackLayout>
+                        <HorizontalStackLayout Spacing="4">
+                            <BoxView Color="{StaticResource Acento}" WidthRequest="7" HeightRequest="7" CornerRadius="1" VerticalOptions="Center" />
+                            <Label Text="Tuyo" FontSize="9" TextColor="{StaticResource TextoClaroSuave}" />
+                        </HorizontalStackLayout>
+                    </HorizontalStackLayout>
+                    <Label x:Name="lblZonaDetalle"
+                           FontSize="9"
+                           TextColor="{StaticResource TextoClaroSuave}"
+                           Margin="0,0,0,2" />
+                </FlexLayout>
+
+                <!-- ================= aviso ================= -->
+                <Border x:Name="panelAviso"
+                        IsVisible="False"
+                        BackgroundColor="{StaticResource SuperficieAlta}"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="8,6">
+                    <VerticalStackLayout Spacing="2">
+                        <Label x:Name="lblAviso"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="12"
+                               TextColor="{StaticResource TextoClaro}"
+                               LineBreakMode="WordWrap" />
+                        <Label x:Name="lblAvisoDetalle"
+                               FontSize="12"
+                               TextColor="{StaticResource TextoClaroSuave}"
+                               LineBreakMode="WordWrap" />
+                    </VerticalStackLayout>
+                </Border>
+
+                </VerticalStackLayout>
+
+                <!-- ================= plano (marco con vista solo estacionamiento) ================= -->
+                <Border x:Name="marcoPlano"
+                        BackgroundColor="{StaticResource Superficie}"
+                        Stroke="{StaticResource Acento}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 12"
+                        Padding="0">
+                    <VerticalStackLayout Spacing="0">
+                        <Grid ColumnDefinitions="*,Auto"
+                              ColumnSpacing="8"
+                              Padding="8,6"
+                              BackgroundColor="{StaticResource SuperficieAlta}">
+                            <VerticalStackLayout x:Name="marcoPlanoCabecera"
+                                                 Spacing="0"
+                                                 VerticalOptions="Center">
+                                <Label Text="Plano del estacionamiento"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="11"
+                                       TextColor="{StaticResource TextoClaro}" />
+                                <Label Text="Toca una bahía en el dibujo"
+                                       FontSize="9"
+                                       TextColor="{StaticResource TextoClaroSuave}" />
+                            </VerticalStackLayout>
+                            <Button x:Name="btnSoloPlano"
+                                    Grid.Column="1"
+                                    Text="Solo plano"
+                                    Clicked="OnSoloPlanoClicked"
+                                    BackgroundColor="{StaticResource Fondo}"
+                                    TextColor="{StaticResource Acento}"
+                                    FontFamily="OpenSansSemibold"
+                                    FontSize="9"
+                                    CornerRadius="8"
+                                    HeightRequest="32"
+                                    Padding="10,0"
+                                    VerticalOptions="Center" />
+                        </Grid>
+                        <VerticalStackLayout x:Name="contenedorPlazas"
+                                             Spacing="6"
+                                             Padding="6,4,6,8" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <ActivityIndicator x:Name="spinnerPlazas" IsRunning="False" IsVisible="False" Color="{StaticResource Acento}" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- ================= pie ================= -->
+        <FlexLayout x:Name="panelPie"
+                    Grid.Row="1"
+                    Wrap="Wrap"
+                    Direction="Row"
+                    JustifyContent="SpaceBetween"
+                    AlignItems="Center"
+                    BackgroundColor="{StaticResource Superficie}"
+                    Padding="10,8">
+            <VerticalStackLayout VerticalOptions="Center" Spacing="0" Margin="0,0,8,2">
+                <Label x:Name="lblLibres"
+                       Text="0 PLAZAS LIBRES"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="12"
+                       TextColor="{StaticResource Acento}"
+                       LineBreakMode="WordWrap" />
+                <Label x:Name="lblSeleccion"
+                       Text="Toca una plaza libre"
+                       FontSize="10"
+                       TextColor="{StaticResource TextoClaroSuave}"
+                       LineBreakMode="WordWrap" />
+            </VerticalStackLayout>
+            <Button x:Name="btnContinuar"
+                    Text="Continuar"
+                    Clicked="OnContinuarClicked"
+                    IsEnabled="False"
+                    BackgroundColor="{StaticResource Acento}"
+                    TextColor="{StaticResource Fondo}"
+                    FontFamily="OpenSansSemibold"
+                    CornerRadius="10"
+                    HeightRequest="36"
+                    MinimumWidthRequest="100"
+                    Padding="14,0"
+                    Margin="0" />
+        </FlexLayout>
+
+        <!-- ============ popup ubicación (hover en tu puesto amarillo) ============ -->
+        <Grid x:Name="capaUbicacionBahia"
+              Grid.RowSpan="2"
+              IsVisible="False"
+              InputTransparent="True"
+              ZIndex="98"
+              VerticalOptions="Fill"
+              HorizontalOptions="Fill">
+            <Border x:Name="tarjetaUbicacionBahia"
+                    InputTransparent="True"
+                    BackgroundColor="#F8FAFC"
+                    Stroke="#F2C51A"
+                    StrokeThickness="2"
+                    StrokeShape="RoundRectangle 8"
+                    Padding="12,10"
+                    Margin="24,72,24,0"
+                    VerticalOptions="Start"
+                    HorizontalOptions="Center"
+                    MaximumWidthRequest="340">
+                <VerticalStackLayout Spacing="6">
+                    <Label x:Name="lblUbicacionBahiaTitulo"
+                           Text="Tu ubicación en el parqueadero"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="12"
+                           TextColor="#0F172A" />
+                    <Label x:Name="lblUbicacionBahiaDetalle"
+                           FontSize="10"
+                           TextColor="#334155"
+                           LineBreakMode="WordWrap" />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+        <!-- ============ popup de signografía ============ -->
+        <Grid x:Name="capaLeyenda"
+              Grid.RowSpan="2"
+              IsVisible="False"
+              BackgroundColor="#CC000000">
+            <Border BackgroundColor="{StaticResource Fondo}"
+                    Stroke="{StaticResource SuperficieBorde}"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 10"
+                    Padding="14"
+                    Margin="18,40"
+                    VerticalOptions="Center">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Label Text="SIGNIFICADO DE LOS SÍMBOLOS"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="12"
+                               CharacterSpacing="1"
+                               TextColor="{StaticResource TextoClaro}"
+                               VerticalOptions="Center" />
+                        <Button Grid.Column="1"
+                                x:Name="btnCerrarLeyenda"
+                                Text="✕"
+                                Clicked="OnCerrarLeyendaClicked"
+                                BackgroundColor="Transparent"
+                                TextColor="{StaticResource TextoClaroSuave}"
+                                FontSize="14"
+                                WidthRequest="34"
+                                HeightRequest="34"
+                                Padding="0" />
+                    </Grid>
+
+                    <ScrollView Grid.Row="1">
+                        <VerticalStackLayout x:Name="cuerpoLeyenda" Spacing="10" />
+                    </ScrollView>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</ContentPage>

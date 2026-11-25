@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <!-- Solo audita paquetes que referenciamos directo (evita duplicar NU19xx por TFM). -->
+    <NuGetAuditMode>direct</NuGetAuditMode>
+    <!-- Sugerencias IDE00xx: solo en el editor, no en la salida de compilación. -->
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+</Project>
